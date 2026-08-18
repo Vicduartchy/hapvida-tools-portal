@@ -311,7 +311,7 @@ export default function Home() {
 
       <main className="min-w-0 flex-1">
         <div className="relative isolate overflow-hidden bg-[#0c1c43]">
-          <img src={`${ASSET_BASE}assets/hac-operations-hero.png`} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover opacity-75" />
+          <img src={`${ASSET_BASE}assets/hac-operations-hero.webp`} alt="" className="absolute inset-0 -z-10 h-full w-full object-cover opacity-75" />
           <div className="absolute inset-0 -z-10 bg-[linear-gradient(110deg,rgba(12,28,67,0.98)_0%,rgba(12,28,67,0.87)_42%,rgba(23,70,162,0.50)_100%)]" />
           <header className="flex items-center justify-between px-5 py-5 sm:px-9 lg:px-12">
             <button type="button" onClick={() => setSidebarOpen(true)} className="grid h-10 w-10 place-items-center rounded-xl border border-white/20 text-white lg:hidden" aria-label="Abrir navegação"><Menu size={19} /></button>
