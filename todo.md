@@ -10,3 +10,6 @@
 - [ ] Diagnosticar o CSS ausente no deploy da Vercel.
 - [ ] Corrigir caminhos de CSS e assets no build de produção.
 - [ ] Validar visualmente a Vercel e o GitHub Pages após a correção.
+- [x] Comparar a identidade visual da página inicial com as ferramentas internas.
+- [x] Padronizar componentes visuais do portal sem alterar as lógicas das ferramentas.
+- [ ] Validar navegação, responsividade e publicação da nova página inicial.
