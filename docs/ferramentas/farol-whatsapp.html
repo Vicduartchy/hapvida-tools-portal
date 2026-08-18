@@ -1,0 +1,1538 @@
+<!doctype html>
+<html lang="pt-BR"><head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farol WhatsApp — Hub do Agile Coach · Hapvida</title>
+<style>
+
+  :root{
+    --azul:#1A3DAA;
+    --azul-escuro:#0F2370;
+    --vermelho:#E8272A;
+    --laranja:#F47920;
+    --amarelo:#FFC20E;
+    --verde:#2E9E44; /* status "Enviado" - não há verde na paleta oficial, usado apenas para semântica de farol (verde/vermelho) */
+    --cinza-na:#9AA5C4;
+    --branco:#FFFFFF;
+    --preto:#000000;
+    --cinza-bg:#F2F4F9;
+    --cinza-borda:#D7DCE8;
+    --cinza-texto:#5B6478;
+    --sombra:0 2px 10px rgba(15,35,112,0.08);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:Arial, Helvetica, sans-serif;
+    background:var(--cinza-bg);
+    color:var(--azul-escuro);
+  }
+  header{
+    background:linear-gradient(135deg,var(--azul-escuro) 0%,var(--azul) 100%);
+    color:var(--branco);
+    padding:22px 28px;
+    border-radius:14px;
+    margin:20px auto 0;
+    max-width:1180px;
+    box-shadow:0 2px 10px rgba(15,35,112,0.15);
+  }
+  .header-row{
+    display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;max-width:1180px;margin:0 auto;
+  }
+  .brand-mark{display:flex; align-items:center; gap:14px;}
+  .flor{width:46px; height:46px; flex:0 0 auto;}
+  header h1{margin:2px 0 0 0;font-size:22px;font-weight:700;}
+  header .eyebrow{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;opacity:.78;font-weight:700;margin-bottom:2px;}
+  header p{margin:4px 0 0;font-size:13px;opacity:.85;}
+  .update-badge{
+    background:var(--laranja);
+    color:var(--branco);
+    padding:10px 18px;
+    border-radius:8px;
+    font-size:14px;
+    font-weight:700;
+    white-space:nowrap;
+    box-shadow:0 2px 6px rgba(0,0,0,.15);
+  }
+  .update-badge .lbl{display:block;font-size:10px;font-weight:400;text-transform:uppercase;letter-spacing:.5px;opacity:.9;margin-bottom:2px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px;}
+
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px;}
+  .kpi{background:var(--branco);border-radius:12px;box-shadow:0 2px 10px rgba(15,35,112,0.08);padding:16px 18px;border-top:4px solid var(--azul);}
+  .kpi.green{border-top-color:var(--verde);}
+  .kpi.red{border-top-color:var(--vermelho);}
+  .kpi.orange{border-top-color:var(--laranja);}
+  .kpi .label{font-size:12px;color:#5A6B9C;text-transform:uppercase;letter-spacing:.4px;}
+  .kpi .value{font-size:28px;font-weight:700;color:var(--azul-escuro);margin-top:4px;}
+  .kpi .sub{font-size:12px;color:#7282AD;margin-top:2px;}
+
+  .panel{background:var(--branco);border-radius:14px;box-shadow:0 2px 10px rgba(15,35,112,0.08);padding:20px;margin-bottom:24px;}
+  .panel h2{margin:0 0 4px;font-size:16px;color:var(--azul);}
+  .panel .desc{font-size:12px;color:#6577A8;margin-bottom:16px;}
+  .panel-headrow{display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .panel-headrow h2{margin:0 0 4px;}
+  .lbl-toggle{display:flex;align-items:center;gap:6px;font-size:12px;color:#6577A8;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .lbl-toggle input{cursor:pointer;}
+  body.hide-chart-labels .donut-center,
+  body.hide-chart-labels .bar-row .pct{display:none;}
+
+  .editor-panel{border:1px solid var(--azul);}
+  .editor-panel textarea{
+    width:100%;font-family:Consolas,Monaco,monospace;font-size:12px;line-height:1.5;padding:10px;
+    border:1px solid var(--cinza-borda);border-radius:8px;resize:vertical;color:var(--azul-escuro);background:#FBFCFF;
+  }
+  .editor-actions{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;align-items:center;}
+  .editor-actions.secondary{margin-top:8px;padding-top:10px;border-top:1px dashed var(--cinza-borda);}
+  .btn{padding:9px 16px;border-radius:6px;font-size:13px;font-weight:700;border:none;cursor:pointer;font-family:Arial,sans-serif;}
+  .btn:disabled{opacity:.4;cursor:not-allowed;}
+  .btn-primary,.btn-azul{background:var(--azul);color:var(--branco);border:none;}
+  .btn-azul:hover{background:var(--azul-escuro);}
+  .btn-primary:hover:not(:disabled){background:var(--azul-escuro);}
+  .btn-success,.btn-verde{background:var(--verde);color:var(--branco);}
+  .btn-success:hover:not(:disabled),.btn-verde:hover:not(:disabled){background:#247A35;}
+  .btn-ghost,.btn-outline{background:var(--branco);color:var(--azul);border:1px solid var(--azul);}
+  .btn-ghost:hover:not(:disabled),.btn-outline:hover:not(:disabled){background:#EEF1FA;}
+  .btn-danger-ghost,.btn-vermelho{background:var(--branco);color:var(--vermelho);border:1px solid var(--vermelho);}
+  .btn-danger-ghost:hover:not(:disabled),.btn-vermelho:hover:not(:disabled){background:#FDEEEE;}
+  .btn-sm{font-size:11px;padding:6px 12px;font-weight:600;}
+  .offline-badge{
+    background:rgba(255,255,255,.16); color:var(--branco); font-size:11px; font-weight:700;
+    padding:6px 12px; border-radius:20px; letter-spacing:.02em; white-space:nowrap;
+  }
+  .parse-msg{margin-top:10px;font-size:13px;padding:8px 12px;border-radius:6px;display:none;}
+  .parse-msg.ok{display:block;background:#E9F7EC;color:#1E7A33;border:1px solid var(--verde);}
+  .parse-msg.warn{display:block;background:#FFF4EA;color:#7A4400;border:1px solid var(--laranja);}
+  .dirty-pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:4px 11px;border-radius:12px;font-weight:700;}
+  .dirty-pill.clean{background:#E9F7EC;color:#1E7A33;}
+  .dirty-pill.dirty{background:#FFF0F0;color:var(--vermelho);}
+  .status-pill{display:inline-block;font-size:11px;padding:3px 10px;border-radius:12px;font-weight:700;}
+  .status-pill.default{background:#EEF1FA;color:#5A6B9C;}
+  .status-pill.saved{background:#E9F7EC;color:#1E7A33;}
+
+  .donut-row{display:flex;align-items:center;gap:36px;flex-wrap:wrap;}
+  .donut{width:200px;height:200px;border-radius:50%;flex:0 0 auto;position:relative;display:flex;align-items:center;justify-content:center;}
+  .donut::after{content:"";position:absolute;width:128px;height:128px;background:var(--branco);border-radius:50%;}
+  .donut-center{position:relative;z-index:2;text-align:center;}
+  .donut-center .pct{font-size:30px;font-weight:700;color:var(--azul-escuro);}
+  .donut-center .txt{font-size:11px;color:#7282AD;}
+  .legend{display:flex;flex-direction:column;gap:10px;font-size:13px;}
+  .legend .row{display:flex;align-items:center;gap:8px;}
+  .dot{width:12px;height:12px;border-radius:3px;display:inline-block;}
+
+  .bars{display:flex;flex-direction:column;gap:12px;}
+  .bar-row{display:grid;grid-template-columns:190px 1fr 70px auto;align-items:center;gap:12px;}
+  .bar-row .name{font-size:13px;font-weight:600;color:var(--azul-escuro);}
+  .bar-track{height:20px;background:#EEF1FA;border-radius:5px;overflow:hidden;display:flex;}
+  .bar-seg.g{background:var(--verde);}
+  .bar-seg.r{background:var(--vermelho);}
+  .bar-seg.na{background:var(--cinza-na);}
+  .bar-row .pct{font-size:13px;font-weight:700;text-align:right;}
+
+  .toolbar{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+  .toolbar input, .toolbar select{
+    padding:8px 10px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:13px;font-family:Arial,sans-serif;color:var(--azul-escuro);
+  }
+  .toolbar input{flex:1;min-width:200px;}
+
+  /* ---------- Multi-select filter dropdown ---------- */
+  .msf{position:relative;}
+  .msf-btn{
+    border:1px solid var(--cinza-borda);border-radius:6px;padding:8px 30px 8px 10px;font-size:13px;
+    background:var(--branco) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%235B6478'/%3E%3C/svg%3E") no-repeat right 12px center;
+    color:var(--azul-escuro);font-family:Arial,sans-serif;cursor:pointer;min-width:150px;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .msf-btn:hover{border-color:var(--azul);}
+  .msf.has-selection .msf-btn{border-color:var(--azul);font-weight:700;background-color:#EEF1FB;}
+  .msf-panel{
+    display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:60;background:var(--branco);
+    border:1px solid var(--cinza-borda);border-radius:10px;box-shadow:0 8px 24px rgba(15,35,112,0.16);
+    min-width:220px;max-width:280px;padding:8px 0;
+  }
+  .msf.open .msf-panel{display:block;}
+  .msf-search{margin:0 10px 6px;padding:6px 8px;border:1px solid var(--cinza-borda);border-radius:6px;font-size:12.5px;width:calc(100% - 20px);font-family:Arial,sans-serif;}
+  .msf-list{max-height:220px;overflow-y:auto;padding:0 4px;}
+  .msf-opt{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:13px;cursor:pointer;border-radius:6px;}
+  .msf-opt:hover{background:#F2F4F9;}
+  .msf-opt input{cursor:pointer;}
+  .msf-opt.hidden{display:none;}
+  .msf-actions{display:flex;justify-content:space-between;gap:8px;padding:8px 10px 2px;border-top:1px solid #EEF0F6;margin-top:6px;}
+  .msf-actions button{border:none;background:none;font-size:12px;font-weight:700;cursor:pointer;font-family:Arial,sans-serif;}
+  .msf-actions .msf-clear{color:var(--cinza-texto,#5B6478);}
+  .msf-actions .msf-apply{color:var(--azul);}
+  .msf-empty{padding:8px 10px;font-size:12px;color:var(--cinza-texto,#5B6478);}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  thead th{
+    background:var(--azul-escuro);color:var(--branco);text-align:left;padding:9px 10px;font-size:12px;position:sticky;top:0;
+  }
+  thead th[data-sort]{cursor:pointer;user-select:none;}
+  thead th[data-sort]:hover{background:var(--azul);}
+  thead th .sort-arrow{display:inline-block;width:12px;opacity:.6;font-size:10px;}
+  thead th.sort-active .sort-arrow{opacity:1;}
+  tbody td{padding:8px 10px;border-bottom:1px solid var(--cinza-borda);}
+  tbody tr:hover{background:#F0F3FC;}
+  .badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:700;color:var(--branco);cursor:pointer;user-select:none;}
+  .badge:hover{opacity:.78;}
+  .badge.g{background:var(--verde);}
+  .badge.r{background:var(--vermelho);}
+  .badge.na{background:var(--cinza-na);}
+  .table-scroll{max-height:480px;overflow:auto;border:1px solid var(--cinza-borda);border-radius:8px;}
+  .hint{font-size:11px;color:#8C9BC6;margin-bottom:10px;}
+  .nota-input{width:100%;border:1px solid transparent;background:transparent;font-size:12px;color:#7282AD;padding:2px 4px;border-radius:4px;font-family:Arial,sans-serif;}
+  .nota-input:hover,.nota-input:focus{border-color:var(--cinza-borda);background:#FBFCFF;}
+  .nota-input::placeholder{color:#C3CCE5;}
+
+  .alert-strip{background:#FFF4EA;border:1px solid var(--laranja);border-radius:8px;padding:12px 16px;font-size:13px;color:#7A4400;margin-bottom:22px;}
+  .alert-strip b{color:var(--laranja);}
+
+  footer{text-align:center;font-size:11px;color:#8C9BC6;padding:20px;}
+
+  /* ===================== Tabs (unificado) ===================== */
+  .tabbar{display:flex;gap:6px;margin-bottom:16px;position:sticky;top:8px;z-index:50;background:var(--cinza-bg);padding:4px 0;flex-wrap:wrap;}
+  .tab{background:var(--branco);color:var(--azul-escuro);border:1px solid var(--cinza-borda);border-radius:8px;padding:10px 18px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Arial,Helvetica,sans-serif;}
+  .tab:hover{background:#EEF2FC;}
+  .tab.active{background:var(--azul);color:var(--branco);border-color:var(--azul);}
+  .tab-content.hidden{display:none;}
+
+  @media print{
+    .toolbar{display:none;}
+    .editor-panel{display:none;}
+    .board-tabs{display:none;}
+    .wa-btn-sm{display:none;}
+    .tabbar{display:none;}
+    .tab-content.hidden{display:block !important;}
+    body{background:#fff;}
+  }
+
+  /* ===================== Seletor de farol (boards) ===================== */
+  .board-tabs{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:18px;}
+  .board-tab{
+    background:var(--branco);border:1.5px solid var(--cinza-borda);border-radius:20px;padding:8px 16px;font-size:13px;
+    font-weight:700;cursor:pointer;color:#5A6B9C;display:flex;align-items:center;gap:6px;
+  }
+  .board-tab.active{background:var(--azul);border-color:var(--azul);color:var(--branco);}
+  .board-tab .gear{opacity:.7;font-size:11px;}
+  .board-tab.active .gear{opacity:1;}
+  .board-tab-add{
+    background:var(--branco);border:1.5px dashed var(--azul);border-radius:20px;padding:8px 16px;font-size:13px;
+    font-weight:700;cursor:pointer;color:var(--azul);
+  }
+
+  /* ===================== Modais ===================== */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(15,35,112,.45);z-index:300;align-items:center;justify-content:center;padding:20px;}
+  .modal-overlay.open{display:flex;}
+  .modal{background:var(--branco);border-radius:14px;max-width:540px;width:100%;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.25);max-height:90vh;overflow-y:auto;}
+  .modal h3{margin:0 0 14px;font-size:16px;color:var(--azul-escuro);}
+  .field{margin-bottom:13px;}
+  .field label{display:block;font-size:12px;font-weight:700;color:#5A6B9C;margin-bottom:5px;}
+  .field input,.field select,.field textarea{
+    width:100%;border:1px solid var(--cinza-borda);border-radius:8px;padding:9px 11px;font-size:13.5px;font-family:Arial,Helvetica,sans-serif;color:var(--azul-escuro);
+  }
+  .field textarea{min-height:64px;resize:vertical;font-family:Consolas,Monaco,monospace;font-size:12px;}
+  .field .hint2{font-size:11px;color:#8C9BC6;margin-top:4px;}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+  .modal-actions .danger-link{margin-right:auto;color:var(--vermelho);font-size:12.5px;font-weight:700;cursor:pointer;background:none;border:none;}
+  .modal .copied-msg{font-size:12px;color:#1E7A33;font-weight:700;visibility:hidden;margin-right:auto;align-self:center;}
+  .modal .copied-msg.show{visibility:visible;}
+
+  .wa-btn-sm{background:#E9F7EC;color:#1E7A33;border:1px solid #BFE6C9;border-radius:6px;padding:5px 10px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;}
+  .wa-btn-sm:hover{background:#DCF1E1;}
+
+  #toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(10px);background:#0F2370;color:#fff;
+    padding:10px 18px;border-radius:8px;font-size:13px;opacity:0;pointer-events:none;transition:.2s;z-index:400;
+  }
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-row">
+    <div class="brand-mark">
+      <svg class="flor" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="50" cy="32" r="17" fill="#E8272A"></circle>
+        <circle cx="71" cy="58" r="17" fill="#F47920"></circle>
+        <circle cx="29" cy="58" r="17" fill="#FFC20E"></circle>
+        <circle cx="50" cy="58" r="11" fill="#FFFFFF"></circle>
+      </svg>
+      <div>
+        <div class="eyebrow">Hub do Agile Coach · Hapvida</div>
+        <h1>Farol</h1>
+        <p>Base: lista · Critério: 🟢 / 🔴 / ⚪</p>
+      </div>
+    </div>
+    <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+      <div class="update-badge" id="updateBadge"></div>
+      <div class="offline-badge">100% offline</div>
+    </div>
+  </div>
+  <div style="max-width:1180px;margin:10px auto 0;display:flex;gap:10px;flex-wrap:wrap;">
+    <button class="btn btn-azul btn-sm" id="btnExportHtml" title="Gera um novo arquivo .html com todos os farois e edições atuais já embutidos — funciona em qualquer navegador">💾 Exportar HTML atualizado</button>
+    <label class="btn btn-verde btn-sm" style="cursor:pointer;" title="Importa o Dashboard_SMs_x_Squads_Hapvida.html para identificar o SM responsável por cada item">📋 Importar SMs
+      <input type="file" id="farolSmImport" accept=".html" style="display:none;">
+    </label>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="board-tabs" id="boardTabs"></div>
+
+  <div class="panel editor-panel">
+    <h2>🔄 Atualizar dados (sem precisar do Claude)</h2>
+    <div class="desc">
+      Cole o texto bruto do farol e clique em <b>"Processar texto"</b>, ou clique direto nos status coloridos da
+      tabela abaixo. Isso só atualiza a <b>pré-visualização</b> — nada é gravado ainda. Quando estiver do jeito que
+      quer, clique em <b>"Salvar alterações"</b>. Se mudar de ideia antes de salvar, use <b>"Desfazer"</b>.
+    </div>
+    <textarea id="pasteArea" rows="7" placeholder="Cole aqui o texto completo do farol..."></textarea>
+
+    <div class="editor-actions">
+      <button class="btn btn-ghost" id="btnProcess">Processar texto</button>
+      <button class="btn btn-success" id="btnSave">💾 Salvar alterações</button>
+      <button class="btn btn-ghost" id="btnUndo">↩️ Desfazer</button>
+      <span class="dirty-pill" id="dirtyPill"></span>
+    </div>
+
+    <div class="editor-actions secondary">
+      <button class="btn btn-ghost btn-sm" id="btnBackup">Baixar backup deste farol (.json)</button>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer;margin:0;">
+        Carregar backup
+        <input type="file" id="backupFile" accept="application/json" style="display:none;">
+      </label>
+      <button class="btn btn-danger-ghost btn-sm" id="btnReset">Resetar p/ padrão</button>
+      <span class="status-pill" id="statusPill"></span>
+    </div>
+
+    <div id="parseMsg" class="parse-msg"></div>
+  </div>
+
+  <div class="tabbar" id="tabBar">
+    <button class="tab active" data-tab="resultado">📊 Resultado</button>
+    <button class="tab" data-tab="graficos">📈 Gráficos</button>
+  </div>
+
+  <div class="tab-content" id="tab-resultado">
+    <div class="kpis" id="kpis"></div>
+
+    <div class="alert-strip" id="alertStrip"></div>
+
+    <div class="panel">
+      <h2>Detalhe por <span data-rotulo-item="">Área</span></h2>
+      <div class="hint">Dica: clique no status (badge colorido) de qualquer linha para alternar. Lembre de clicar em "Salvar alterações" depois.</div>
+      <div class="toolbar">
+        <input type="text" id="search" placeholder="Buscar...">
+        <div class="msf" id="msfDir"><button type="button" class="msf-btn" data-default="Todas">Todas</button>
+          <div class="msf-panel"><input type="text" class="msf-search" placeholder="Buscar..."><div class="msf-list"></div>
+          <div class="msf-actions"><button type="button" class="msf-clear">Limpar</button><button type="button" class="msf-apply">Aplicar</button></div></div></div>
+        <select id="filterStatus">
+          <option value="">Todos os status</option>
+          <option value="sent">Somente cumprido</option>
+          <option value="not_sent">Somente pendente</option>
+          <option value="na">Somente não se aplica</option>
+        </select>
+        <span id="filterSmWrapFarol" style="display:none;">
+          <div class="msf" id="msfSmFarol"><button type="button" class="msf-btn" data-default="Todos os SMs">Todos os SMs</button>
+            <div class="msf-panel"><input type="text" class="msf-search" placeholder="Buscar..."><div class="msf-list"></div>
+            <div class="msf-actions"><button type="button" class="msf-clear">Limpar</button><button type="button" class="msf-apply">Aplicar</button></div></div></div>
+        </span>
+      </div>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th data-sort="0" data-rotulo-grupo="">Diretoria <span class="sort-arrow">↕</span></th><th data-sort="1" data-rotulo-item="">Área / Squad <span class="sort-arrow">↕</span></th><th data-sort="2">Status (clicável) <span class="sort-arrow">↕</span></th><th>Observação</th><th id="thSmFarol" style="display:none;">SM</th></tr></thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-graficos">
+    <div class="panel">
+      <div class="panel-headrow">
+        <h2>Visão Geral</h2>
+        <label class="lbl-toggle"><input type="checkbox" id="labelsToggle" checked="">Mostrar valores</label>
+      </div>
+      <div class="desc">Percentual de itens que já cumpriram o critério, sobre o total aplicável (itens marcados como não aplicável são excluídos do cálculo).</div>
+      <div class="donut-row">
+        <div class="donut" id="donut"></div>
+        <div class="legend" id="legend"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h2>% por <span data-rotulo-grupo="">Diretoria</span></h2>
+      <div class="desc">Ordenado do maior para o menor percentual. Verde = cumprido, vermelho = pendente, cinza = não se aplica. Use o botão WhatsApp pra cobrar quem está pendente.</div>
+      <div class="bars" id="bars"></div>
+    </div>
+  </div>
+
+</div>
+
+<footer>Hub do Agile Coach · Hapvida — ferramenta offline, sem fontes externas · Última atualização: <span id="footerUpdate"></span> · Exporte via impressão (Ctrl/Cmd+P) para PDF.</footer>
+
+<!-- Modal de configuração do farol -->
+<div class="modal-overlay" id="configModal">
+  <div class="modal">
+    <h3 id="cfgModalTitle">Novo farol</h3>
+    <div class="field"><label>Nome do farol</label><input type="text" id="cfgNome" placeholder="Ex: Farol de Envio de Relatório Mensal"></div>
+    <div class="field"><label>Descrição curta</label><textarea id="cfgDescricao" style="font-family:Arial,Helvetica,sans-serif;font-size:13px;" placeholder="O que esse farol acompanha"></textarea></div>
+    <div class="field-row">
+      <div class="field"><label>Rótulo do grupo (ex: Diretoria, Squad, Responsável)</label><input type="text" id="cfgRotuloGrupo"></div>
+      <div class="field"><label>Rótulo do item (ex: Área/Squad, Destinatário, Projeto)</label><input type="text" id="cfgRotuloItem"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Rótulo 🟢</label><input type="text" id="cfgRotuloVerde"></div>
+      <div class="field"><label>Rótulo 🔴</label><input type="text" id="cfgRotuloVermelho"></div>
+      <div class="field"><label>Rótulo ⚪</label><input type="text" id="cfgRotuloCinza"></div>
+    </div>
+    <div class="field"><label>Modelo de mensagem de WhatsApp</label>
+      <textarea id="cfgWaTemplate"></textarea>
+      <div class="hint2">Placeholders disponíveis: {grupo}, {nomeFarol}, {qtd}, {rotuloItem}, {rotuloItemPlural}, {rotuloVermelho}, {lista}</div>
+    </div>
+    <div class="modal-actions">
+      <button class="danger-link" id="cfgDeleteBtn" style="display:none;">Excluir farol</button>
+      <button class="btn btn-ghost btn-sm" id="cfgDuplicateBtn" style="display:none;">⧉ Duplicar</button>
+      <button class="btn btn-ghost" id="cfgCloseBtn">Cancelar</button>
+      <button class="btn btn-primary" id="cfgSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de WhatsApp -->
+<div class="modal-overlay" id="waModal">
+  <div class="modal">
+    <h3>Gerar mensagem de cobrança</h3>
+    <div class="desc" id="waModalSub"></div>
+    <div class="editor-actions" style="margin-top:0;margin-bottom:8px;">
+      <button class="btn btn-ghost btn-sm" id="editTplBtnFarol">Editar modelo</button>
+    </div>
+    <textarea id="waTextarea" rows="9"></textarea>
+    <div class="modal-actions">
+      <span class="copied-msg" id="copiedMsgFarol">Copiado!</span>
+      <button class="btn btn-ghost" id="waCloseBtn">Fechar</button>
+      <button class="btn btn-primary" id="waCopyBtn">Copiar mensagem</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+var __PRISTINE_HTML__ = document.documentElement.outerHTML;
+(function(){
+'use strict';
+
+/* ============================================================
+   DADOS-SEMENTE DO FAROL 3T (migrados fielmente do arquivo original)
+   ============================================================ */
+var SEED_DATA_3T = [
+["Assistencial", "Aplicativos Assistenciais", "sent", ""],
+["Assistencial", "Aplicativos Assistenciais (Avanz)", "sent", ""],
+["Assistencial", "Backoffice Hospitalar - Gestão de Leitos", "not_sent", ""],
+["Assistencial", "Diagnóstico LIS", "not_sent", ""],
+["Assistencial", "HomeCare Mobile", "not_sent", ""],
+["Assistencial", "HomeCare Web", "not_sent", ""],
+["Assistencial", "Internação Multidisciplinar", "sent", ""],
+["Assistencial", "LEGADO - Hospitalar Assistencial", "sent", ""],
+["Assistencial", "Linha de Cuidado", "sent", ""],
+["Assistencial", "MedPrev", "not_sent", ""],
+["Assistencial", "Produtos e Projetos Especiais", "sent", ""],
+["Assistencial", "Protocolos - Eletivo e Emergência", "sent", ""],
+["Assistencial", "Protocolos - Internação (modelador)", "sent", ""],
+["Assistencial", "Protocolos - Internação (viewer)", "sent", ""],
+["Assistencial", "Qualivida", "not_sent", ""],
+["Assistencial", "SIGA Clínicas", "not_sent", ""],
+["Assistencial", "SIGA WEB - Linha Assistencial", "sent", ""],
+["Assistencial", "Sustentação Diagnósticos", "not_sent", ""],
+["Assistencial", "Torre Backoffice Hospitalar (Atendimento)", "not_sent", ""],
+["Assistencial", "Torre Backoffice Hospitalar (Farmácia)", "not_sent", ""],
+["Assistencial", "Torre Backoffice Hospitalar (Faturamento)", "not_sent", ""],
+["Assistencial", "Torre Emergência (central da chefia)", "sent", ""],
+["Assistencial", "Torre Emergência (emergência)", "sent", ""],
+["Assistencial", "Torre Emergência (linha de frente)", "sent", ""],
+["Digital", "Acesso", "not_sent", ""],
+["Digital", "Agendamento", "not_sent", ""],
+["Digital", "Analytics e IA", "not_sent", ""],
+["Digital", "API", "not_sent", ""],
+["Digital", "APIs de Relacionamento", "not_sent", ""],
+["Digital", "Aplicativo Venda de Serviços", "not_sent", ""],
+["Digital", "APP do Prestador", "not_sent", ""],
+["Digital", "Bot Autosserviço", "not_sent", ""],
+["Digital", "Bot de Vendas", "sent", ""],
+["Digital", "Call Center", "not_sent", ""],
+["Digital", "Contrate Online Odonto", "not_sent", ""],
+["Digital", "Contrate Online PF", "sent", ""],
+["Digital", "CRM", "not_sent", ""],
+["Digital", "Cuidaê", "not_sent", ""],
+["Digital", "Engagement", "not_sent", ""],
+["Digital", "Fast Track", "not_sent", ""],
+["Digital", "Financeiro", "not_sent", ""],
+["Digital", "OMNICANALIDADE", "not_sent", ""],
+["Digital", "Portais Institucionais", "not_sent", ""],
+["Digital", "Portal do Corretor", "not_sent", ""],
+["Digital", "Portal Empresa - Sustentação da Base", "not_sent", ""],
+["Digital", "Portal Empresas", "not_sent", ""],
+["Digital", "Telemedicina", "not_sent", ""],
+["Digital", "Vendas Saúde PME", "not_sent", ""],
+["IA", "Auditoria e Eficiência Assistencial", "not_sent", ""],
+["IA", "Curadoria", "not_sent", ""],
+["IA", "Diagnóstico", "not_sent", ""],
+["IA", "Gestão de Crônicos e Predição", "not_sent", ""],
+["IA", "Operações Assistenciais", "not_sent", ""],
+["IA", "Terapias", "not_sent", ""],
+["Incorporações", "Cargas", "not_sent", ""],
+["Insights", "Analytics Engineering - Diretoria de Protocolos", "not_sent", ""],
+["Insights", "Analytics engineering - Mercado", "not_sent", ""],
+["Insights", "Analytics Engineering - Novos Projetos e Sustentação", "not_sent", ""],
+["Insights", "Analytics Engineering - Planej. Estratégico", "not_sent", ""],
+["Insights", "Analytics Engineering - Rentabilidade e Incorporação", "not_sent", ""],
+["Insights", "Arquitetura de Dados", "not_sent", ""],
+["Insights", "Assistencial e GRM", "not_sent", ""],
+["Insights", "Backoffice CRM", "not_sent", ""],
+["Insights", "Data Science - Backoffice", "sent", ""],
+["Insights", "Data Science - Visão Computacional", "na", ""],
+["Insights", "Gestão e Gov de Dados", "not_sent", ""],
+["Insights", "Indicadores Corporativos", "not_sent", ""],
+["Insights", "Lakehouse", "not_sent", ""],
+["Insights", "Operadora", "not_sent", ""],
+["Insights", "Planejamento Financeiro", "not_sent", ""],
+["Insights", "Plataforma ML e AI", "sent", ""],
+["Operadora", "Agendas Consultas", "not_sent", ""],
+["Operadora", "Atendimento", "not_sent", ""],
+["Operadora", "Automação", "not_sent", ""],
+["Operadora", "Autorização", "not_sent", ""],
+["Operadora", "Backoffice - Financeiro", "sent", ""],
+["Operadora", "Backoffice - SAP - Melhorias", "not_sent", ""],
+["Operadora", "Backoffice - Supply", "not_sent", ""],
+["Operadora", "Backoffice RH", "sent", ""],
+["Operadora", "Cadastro - Melhorias e Projetos", "not_sent", ""],
+["Operadora", "Cadastro - Sustentação e Refatoração", "not_sent", ""],
+["Operadora", "Comercial", "not_sent", ""],
+["Operadora", "Comercial (incidentes)", "not_sent", ""],
+["Operadora", "Comissão", "not_sent", ""],
+["Operadora", "Contas Médicas", "not_sent", ""],
+["Operadora", "Coparticipação", "sent", ""],
+["Operadora", "Credenciamento", "not_sent", ""],
+["Operadora", "CSC Digital - Portal CSC", "not_sent", ""],
+["Operadora", "Fast Track Comercial", "not_sent", ""],
+["Operadora", "Faturamento (CAFEX)", "sent", ""],
+["Operadora", "Folha Médica 2.0", "not_sent", ""],
+["Operadora", "Haptech", "not_sent", ""],
+["Operadora", "IFRS 17", "sent", ""],
+["Operadora", "Odonto", "not_sent", ""],
+["Operadora", "Portal Prestador", "not_sent", ""],
+["Operadora", "Reembolso", "sent", ""],
+["Operadora", "Regulação ANS", "sent", ""],
+["Operadora", "RPA", "not_sent", ""],
+["Operadora", "Salesforce (Nova Org)", "not_sent", ""],
+["Operadora", "Salesforce (Projetos e melhorias)", "not_sent", ""],
+["Operadora", "SAP Integrações", "sent", ""],
+["TI", "Adquiridas", "not_sent", ""],
+["TI", "Arquitetura - Cloud Azure", "not_sent", ""],
+["TI", "Arquitetura - Governança (Engenharia)", "not_sent", ""],
+["TI", "Arquitetura - Governança (Soluções)", "not_sent", ""],
+["TI", "Arquitetura - QA 2.0", "not_sent", ""],
+["TI", "Cyber Segurança", "not_sent", ""],
+["TI", "Datacenter", "not_sent", ""],
+["TI", "Datacenter (Banco de dados)", "not_sent", ""],
+["TI", "Gestão de Identidades e Acesso", "not_sent", ""],
+["TI", "Governança de SI", "not_sent", ""],
+["TI", "Network e NOC", "not_sent", ""],
+["TI", "Observabilidade", "not_sent", ""],
+["TI", "Operação Diagnóstico", "not_sent", ""],
+["TI", "Operações - Novas Unidades", "not_sent", ""],
+["TI", "Operações e Implantação e PEP", "not_sent", ""],
+["TI", "SAVI Implantação", "not_sent", ""],
+["TI", "Service Desk e Service Now", "not_sent", ""]
+];
+
+var DEFAULT_OVERRIDES_3T = { "Insights|||Data Science - Visão Computacional": "na" };
+var SEED_LABEL_3T = "23/06/2026 09:47 · snapshot padrão";
+
+var DEFAULT_WA_TEMPLATE =
+"Oi {grupo}! 👋\n\n"+
+"Passando pra alinhar sobre o farol de *{nomeFarol}*.\n\n"+
+"📌 Identifiquei *{qtd}* ocorrência(s) de {rotuloItem} ainda como *{rotuloVermelho}*:\n{lista}\n\n"+
+"Pode me ajudar a destravar isso? Qualquer dúvida, me chama 🙂";
+
+var DEFAULT_BOARD_3T = {
+  id:'farol_3t',
+  nome:'Farol de Compromisso 3T',
+  descricao:'Envio do compromisso de 3T para a governança, por diretoria e área/squad.',
+  rotuloGrupo:'Diretoria',
+  rotuloItem:'Área / Squad',
+  rotuloVerde:'Enviado',
+  rotuloVermelho:'Não Enviado',
+  rotuloCinza:'Não se Aplica',
+  waTemplate: DEFAULT_WA_TEMPLATE,
+  createdAt: new Date().toISOString()
+};
+
+/*BOARDS_START*/var EMBEDDED_BOARDS = [{"id":"b_1783520952852_7kqhn","createdAt":"2026-07-08T14:29:12.852Z","nome":"validaçao iniciativas","descricao":"1. Coluna iniciativa - deve representar o agrupamento dos lecons (Ex: Jornada cirúrgicas, Crescimento Orgânico, CSC Digital, etc).\n- Obs 1: Nesse trabalho, precisamos garantir que os lecons estejam agrupados corretamente. Vou disponibilizar, também, 25 projetos estratégicos para vcs verificarem com os times se os lecons priorizados estão dentro de algum deles.\n- Obs 2: Caso o lecom, realmente, não faça parte de nenhum programa ou iniciativa macro, colocar nesse campo a informação \"N/A\"","rotuloGrupo":"Diretoria","rotuloItem":"Iniciativa","rotuloVerde":"Enviado","rotuloVermelho":"Não Enviado","rotuloCinza":"Não se Aplica","waTemplate":"Oi {grupo}! 👋\n\nPassando pra alinhar sobre o farol de *{nomeFarol}*.\n\n📌 Identifiquei *{qtd}* ocorrência(s) de {rotuloItem} ainda como *{rotuloVermelho}*:\n{lista}\n\nPode me ajudar a destravar isso? Qualquer dúvida, me chama 🙂"}];/*BOARDS_END*/
+/*BOARDDATA_START*/var EMBEDDED_BOARDDATA = {"b_1783520952852_7kqhn":{"data":[["Validado","| Não Validado -","not_sent",""],["Assistencial","Aplicativos Assistenciais","sent",""],["Assistencial","Aplicativos Assistenciais (Avanz)","sent",""],["Assistencial","Aplicativos Linha de cuidado","sent",""],["Assistencial","Backoffice Hospitalar - Gestão de Leitos","sent",""],["Assistencial","Diagnóstico SIGA","sent",""],["Assistencial","Diagnóstico US","sent",""],["Assistencial","HomeCare Mobile","sent",""],["Assistencial","HomeCare Web","sent",""],["Assistencial","Internação Multidisciplinar","sent",""],["Assistencial","LEGADO - Hospitalar Assistencial","sent",""],["Assistencial","Linha de Cuidado","sent",""],["Assistencial","Produtos e Projetos Especiais","sent",""],["Assistencial","Programas","sent",""],["Assistencial","Protocolos - Eletivo e Emergência","sent",""],["Assistencial","Protocolos - Internação (modelador)","sent",""],["Assistencial","Protocolos - Internação (viewer)","sent",""],["Assistencial","SIGA Coletivo","sent",""],["Assistencial","SIGA WEB - Linha Assistencial","sent",""],["Assistencial","Telemedicina","sent",""],["Assistencial","Torre Backoffice Hospitalar (Atendimento)","sent",""],["Assistencial","Torre Backoffice Hospitalar (Farmácia)","sent",""],["Assistencial","Torre Backoffice Hospitalar (Faturamento)","sent",""],["Assistencial","Torre Emergência (central da chefia)","sent",""],["Assistencial","Torre Emergência (emergência)","sent",""],["Assistencial","Torre Emergência (linha de frente)","sent",""],["Assistencial","MedPrev","sent",""],["Assistencial","Qualivida","sent",""],["Assistencial","Siga Clínicas","sent",""],["Backoffice","Financeiro","sent",""],["Backoffice","IFRS 17","sent",""],["Backoffice","RH","sent",""],["Backoffice","RPA","sent",""],["Backoffice","SAP - Melhorias","sent",""],["Backoffice","SAP Integrações","sent",""],["Backoffice","Supply","sent",""],["Digital","Acesso","not_sent",""],["Digital","AFP do Prestador - Multi","sent",""],["Digital","AFP do Prestador - Odonto","sent",""],["Digital","Agendamento","not_sent",""],["Digital","Analytics e IA","not_sent",""],["Digital","API","not_sent",""],["Digital","APIs de Relacionamento","not_sent",""],["Digital","Aplicativo Venda de Serviços","sent",""],["Digital","Bot Autosserviço","not_sent",""],["Digital","Bot de Vendas","not_sent",""],["Digital","Call Center","not_sent",""],["Digital","Comercial","not_sent",""],["Digital","Contrate Online Odonto","not_sent",""],["Digital","Contrate Online PF","not_sent",""],["Digital","CRM","not_sent",""],["Digital","Cuidaê","not_sent",""],["Digital","Engagement","not_sent",""],["Digital","Fast Track","not_sent",""],["Digital","Fast Track Comercial","not_sent",""],["Digital","Financeiro","not_sent",""],["Digital","OMNICANALIDADE","not_sent",""],["Digital","Portais Institucionais","not_sent",""],["Digital","Portal do Corretor","not_sent",""],["Digital","Portal Empresa - Sustentação da Base","sent",""],["Digital","Portal Empresas","sent",""],["Digital","Salesforce (Nova Org)","sent",""],["Digital","Salesforce (Projetos e melhorias)","sent",""],["Digital","Vendas Saúde PME","not_sent",""],["IA","Curadoria","not_sent",""],["IA","Diagnóstico","not_sent",""],["IA","Diagnóstico e Métodos Gráficos","sent",""],["IA","Gestão de Crônicos e Predição","not_sent",""],["IA","Operações Assistenciais","not_sent",""],["IA","Terapias","sent",""],["Incorporações","Cargas","not_sent",""],["Insights","Analytics Engineering - Diretoria de Protocolos","sent",""],["Insights","Analytics engineering - Mercado","sent",""],["Insights","Analytics Engineering - Novos Projetos e Sustentação","sent",""],["Insights","Analytics Engineering - Planej. Estratégico","sent",""],["Insights","Analytics Engineering - Rentabilidade e Incorporação","sent",""],["Insights","Arquitetura de Dados","sent",""],["Insights","Assistencial e GRM","sent",""],["Insights","Backoffice CRM","sent",""],["Insights","Data Science - Backoffice","sent",""],["Insights","Plataforma de ML & AI","sent",""],["Insights","Lakehouse","sent",""],["Insights","Operadora","sent",""],["Operadora","Agendas Consultas","sent",""],["Operadora","Atendimento","sent",""],["Operadora","Automação","sent",""],["Operadora","Autorização","sent",""],["Operadora","Cadastro - Melhorias e Projetos","sent",""],["Operadora","Cadastro - Sustentação e Refatoração","sent",""],["Operadora","Comercial (incidentes)","not_sent",""],["Operadora","Comissão","sent",""],["Operadora","Contas Médicas","sent",""],["Operadora","Coparticipação","sent",""],["Operadora","Credenciamento","sent",""],["Operadora","CSC Digital - Portal CSC","not_sent",""],["Operadora","Faturamento (CAFEX)","sent",""],["Operadora","Folha Médica 2.0","not_sent",""],["Operadora","Haptech","not_sent",""],["Operadora","Judicialização","sent",""],["Operadora","Odonto","not_sent",""],["Operadora","Portal Prestador","not_sent",""],["Operadora","Regulação","not_sent",""],["Operadora","Regulatório","sent",""],["Operadora","Reembolso","sent",""],["Operadora","SAVI e SAD","not_sent",""],["TI","Arquitetura - Governança (Engenharia)","not_sent",""],["TI","Arquitetura - Governança (Soluções)","not_sent",""],["TI","Cyber Segurança","not_sent",""],["TI","Gestão de Identidades e Acesso","not_sent",""],["TI","Governança de SI","not_sent",""],["TI","Network e NOC","sent",""],["TI","Operações e Implantação e PEP","sent",""]],"overrides":{"Assistencial|||Protocolos - Eletivo e Emergência":"sent","Assistencial|||Torre Backoffice Hospitalar (Farmácia)":"sent","Assistencial|||SIGA Coletivo":"sent","Assistencial|||Protocolos - Internação (modelador)":"sent","Assistencial|||Protocolos - Internação (viewer)":"sent"},"lastUpdate":"09/07/2026 10:31 (horário deste computador)"}};/*BOARDDATA_END*/
+/*EXPORT_TS_START*/var EMBEDDED_EXPORT_TS = 1783608628594;/*EXPORT_TS_END*/
+// --- Invalidação de localStorage por timestamp de exportação ---
+(function(){
+  if(EMBEDDED_EXPORT_TS > 0) {
+    var LS_TS_KEY = 'hac_exportts_' + (window.location.pathname.split('/').pop()||'hub');
+    var knownTs = parseInt(localStorage.getItem(LS_TS_KEY) || '0', 10);
+    if(EMBEDDED_EXPORT_TS > knownTs) {
+      ['hac_farol_boards_v1','hac_farol_boarddata_','hac_farol_active_v1','hac_farol_showlabels_v1'].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
+      try{ localStorage.setItem(LS_TS_KEY, String(EMBEDDED_EXPORT_TS)); }catch(e){}
+    }
+  }
+})();
+// --- fim invalidação ---
+
+
+/* ============================================================
+   CONSTANTES GERAIS
+   ============================================================ */
+var LS_BOARDS = 'hac_farol_boards_v1';
+var LS_BOARDDATA_PREFIX = 'hac_farol_boarddata_';
+var LS_ACTIVE = 'hac_farol_active_v1';
+var LS_SHOWLABELS = 'hac_farol_showlabels_v1';
+var MAX_UNDO = 30;
+var STATUS_ORDER = ['sent','not_sent','na'];
+var statusClass = {sent:'g', not_sent:'r', na:'na'};
+
+var BOARDS = [];            // lista de configs (sem os dados de tabela)
+var ACTIVE_BOARD = null;    // config do board ativo
+var STATE = { data: [], overrides: {}, lastUpdate: null, usingDefault: true };
+var AGG = null;
+var UNDO_STACK = [];
+var SAVED_SNAPSHOT = { data:'[]', overrides:'{}' };
+var EDITING_BOARD_ID = null; // usado no modal de configuração
+var WA_GRUPO_ATUAL = null;
+
+function el(id){ return document.getElementById(id); }
+function escapeAttr(s){ return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+function escapeHtml(s){ return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function uid(){ return 'b_'+Date.now()+'_'+Math.random().toString(36).slice(2,7); }
+function nowLabel(){
+  var d = new Date();
+  function p(n){ return String(n).padStart(2,'0'); }
+  return p(d.getDate())+'/'+p(d.getMonth()+1)+'/'+d.getFullYear()+' '+p(d.getHours())+':'+p(d.getMinutes())+' (horário deste computador)';
+}
+
+/* ============================================================
+   STORAGE — boards (config) e board data (tabela/overrides)
+   ============================================================ */
+function loadBoardsConfig(){
+  try{
+    var raw = localStorage.getItem(LS_BOARDS);
+    if(raw){ BOARDS = JSON.parse(raw); return; }
+  }catch(e){}
+  if(EMBEDDED_BOARDS && EMBEDDED_BOARDS.length){
+    BOARDS = EMBEDDED_BOARDS;
+    saveBoardsConfig();
+    return;
+  }
+  BOARDS = [DEFAULT_BOARD_3T];
+  saveBoardsConfig();
+}
+function saveBoardsConfig(){
+  localStorage.setItem(LS_BOARDS, JSON.stringify(BOARDS));
+}
+function getActiveBoardId(){
+  try{ return localStorage.getItem(LS_ACTIVE); }catch(e){ return null; }
+}
+function setActiveBoardId(id){
+  try{ localStorage.setItem(LS_ACTIVE, id); }catch(e){}
+}
+function loadShowLabels(){
+  try{ var v = localStorage.getItem(LS_SHOWLABELS); return v===null ? true : v==='1'; }catch(e){ return true; }
+}
+function saveShowLabels(v){
+  try{ localStorage.setItem(LS_SHOWLABELS, v?'1':'0'); }catch(e){}
+}
+
+function readBoardData(boardId){
+  var key = LS_BOARDDATA_PREFIX+boardId;
+  try{
+    var raw = localStorage.getItem(key);
+    if(raw) return {payload: JSON.parse(raw), had:true};
+  }catch(e){}
+  if(EMBEDDED_BOARDDATA && EMBEDDED_BOARDDATA[boardId]){
+    return {payload: EMBEDDED_BOARDDATA[boardId], had:true};
+  }
+  // sem dado salvo: se for o board seed 3T, usa o snapshot original
+  if(boardId === DEFAULT_BOARD_3T.id){
+    return {payload:{
+      data: applyOverridesGeneric(SEED_DATA_3T, DEFAULT_OVERRIDES_3T),
+      overrides: DEFAULT_OVERRIDES_3T,
+      lastUpdate: null
+    }, had:false};
+  }
+  return {payload:{data:[], overrides:{}, lastUpdate:null}, had:false};
+}
+function saveBoardData(boardId, payload){
+  localStorage.setItem(LS_BOARDDATA_PREFIX+boardId, JSON.stringify(payload));
+}
+function deleteBoardDataStorage(boardId){
+  localStorage.removeItem(LS_BOARDDATA_PREFIX+boardId);
+}
+
+function applyOverridesGeneric(baseList, overrides){
+  return baseList.map(function(row){
+    var dir=row[0], item=row[1], status=row[2], nota=row[3]||'';
+    var key = dir+'|||'+item;
+    return [dir, item, overrides[key] || status, nota];
+  });
+}
+function cloneState(){
+  return { data: JSON.parse(JSON.stringify(STATE.data)), overrides: JSON.parse(JSON.stringify(STATE.overrides)) };
+}
+function isDirty(){
+  return JSON.stringify(STATE.data) !== SAVED_SNAPSHOT.data || JSON.stringify(STATE.overrides) !== SAVED_SNAPSHOT.overrides;
+}
+
+/* ============================================================
+   TROCA DE BOARD
+   ============================================================ */
+function switchBoard(boardId){
+  var board = BOARDS.filter(function(b){return b.id===boardId;})[0];
+  if(!board) return;
+  ACTIVE_BOARD = board;
+  setActiveBoardId(boardId);
+
+  var res = readBoardData(boardId);
+  STATE.data = res.payload.data || [];
+  STATE.overrides = res.payload.overrides || {};
+  STATE.lastUpdate = res.payload.lastUpdate || null;
+  STATE.usingDefault = !res.had;
+  STATE.filterDir = [];
+  STATE.filterSmFarol = [];
+  STATE.tableSortCol = null;
+  UNDO_STACK.length = 0;
+  SAVED_SNAPSHOT = { data: JSON.stringify(STATE.data), overrides: JSON.stringify(STATE.overrides) };
+
+  renderBoardTabs();
+  renderHeaderTexts();
+  renderAll();
+}
+
+/* ============================================================
+   CRUD DE BOARDS
+   ============================================================ */
+function createBoard(cfg){
+  var board = Object.assign({id:uid(), createdAt:new Date().toISOString()}, cfg);
+  BOARDS.push(board);
+  saveBoardsConfig();
+  saveBoardData(board.id, {data:[], overrides:{}, lastUpdate:null});
+  switchBoard(board.id);
+  showToast('Farol "'+board.nome+'" criado.');
+}
+function updateBoardConfig(boardId, cfg){
+  BOARDS = BOARDS.map(function(b){ return b.id===boardId ? Object.assign({}, b, cfg) : b; });
+  saveBoardsConfig();
+  if(ACTIVE_BOARD && ACTIVE_BOARD.id===boardId){ ACTIVE_BOARD = Object.assign({}, ACTIVE_BOARD, cfg); }
+  renderBoardTabs();
+  renderHeaderTexts();
+  renderAll();
+  showToast('Configuração do farol salva.');
+}
+function duplicateBoard(boardId){
+  var board = BOARDS.filter(function(b){return b.id===boardId;})[0];
+  if(!board) return;
+  var newBoard = Object.assign({}, board, {id:uid(), nome:board.nome+' (cópia)', createdAt:new Date().toISOString()});
+  BOARDS.push(newBoard);
+  saveBoardsConfig();
+  var res = readBoardData(boardId);
+  saveBoardData(newBoard.id, JSON.parse(JSON.stringify(res.payload)));
+  switchBoard(newBoard.id);
+  showToast('Farol duplicado como "'+newBoard.nome+'".');
+}
+function deleteBoard(boardId){
+  if(BOARDS.length<=1){ alert('Esse é o único farol existente — não dá pra excluir. Crie outro antes, se quiser substituir este.'); return; }
+  var board = BOARDS.filter(function(b){return b.id===boardId;})[0];
+  if(!confirm('Excluir o farol "'+board.nome+'"? Isso remove a configuração e os dados salvos dele. Essa ação não tem desfazer.')) return;
+  BOARDS = BOARDS.filter(function(b){return b.id!==boardId;});
+  saveBoardsConfig();
+  deleteBoardDataStorage(boardId);
+  switchBoard(BOARDS[0].id);
+  showToast('Farol excluído.');
+}
+
+
+/* ============================================================
+   MUTAÇÃO CENTRAL (toda alteração passa por aqui)
+   ============================================================ */
+function commitChange(newData, newOverrides){
+  UNDO_STACK.push(cloneState());
+  if(UNDO_STACK.length > MAX_UNDO) UNDO_STACK.shift();
+  STATE.data = newData;
+  STATE.overrides = newOverrides;
+  renderAll();
+}
+
+/* ============================================================
+   PARSER DO TEXTO COLADO — genérico, baseado nos emojis 🟢/🔴
+   Formato esperado por linha: "Grupo - Item 🟢" ou "Grupo - Item 🔴"
+   ============================================================ */
+function parseFarolText(text){
+  var lines = text.split(/\r?\n/);
+  var parsed = [];
+  var skipped = [];
+  var statusWords = [ACTIVE_BOARD.rotuloVerde, ACTIVE_BOARD.rotuloVermelho, ACTIVE_BOARD.rotuloCinza]
+    .map(function(s){ return String(s||'').toLowerCase(); }).filter(Boolean);
+
+  lines.forEach(function(raw){
+    var line = raw.trim();
+    if(!line) return;
+    if(line.startsWith('*')) return;
+    if(/^FAROL/i.test(line)) return;
+    var emojiMatches = line.match(/(🟢|🔴)/g);
+    if(!emojiMatches){ skipped.push(raw); return; }
+    var lastEmoji = emojiMatches[emojiMatches.length-1];
+    var lastIdx = line.lastIndexOf(lastEmoji);
+    var status = lastEmoji === '🟢' ? 'sent' : 'not_sent';
+    var head = line.slice(0, lastIdx);
+    head = head.replace(/🟢|🔴/g,'').trim();
+    if(head.indexOf('~')>=0){ head = head.replace(/~/g,'').trim(); }
+    head = head.replace(/–/g,'-');
+    var sepIdx = head.indexOf(' - ');
+    if(sepIdx === -1){ skipped.push(raw); return; }
+    var dir = head.slice(0, sepIdx).trim();
+    var item = head.slice(sepIdx+3).trim();
+    if(!dir || !item){ skipped.push(raw); return; }
+    var dirLower = dir.toLowerCase();
+    if(statusWords.some(function(w){ return dirLower.indexOf(w)>=0; })){ skipped.push(raw); return; }
+    parsed.push([dir, item, status, '']);
+  });
+  return {parsed:parsed, skipped:skipped};
+}
+
+function applyNewPaste(){
+  var text = el('pasteArea').value;
+  var res = parseFarolText(text);
+  var parsed = res.parsed, skipped = res.skipped;
+  if(parsed.length === 0){
+    showParseMsg('Nenhuma linha reconhecida. O formato esperado é "Grupo - Item 🟢" ou "Grupo - Item 🔴" em cada linha.', true);
+    return;
+  }
+  // preserva notas já existentes para itens que já existiam
+  var notaByKey = {};
+  STATE.data.forEach(function(r){ notaByKey[r[0]+'|||'+r[1]] = r[3]||''; });
+  var withNotes = parsed.map(function(r){ return [r[0], r[1], r[2], notaByKey[r[0]+'|||'+r[1]] || '']; });
+
+  var newData = applyOverridesGeneric(withNotes, STATE.overrides);
+  commitChange(newData, STATE.overrides);
+
+  var msg = parsed.length+' linha(s) processada(s) na pré-visualização. Clique em "Salvar alterações" para confirmar.';
+  if(skipped.length) msg += ' '+skipped.length+' linha(s) ignorada(s) — veja o console do navegador (F12).';
+  showParseMsg(msg, skipped.length>0);
+  if(skipped.length) console.log('Linhas ignoradas no farol colado:', skipped);
+}
+
+function cycleStatus(dir, item){
+  var newData = STATE.data.map(function(r){ return r.slice(); });
+  var row = newData.filter(function(r){return r[0]===dir && r[1]===item;})[0];
+  if(!row) return;
+  var idx = STATUS_ORDER.indexOf(row[2]);
+  row[2] = STATUS_ORDER[(idx+1)%STATUS_ORDER.length];
+  var newOverrides = Object.assign({}, STATE.overrides);
+  newOverrides[dir+'|||'+item] = row[2];
+  commitChange(newData, newOverrides);
+  showParseMsg('"'+item+'" marcado como '+statusLabelFor(row[2])+' na pré-visualização. Clique em "Salvar alterações" para confirmar.', false);
+}
+
+function updateNota(dir, item, nota){
+  var newData = STATE.data.map(function(r){
+    if(r[0]===dir && r[1]===item) return [r[0], r[1], r[2], nota];
+    return r;
+  });
+  commitChange(newData, STATE.overrides);
+}
+
+function undoLast(){
+  if(UNDO_STACK.length === 0){ showParseMsg('Não há nada para desfazer.', true); return; }
+  var prev = UNDO_STACK.pop();
+  STATE.data = prev.data;
+  STATE.overrides = prev.overrides;
+  renderAll();
+  showParseMsg('Última alteração desfeita.', false);
+}
+
+function resetAll(){
+  if(!confirm('Isso vai descartar a pré-visualização atual deste farol. Se for o farol padrão (3T), volta pro snapshot original; senão, fica vazio. Você ainda pode usar "Desfazer" antes de salvar. Continuar?')) return;
+  var newData, newOverrides;
+  if(ACTIVE_BOARD.id === DEFAULT_BOARD_3T.id){
+    newOverrides = Object.assign({}, DEFAULT_OVERRIDES_3T);
+    newData = applyOverridesGeneric(SEED_DATA_3T, newOverrides);
+  } else {
+    newOverrides = {};
+    newData = [];
+  }
+  commitChange(newData, newOverrides);
+  showParseMsg('Pré-visualização resetada. Clique em "Salvar alterações" para confirmar, ou em "Desfazer" para voltar.', true);
+}
+
+function saveChanges(){
+  try{
+    var ts = nowLabel();
+    saveBoardData(ACTIVE_BOARD.id, {data:STATE.data, overrides:STATE.overrides, lastUpdate:ts});
+    STATE.lastUpdate = ts;
+    STATE.usingDefault = false;
+    SAVED_SNAPSHOT = { data: JSON.stringify(STATE.data), overrides: JSON.stringify(STATE.overrides) };
+    renderAll();
+    showParseMsg('Alterações salvas com sucesso neste navegador.', false);
+  }catch(e){
+    showParseMsg('Não foi possível salvar (armazenamento local indisponível ou cheio).', true);
+  }
+}
+
+/* ============================================================
+   BACKUP / RESTORE (por farol) — aceita também o formato antigo
+   do Farol 3T original (compatibilidade)
+   ============================================================ */
+function downloadBackup(){
+  var payload = { board:ACTIVE_BOARD, data:STATE.data, overrides:STATE.overrides, lastUpdate:STATE.lastUpdate, exportedAt:nowLabel() };
+  var blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = 'farol_'+slug(ACTIVE_BOARD.nome)+'_backup.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+function slug(s){ return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,''); }
+
+function restoreBackup(file){
+  var reader = new FileReader();
+  reader.onload = function(){
+    try{
+      var payload = JSON.parse(reader.result);
+      if(!Array.isArray(payload.data)) throw new Error('formato inválido');
+      var newData = payload.data.map(function(r){ return [r[0], r[1], r[2], r[3]||'']; });
+      var newOverrides = payload.overrides || {};
+      commitChange(newData, newOverrides);
+      showParseMsg('Backup carregado na pré-visualização deste farol. Clique em "Salvar alterações" para confirmar.', true);
+    }catch(err){
+      showParseMsg('Arquivo de backup inválido ou corrompido.', true);
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* ============================================================
+   RENDER
+   ============================================================ */
+function statusLabelFor(code){
+  if(code==='sent') return ACTIVE_BOARD.rotuloVerde;
+  if(code==='not_sent') return ACTIVE_BOARD.rotuloVermelho;
+  return ACTIVE_BOARD.rotuloCinza;
+}
+
+function showParseMsg(msg, isWarn){
+  var e = el('parseMsg');
+  e.className = 'parse-msg ' + (isWarn ? 'warn' : 'ok');
+  e.textContent = msg;
+}
+function showToast(msg){
+  var t = el('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2400);
+}
+
+function computeAggregates(){
+  var data = STATE.data;
+  var total = data.length;
+  var totalNA = data.filter(function(d){return d[2]==='na';}).length;
+  var totalSent = data.filter(function(d){return d[2]==='sent';}).length;
+  var totalApplicable = total - totalNA;
+  var totalNot = totalApplicable - totalSent;
+  var pctSent = totalApplicable>0 ? (totalSent/totalApplicable*100) : 0;
+
+  var byDir = {};
+  data.forEach(function(row){
+    var dir=row[0], status=row[2];
+    if(!byDir[dir]) byDir[dir] = {total:0, sent:0, na:0};
+    byDir[dir].total++;
+    if(status==='sent') byDir[dir].sent++;
+    if(status==='na') byDir[dir].na++;
+  });
+  var dirRows = Object.keys(byDir).map(function(dir){
+    var v = byDir[dir];
+    var applicable = v.total - v.na;
+    var not = applicable - v.sent;
+    return {dir:dir, total:v.total, applicable:applicable, sent:v.sent, not:not, na:v.na, pct: applicable>0 ? v.sent/applicable*100 : 0};
+  }).sort(function(a,b){ return b.pct-a.pct; });
+
+  var zeroDirs = dirRows.filter(function(d){return d.pct===0 && d.applicable>0;}).map(function(d){return d.dir;});
+  var topPendentes = dirRows.slice().sort(function(a,b){return b.not-a.not;}).slice(0,2).filter(function(d){return d.not>0;});
+
+  AGG = {total:total, totalNA:totalNA, totalSent:totalSent, totalApplicable:totalApplicable, totalNot:totalNot,
+         pctSent:pctSent, byDir:byDir, dirRows:dirRows, zeroDirs:zeroDirs, topPendentes:topPendentes};
+}
+
+function renderHeaderTexts(){
+  document.querySelector('header h1').textContent = ACTIVE_BOARD.nome;
+  document.querySelector('header p').textContent =
+    'Base: lista de '+ACTIVE_BOARD.rotuloGrupo.toLowerCase()+'/'+ACTIVE_BOARD.rotuloItem.toLowerCase()+' · Critério: 🟢 '+
+    ACTIVE_BOARD.rotuloVerde+' / 🔴 '+ACTIVE_BOARD.rotuloVermelho+' / ⚪ '+ACTIVE_BOARD.rotuloCinza;
+  document.querySelectorAll('[data-rotulo-grupo]').forEach(function(n){ n.textContent = ACTIVE_BOARD.rotuloGrupo; });
+  document.querySelectorAll('[data-rotulo-item]').forEach(function(n){ n.textContent = ACTIVE_BOARD.rotuloItem; });
+  el('pasteArea').placeholder = 'Cole aqui o texto completo do farol (ex: '+ACTIVE_BOARD.rotuloGrupo+' - '+ACTIVE_BOARD.rotuloItem+' 🟢) ...';
+}
+
+function renderKPIs(){
+  var total=AGG.total, totalNA=AGG.totalNA, totalSent=AGG.totalSent, totalNot=AGG.totalNot,
+      totalApplicable=AGG.totalApplicable, pctSent=AGG.pctSent, zeroDirs=AGG.zeroDirs;
+  el('kpis').innerHTML =
+    '<div class="kpi"><div class="label">Total mapeado</div><div class="value">'+total+'</div>'+
+      '<div class="sub">'+totalApplicable+' aplicáveis'+(totalNA>0?' · '+totalNA+' '+ACTIVE_BOARD.rotuloCinza.toLowerCase():'')+'</div></div>'+
+    '<div class="kpi green"><div class="label">'+escapeHtml(ACTIVE_BOARD.rotuloVerde)+'</div><div class="value" style="color:#2E9E44">'+totalSent+'</div>'+
+      '<div class="sub">'+pctSent.toFixed(1)+'% do aplicável</div></div>'+
+    '<div class="kpi red"><div class="label">'+escapeHtml(ACTIVE_BOARD.rotuloVermelho)+'</div><div class="value" style="color:#E8272A">'+totalNot+'</div>'+
+      '<div class="sub">'+(100-pctSent).toFixed(1)+'% do aplicável</div></div>'+
+    '<div class="kpi orange"><div class="label">'+escapeHtml(ACTIVE_BOARD.rotuloGrupo)+'s a 0%</div><div class="value" style="color:#F47920">'+zeroDirs.length+'</div>'+
+      '<div class="sub">'+(zeroDirs.join(', ')||'nenhuma')+'</div></div>';
+
+  var topTxt = AGG.topPendentes.map(function(d){ return '<b>'+escapeHtml(d.dir)+'</b> ('+d.not+' '+ACTIVE_BOARD.rotuloVermelho.toLowerCase()+')'; }).join(' e ');
+  el('alertStrip').innerHTML =
+    '<b>Alerta:</b> '+zeroDirs.length+' '+ACTIVE_BOARD.rotuloGrupo.toLowerCase()+'(s) a 0% de '+ACTIVE_BOARD.rotuloVerde.toLowerCase()+' — <b>'+
+    (zeroDirs.join(', ')||'nenhuma')+'</b>. '+
+    (topTxt ? 'Maior volume de pendência: '+topTxt+'.' : '')+
+    (AGG.totalNA>0 ? ' <i>'+AGG.totalNA+' item(ns) classificado(s) como '+ACTIVE_BOARD.rotuloCinza+' foram excluídos do cálculo.</i>' : '');
+}
+
+function renderDonut(){
+  var total=AGG.total, totalSent=AGG.totalSent, totalNot=AGG.totalNot, totalNA=AGG.totalNA, pctSent=AGG.pctSent;
+  var segSentDeg = total>0 ? (totalSent/total*360) : 0;
+  var segNotDeg = total>0 ? (totalNot/total*360) : 0;
+  var VERDE='#2E9E44', VERMELHO='#E8272A', CINZA='#9AA5C4';
+  el('donut').style.background = 'conic-gradient('+VERDE+' 0deg '+segSentDeg+'deg, '+VERMELHO+' '+segSentDeg+'deg '+(segSentDeg+segNotDeg)+'deg, '+CINZA+' '+(segSentDeg+segNotDeg)+'deg 360deg)';
+  el('donut').innerHTML = '<div class="donut-center"><div class="pct">'+pctSent.toFixed(1)+'%</div><div class="txt">'+escapeHtml(ACTIVE_BOARD.rotuloVerde.toLowerCase())+'<br>(s/ aplicável)</div></div>';
+  el('legend').innerHTML =
+    '<div class="row"><span class="dot" style="background:'+VERDE+'"></span> '+escapeHtml(ACTIVE_BOARD.rotuloVerde)+' — '+totalSent+' (' +pctSent.toFixed(1)+'%)</div>'+
+    '<div class="row"><span class="dot" style="background:'+VERMELHO+'"></span> '+escapeHtml(ACTIVE_BOARD.rotuloVermelho)+' — '+totalNot+' ('+(100-pctSent).toFixed(1)+'%)</div>'+
+    (totalNA>0 ? '<div class="row"><span class="dot" style="background:'+CINZA+'"></span> '+escapeHtml(ACTIVE_BOARD.rotuloCinza)+' — '+totalNA+'</div>' : '');
+}
+
+function renderBars(){
+  el('bars').innerHTML = AGG.dirRows.map(function(d){
+    return '<div class="bar-row">'+
+      '<div class="name">'+escapeHtml(d.dir)+' <span style="color:#8C9BC6;font-weight:400;">('+d.total+(d.na>0?', '+d.na+' '+escapeHtml(ACTIVE_BOARD.rotuloCinza):'')+')</span></div>'+
+      '<div class="bar-track">'+
+        '<div class="bar-seg g" style="width:'+(d.total? d.sent/d.total*100:0)+'%"></div>'+
+        '<div class="bar-seg r" style="width:'+(d.total? d.not/d.total*100:0)+'%"></div>'+
+        (d.na>0 ? '<div class="bar-seg na" style="width:'+(d.na/d.total*100)+'%"></div>' : '')+
+      '</div>'+
+      '<div class="pct" style="color:'+(d.pct>0?'#2E9E44':'#E8272A')+'">'+d.pct.toFixed(0)+'%</div>'+
+      (d.not>0 ? '<button class="wa-btn-sm" data-wagroup="'+escapeAttr(d.dir)+'">WhatsApp</button>' : '<span></span>')+
+    '</div>';
+  }).join('');
+  document.querySelectorAll('[data-wagroup]').forEach(function(b){
+    b.addEventListener('click', function(){ openWaModal(b.getAttribute('data-wagroup')); });
+  });
+}
+
+/* ============================================================
+   MULTI-SELECT FILTER (dropdown com checkboxes)
+   ============================================================ */
+var MSF_REGISTRY = {};
+function msfPopulate(containerId, options, selectedArr, defaultLabel, singularLabel){
+  var box = el(containerId);
+  if(!box) return;
+  var btn = box.querySelector('.msf-btn');
+  var list = box.querySelector('.msf-list');
+  MSF_REGISTRY[containerId] = MSF_REGISTRY[containerId] || {};
+  MSF_REGISTRY[containerId].options = options;
+  MSF_REGISTRY[containerId].pending = selectedArr.slice();
+  function renderList(filterTerm){
+    var term = (filterTerm||'').toLowerCase();
+    list.innerHTML = options.length ? options.map(function(opt){
+      var checked = MSF_REGISTRY[containerId].pending.indexOf(opt) > -1;
+      var hide = term && opt.toLowerCase().indexOf(term) === -1;
+      return '<label class="msf-opt'+(hide?' hidden':'')+'"><input type="checkbox" value="'+escapeAttr(opt)+'"'+(checked?' checked':'')+'>'+escapeHtml(opt)+'</label>';
+    }).join('') : '<div class="msf-empty">Nenhuma opção disponível</div>';
+  }
+  renderList('');
+  function updateBtnLabel(){
+    var n = selectedArr.length;
+    if(n===0) btn.textContent = defaultLabel;
+    else if(n===1) btn.textContent = selectedArr[0];
+    else btn.textContent = n+' '+singularLabel+'s selecionad'+(singularLabel.slice(-1)==='a'?'as':'os');
+    box.classList.toggle('has-selection', n>0);
+  }
+  updateBtnLabel();
+  MSF_REGISTRY[containerId].updateBtnLabel = updateBtnLabel;
+  MSF_REGISTRY[containerId].renderList = renderList;
+}
+function msfInit(containerId, selectedArrRef, onApply){
+  var box = el(containerId);
+  if(!box || box.dataset.wired) return;
+  box.dataset.wired = '1';
+  var btn = box.querySelector('.msf-btn');
+  var list = box.querySelector('.msf-list');
+  var searchEl = box.querySelector('.msf-search');
+  var clearBtn = box.querySelector('.msf-clear');
+  var applyBtn = box.querySelector('.msf-apply');
+  btn.addEventListener('click', function(e){
+    e.stopPropagation();
+    document.querySelectorAll('.msf.open').forEach(function(o){ if(o!==box) o.classList.remove('open'); });
+    var reg = MSF_REGISTRY[containerId];
+    if(reg){ reg.pending = selectedArrRef().slice(); reg.renderList(searchEl.value); }
+    box.classList.toggle('open');
+    if(box.classList.contains('open')) searchEl.focus();
+  });
+  searchEl.addEventListener('click', function(e){ e.stopPropagation(); });
+  searchEl.addEventListener('input', function(){ MSF_REGISTRY[containerId].renderList(this.value); });
+  list.addEventListener('click', function(e){ e.stopPropagation(); });
+  list.addEventListener('change', function(e){
+    if(e.target.tagName!=='INPUT') return;
+    var v = e.target.value;
+    var reg = MSF_REGISTRY[containerId];
+    var idx = reg.pending.indexOf(v);
+    if(e.target.checked && idx===-1) reg.pending.push(v);
+    if(!e.target.checked && idx>-1) reg.pending.splice(idx,1);
+  });
+  clearBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    MSF_REGISTRY[containerId].pending = [];
+    MSF_REGISTRY[containerId].renderList(searchEl.value);
+  });
+  applyBtn.addEventListener('click', function(e){
+    e.stopPropagation();
+    onApply(MSF_REGISTRY[containerId].pending.slice());
+    box.classList.remove('open');
+    if(MSF_REGISTRY[containerId].updateBtnLabel) MSF_REGISTRY[containerId].updateBtnLabel();
+  });
+  document.addEventListener('click', function(){ box.classList.remove('open'); });
+}
+function renderDirFilterOptions(){
+  if(!el('msfDir')) return;
+  var defaultLbl = 'Todas as '+ACTIVE_BOARD.rotuloGrupo.toLowerCase()+'s';
+  var dirOpts = Object.keys(AGG.byDir).sort();
+  STATE.filterDir = STATE.filterDir || [];
+  msfPopulate('msfDir', dirOpts, STATE.filterDir, defaultLbl, ACTIVE_BOARD.rotuloGrupo.toLowerCase());
+  msfInit('msfDir', function(){ return STATE.filterDir; }, function(vals){
+    STATE.filterDir = vals; renderTable();
+  });
+}
+
+function renderTable(){
+  var q = el('search').value.toLowerCase();
+  var fd = STATE.filterDir || [];
+  var fs = el('filterStatus').value;
+  var fsm = STATE.filterSmFarol || [];
+  var rows = STATE.data.filter(function(r){
+    var dir=r[0], item=r[1], status=r[2];
+    if(fd.length && fd.indexOf(dir)<0) return false;
+    if(fs!=='' && status!==fs) return false;
+    if(q && item.toLowerCase().indexOf(q)<0 && dir.toLowerCase().indexOf(q)<0) return false;
+    if(fsm.length){
+      var info = smOfFarol(dir, item);
+      if(!info || fsm.indexOf(info.sm)<0) return false;
+    }
+    return true;
+  });
+  if(STATE.tableSortCol !== undefined && STATE.tableSortCol !== null){
+    var sc = STATE.tableSortCol, sd = STATE.tableSortDir || 'asc';
+    rows = rows.slice().sort(function(a,b){
+      var va = String(a[sc]||'').toLowerCase(), vb = String(b[sc]||'').toLowerCase();
+      var cmp = va.localeCompare(vb, 'pt-BR', {numeric:true});
+      return sd==='asc' ? cmp : -cmp;
+    });
+  }
+  el('tableBody').innerHTML = rows.map(function(r){
+    var dir=r[0], item=r[1], status=r[2], nota=r[3]||'';
+    var smCell = '';
+    if(Object.keys(smMapFarol).length){
+      var info = smOfFarol(dir, item);
+      smCell = '<td style="font-size:12px;color:#555;">'+(info?escapeHtml(info.sm||'—'):'—')+'</td>';
+    }
+    return '<tr>'+
+      '<td>'+escapeHtml(dir)+'</td>'+
+      '<td>'+escapeHtml(item)+'</td>'+
+      '<td><span class="badge '+statusClass[status]+'" data-dir="'+escapeAttr(dir)+'" data-item="'+escapeAttr(item)+'" title="Clique para alternar status">'+statusLabelFor(status)+'</span></td>'+
+      '<td><input type="text" class="nota-input" data-notadir="'+escapeAttr(dir)+'" data-notaitem="'+escapeAttr(item)+'" value="'+escapeAttr(nota)+'" placeholder="observação..."></td>'+
+      smCell+
+    '</tr>';
+  }).join('') || '<tr><td colspan="5" style="text-align:center;color:#8C9BC6;">Nenhum resultado</td></tr>';
+}
+
+function renderUpdateBadge(){
+  var badgeText = STATE.lastUpdate || (ACTIVE_BOARD.id===DEFAULT_BOARD_3T.id ? SEED_LABEL_3T : 'nenhum dado ainda');
+  el('updateBadge').innerHTML = '<span class="lbl">'+(STATE.lastUpdate ? 'Última atualização salva' : 'Última atualização')+'</span>'+badgeText;
+  el('footerUpdate').textContent = badgeText;
+  var pill = el('statusPill');
+  if(STATE.usingDefault){
+    pill.className = 'status-pill default';
+    pill.textContent = ACTIVE_BOARD.id===DEFAULT_BOARD_3T.id ? '📦 Exibindo snapshot padrão — ainda não salvo neste navegador' : '📦 Farol novo — sem dados salvos ainda';
+  } else {
+    pill.className = 'status-pill saved';
+    pill.textContent = '✅ Há dados salvos neste navegador';
+  }
+}
+
+function renderActionBar(){
+  var dirty = isDirty();
+  var pill = el('dirtyPill');
+  pill.className = 'dirty-pill ' + (dirty ? 'dirty' : 'clean');
+  pill.textContent = dirty ? '● Alterações não salvas' : '✓ Tudo salvo';
+  el('btnSave').disabled = !dirty;
+  el('btnUndo').disabled = UNDO_STACK.length === 0;
+  el('btnUndo').textContent = UNDO_STACK.length > 0 ? '↩️ Desfazer ('+UNDO_STACK.length+')' : '↩️ Desfazer';
+}
+
+function renderAll(){
+  computeAggregates();
+  renderKPIs();
+  renderDonut();
+  renderBars();
+  renderDirFilterOptions();
+  renderFarolSmFilterOptions();
+  renderTable();
+  renderUpdateBadge();
+  renderActionBar();
+  wireTableEvents();
+}
+
+function wireTableEvents(){
+  el('tableBody').onclick = function(e){
+    var badge = e.target.closest ? e.target.closest('.badge') : null;
+    if(badge){ cycleStatus(badge.getAttribute('data-dir'), badge.getAttribute('data-item')); }
+  };
+  el('tableBody').onchange = function(e){
+    if(e.target.classList && e.target.classList.contains('nota-input')){
+      updateNota(e.target.getAttribute('data-notadir'), e.target.getAttribute('data-notaitem'), e.target.value);
+    }
+  };
+}
+
+/* ============================================================
+   ABAS DE FAROL (board switcher)
+   ============================================================ */
+function renderBoardTabs(){
+  var html = BOARDS.map(function(b){
+    var active = ACTIVE_BOARD && b.id===ACTIVE_BOARD.id;
+    return '<button class="board-tab'+(active?' active':'')+'" data-switch="'+b.id+'">'+escapeHtml(b.nome)+
+      (active ? ' <span class="gear" data-configboard="'+b.id+'" title="Configurar este farol">⚙️</span>' : '')+
+    '</button>';
+  }).join('');
+  html += '<button class="board-tab-add" id="addBoardBtn">+ Novo farol</button>';
+  el('boardTabs').innerHTML = html;
+
+  document.querySelectorAll('[data-switch]').forEach(function(b){
+    b.addEventListener('click', function(e){
+      if(e.target.hasAttribute('data-configboard')) return;
+      switchBoard(b.getAttribute('data-switch'));
+    });
+  });
+  document.querySelectorAll('[data-configboard]').forEach(function(g){
+    g.addEventListener('click', function(e){ e.stopPropagation(); openConfigModal(g.getAttribute('data-configboard')); });
+  });
+  el('addBoardBtn').addEventListener('click', function(){ openConfigModal(null); });
+}
+
+/* ============================================================
+   MODAL DE CONFIGURAÇÃO DO FAROL
+   ============================================================ */
+function openConfigModal(boardId){
+  EDITING_BOARD_ID = boardId;
+  var b = boardId ? BOARDS.filter(function(x){return x.id===boardId;})[0] : null;
+  el('cfgModalTitle').textContent = b ? 'Configurar farol' : 'Novo farol';
+  el('cfgNome').value = b ? b.nome : '';
+  el('cfgDescricao').value = b ? b.descricao : '';
+  el('cfgRotuloGrupo').value = b ? b.rotuloGrupo : 'Diretoria';
+  el('cfgRotuloItem').value = b ? b.rotuloItem : 'Área / Squad';
+  el('cfgRotuloVerde').value = b ? b.rotuloVerde : 'Enviado';
+  el('cfgRotuloVermelho').value = b ? b.rotuloVermelho : 'Não Enviado';
+  el('cfgRotuloCinza').value = b ? b.rotuloCinza : 'Não se Aplica';
+  el('cfgWaTemplate').value = b ? (b.waTemplate||DEFAULT_WA_TEMPLATE) : DEFAULT_WA_TEMPLATE;
+  el('cfgDeleteBtn').style.display = (b && BOARDS.length>1) ? 'inline-block' : 'none';
+  el('cfgDuplicateBtn').style.display = b ? 'inline-block' : 'none';
+  el('configModal').classList.add('open');
+  el('cfgNome').focus();
+}
+function closeConfigModal(){ el('configModal').classList.remove('open'); }
+
+function submitConfigModal(){
+  var nome = el('cfgNome').value.trim();
+  if(!nome){ alert('Dê um nome para o farol.'); return; }
+  var cfg = {
+    nome:nome,
+    descricao: el('cfgDescricao').value.trim(),
+    rotuloGrupo: el('cfgRotuloGrupo').value.trim()||'Grupo',
+    rotuloItem: el('cfgRotuloItem').value.trim()||'Item',
+    rotuloVerde: el('cfgRotuloVerde').value.trim()||'Enviado',
+    rotuloVermelho: el('cfgRotuloVermelho').value.trim()||'Não Enviado',
+    rotuloCinza: el('cfgRotuloCinza').value.trim()||'Não se Aplica',
+    waTemplate: el('cfgWaTemplate').value
+  };
+  if(EDITING_BOARD_ID){
+    updateBoardConfig(EDITING_BOARD_ID, cfg);
+  } else {
+    createBoard(cfg);
+  }
+  closeConfigModal();
+}
+
+/* ============================================================
+   WHATSAPP
+   ============================================================ */
+function pluralize(s){
+  s = String(s||'').trim();
+  if(!s) return s;
+  if(/s$/i.test(s)) return s;
+  return s+'s';
+}
+function openWaModal(grupo){
+  WA_GRUPO_ATUAL = grupo;
+  var pendentes = STATE.data.filter(function(r){ return r[0]===grupo && r[2]==='not_sent'; });
+  var lista = pendentes.slice(0,8).map(function(r,i){ return (i+1)+'. '+r[1]; }).join('\n');
+  var extra = pendentes.length>8 ? '\n+ '+(pendentes.length-8)+' outro(s) item(ns)' : '';
+  var tpl = ACTIVE_BOARD.waTemplate || DEFAULT_WA_TEMPLATE;
+  var msg = tpl
+    .replace(/{grupo}/g, grupo)
+    .replace(/{nomeFarol}/g, ACTIVE_BOARD.nome)
+    .replace(/{qtd}/g, pendentes.length)
+    .replace(/{rotuloItem}/g, ACTIVE_BOARD.rotuloItem)
+    .replace(/{rotuloItemPlural}/g, pluralize(ACTIVE_BOARD.rotuloItem))
+    .replace(/{rotuloVermelho}/g, ACTIVE_BOARD.rotuloVermelho)
+    .replace(/{lista}/g, lista+extra);
+  el('waModalSub').textContent = grupo+' · '+pendentes.length+' '+ACTIVE_BOARD.rotuloVermelho.toLowerCase();
+  el('waTextarea').value = msg;
+  el('waTextarea').readOnly = true;
+  el('editTplBtnFarol').textContent = 'Editar modelo';
+  STATE.editingTemplateFarol = false;
+  el('waModal').classList.add('open');
+}
+function closeWaModal(){ el('waModal').classList.remove('open'); }
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function showTab(name){
+  ['resultado','graficos'].forEach(function(k){
+    el('tab-'+k).classList.toggle('hidden', k!==name);
+  });
+  document.querySelectorAll('#tabBar .tab').forEach(function(btn){
+    btn.classList.toggle('active', btn.getAttribute('data-tab')===name);
+  });
+}
+
+// ---------- SM mapping via Dashboard HTML ----------
+var LS_SM_MAP_FAROL = 'hac_farol_smmapping_v1';
+var LS_SM_MAP_FAROL_META = 'hac_farol_smmapping_meta_v1';
+var smMapFarol = {};
+try{ var _smf = localStorage.getItem(LS_SM_MAP_FAROL); if(_smf) smMapFarol = JSON.parse(_smf); }catch(e){}
+
+function normFarol(s){ return (s||'').trim().replace(/\u00a0/g,' ').toLowerCase(); }
+
+// Identifica o SM responsável por um item do farol, cruzando com a base importada do Dashboard de SMs.
+// dir = grupo (ex: "Diretoria"/"Assistencial"), item = nome do item (ex: "Aplicativos Assistenciais").
+// Estratégia: 1) nome completo reconstruído "dir - item" (é assim que a squad aparece no Dashboard);
+// 2) apenas o item, caso já venha com o prefixo; 3) contains — pra pegar squads renomeadas parcialmente.
+function smOfFarol(dir, item){
+  if(!item) return null;
+  var full = normFarol(dir ? (dir+' - '+item) : item);
+  var itemOnly = normFarol(item);
+  if(smMapFarol[full]) return smMapFarol[full];
+  if(smMapFarol[itemOnly]) return smMapFarol[itemOnly];
+  var keys = Object.keys(smMapFarol);
+  for(var i=0;i<keys.length;i++){
+    var nk = normFarol(keys[i]);
+    if(nk===full || nk===itemOnly) return smMapFarol[keys[i]];
+  }
+  // fallback: squad renomeada — tenta achar por conteúdo (o item aparece dentro do nome da squad, ou vice-versa)
+  if(itemOnly.length >= 4){
+    for(var j=0;j<keys.length;j++){
+      var nk2 = normFarol(keys[j]);
+      if(nk2.indexOf(itemOnly)>=0 || itemOnly.indexOf(nk2.replace(/^.*? - /,''))>=0) return smMapFarol[keys[j]];
+    }
+  }
+  return null;
+}
+
+function updateFarolSmColumnVisibility(){
+  var th = el('thSmFarol');
+  if(th) th.style.display = Object.keys(smMapFarol).length ? '' : 'none';
+  var filterWrap = el('filterSmWrapFarol');
+  if(filterWrap) filterWrap.style.display = Object.keys(smMapFarol).length ? '' : 'none';
+}
+
+function renderFarolSmFilterOptions(){
+  if(!el('msfSmFarol')) return;
+  var sms = {};
+  STATE.data.forEach(function(r){
+    var info = smOfFarol(r[0], r[1]);
+    if(info && info.sm && info.sm!=='—') sms[info.sm]=true;
+  });
+  var names = Object.keys(sms).sort(function(a,b){return a.localeCompare(b,'pt-BR');});
+  STATE.filterSmFarol = STATE.filterSmFarol || [];
+  msfPopulate('msfSmFarol', names, STATE.filterSmFarol, 'Todos os SMs', 'SM');
+  msfInit('msfSmFarol', function(){ return STATE.filterSmFarol; }, function(vals){
+    STATE.filterSmFarol = vals; renderTable();
+  });
+}
+
+function parseDashboardSmBase(html){
+  function readBlock(marker, pattern){
+    var m = html.match(pattern);
+    if(!m) return null;
+    try { return JSON.parse(m[1]); } catch(e){ throw new Error('O bloco '+marker+' do Dashboard está inválido.'); }
+  }
+  var oldData = readBlock('DATA', /\/\*DATA_START\*\/const DATA = ([\s\S]+?);\s*\/\*DATA_END\*\//);
+  var rows = oldData && Array.isArray(oldData.squads) ? oldData.squads : null;
+  if(!rows || !rows.length){
+    rows = readBlock('SQUADCANON', /\/\*SQUADCANON_START\*\/(?:var|let|const)\s+SQUAD_CANON\s*=\s*([\s\S]+?);\s*\/\*SQUADCANON_END\*\//i);
+  }
+  if(!Array.isArray(rows) || !rows.length) throw new Error('Não encontrei uma base de squads no arquivo. Aceito o Dashboard antigo e o Dashboard SMs x Squads 2.0.');
+  return rows.map(function(s){ return {squad:String(s.squad||s.nome_azure||s.nome||'').replace(/\u00a0/g,' ').trim(), area:s.area||s.diretoria||'', diretoria:s.diretoria||s.area||'', diretor:s.diretor||'', sm_atual:s.sm_atual||s.sm_proposto||s.sm||''}; }).filter(function(s){return s.squad;});
+}
+
+function importFarolSmMapping(file){
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    try{
+      var squads = parseDashboardSmBase(ev.target.result);
+      smMapFarol = {};
+      squads.forEach(function(s){ var k=s.squad.replace(/\u00a0/g,' ').trim(); if(k) smMapFarol[k]={sm:s.sm_atual,area:s.area}; });
+            try{ localStorage.setItem(LS_SM_MAP_FAROL, JSON.stringify(smMapFarol)); }catch(ex){}
+      var meta = {loadedAt:new Date().toISOString(), fileName:file.name, total:Object.keys(smMapFarol).length};
+      try{ localStorage.setItem(LS_SM_MAP_FAROL_META, JSON.stringify(meta)); }catch(ex){}
+      updateFarolSmColumnVisibility();
+      renderFarolSmFilterOptions();
+      renderTable();
+      var matched = STATE.data.filter(function(r){ return smOfFarol(r[0], r[1]); }).length;
+      showToast('✅ '+Object.keys(smMapFarol).length+' squads importadas de "'+file.name+'" — '+matched+'/'+STATE.data.length+' itens com SM identificado.');
+    }catch(err){
+      showToast('❌ '+err.message);
+    }
+  };
+  reader.readAsText(file, 'utf-8');
+}
+
+function exportUpdatedHTML(){
+  try{
+    var allBoardData = {};
+    BOARDS.forEach(function(b){
+      allBoardData[b.id] = readBoardData(b.id).payload;
+    });
+    var boardsBlock = '/*BOARDS_START*/var EMBEDDED_BOARDS = ' + JSON.stringify(BOARDS) + ';/*BOARDS_END*/';
+    var boardDataBlock = '/*BOARDDATA_START*/var EMBEDDED_BOARDDATA = ' + JSON.stringify(allBoardData) + ';/*BOARDDATA_END*/';
+    var _ts = Date.now();
+    var _tsBlock = '/*EXPORT_TS_START*/var EMBEDDED_EXPORT_TS = ' + _ts + ';/*EXPORT_TS_END*/';
+    var html = __PRISTINE_HTML__;
+    html = html.replace(/\/\*BOARDS_START\*\/[\s\S]*?\/\*BOARDS_END\*\//, boardsBlock);
+    html = html.replace(/\/\*EXPORT_TS_START\*\/[\s\S]*?\/\*EXPORT_TS_END\*\//, _tsBlock);
+    html = html.replace(/\/\*BOARDDATA_START\*\/[\s\S]*?\/\*BOARDDATA_END\*\//, boardDataBlock);
+    html = '<!doctype html>\n' + html;
+    var blob = new Blob([html], {type:'text/html;charset=utf-8'});
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'Farol_WhatsApp.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 3000);
+  }catch(err){
+    alert('Não consegui gerar o arquivo atualizado. Detalhe: '+err.message);
+  }
+}
+
+function wireTableSort(){
+  document.querySelectorAll('table thead th[data-sort]').forEach(function(th){
+    th.addEventListener('click', function(){
+      var col = parseInt(th.getAttribute('data-sort'), 10);
+      if(STATE.tableSortCol === col){ STATE.tableSortDir = STATE.tableSortDir==='asc'?'desc':'asc'; }
+      else { STATE.tableSortCol = col; STATE.tableSortDir = 'asc'; }
+      document.querySelectorAll('table thead th[data-sort]').forEach(function(h){
+        h.classList.remove('sort-active');
+        var a = h.querySelector('.sort-arrow'); if(a) a.textContent = '↕';
+      });
+      th.classList.add('sort-active');
+      var arrow = th.querySelector('.sort-arrow'); if(arrow) arrow.textContent = STATE.tableSortDir==='asc' ? '▲' : '▼';
+      renderTable();
+    });
+  });
+}
+
+function init(){
+  loadBoardsConfig();
+  var activeId = getActiveBoardId();
+  if(!activeId || !BOARDS.some(function(b){return b.id===activeId;})) activeId = BOARDS[0].id;
+  switchBoard(activeId);
+  wireTableSort();
+
+  document.querySelectorAll('#tabBar .tab').forEach(function(btn){
+    btn.addEventListener('click', function(){ showTab(btn.getAttribute('data-tab')); });
+  });
+
+  var showLabels = loadShowLabels();
+  document.body.classList.toggle('hide-chart-labels', !showLabels);
+  el('labelsToggle').checked = showLabels;
+  el('labelsToggle').addEventListener('change', function(){
+    saveShowLabels(this.checked);
+    document.body.classList.toggle('hide-chart-labels', !this.checked);
+  });
+
+  el('btnProcess').addEventListener('click', applyNewPaste);
+  el('btnSave').addEventListener('click', saveChanges);
+  el('btnUndo').addEventListener('click', undoLast);
+  el('btnReset').addEventListener('click', resetAll);
+  el('btnBackup').addEventListener('click', downloadBackup);
+  if(el('btnExportHtml')) el('btnExportHtml').addEventListener('click', exportUpdatedHTML);
+  var farolSmImportEl = el('farolSmImport');
+  if(farolSmImportEl) farolSmImportEl.addEventListener('change', function(e){
+    if(e.target.files[0]) importFarolSmMapping(e.target.files[0]);
+    e.target.value='';
+  });
+  updateFarolSmColumnVisibility();
+  renderFarolSmFilterOptions();
+  el('backupFile').addEventListener('change', function(e){
+    if(e.target.files[0]) restoreBackup(e.target.files[0]);
+    e.target.value = '';
+  });
+  el('search').addEventListener('input', renderTable);
+  el('filterStatus').addEventListener('change', renderTable);
+  // filterDir e filterSmFarol: wiring feito dentro de renderDirFilterOptions/renderFarolSmFilterOptions (msfInit)
+
+  el('cfgCloseBtn').addEventListener('click', closeConfigModal);
+  el('cfgSaveBtn').addEventListener('click', submitConfigModal);
+  el('cfgDeleteBtn').addEventListener('click', function(){ var id=EDITING_BOARD_ID; closeConfigModal(); deleteBoard(id); });
+  el('cfgDuplicateBtn').addEventListener('click', function(){ var id=EDITING_BOARD_ID; closeConfigModal(); duplicateBoard(id); });
+
+  el('waCloseBtn').addEventListener('click', closeWaModal);
+  el('editTplBtnFarol').addEventListener('click', function(){
+    if(!STATE.editingTemplateFarol){
+      STATE.editingTemplateFarol = true;
+      el('waTextarea').value = ACTIVE_BOARD.waTemplate || DEFAULT_WA_TEMPLATE;
+      el('waTextarea').readOnly = false;
+      el('editTplBtnFarol').textContent = 'Salvar modelo';
+    } else {
+      STATE.editingTemplateFarol = false;
+      updateBoardConfig(ACTIVE_BOARD.id, Object.assign({}, ACTIVE_BOARD, {waTemplate: el('waTextarea').value}));
+      el('editTplBtnFarol').textContent = 'Editar modelo';
+      openWaModal(WA_GRUPO_ATUAL);
+    }
+  });
+  el('waCopyBtn').addEventListener('click', function(){
+    var txt = el('waTextarea').value;
+    navigator.clipboard.writeText(txt).then(function(){
+      el('copiedMsgFarol').classList.add('show');
+      setTimeout(function(){ el('copiedMsgFarol').classList.remove('show'); }, 2200);
+    }).catch(function(){
+      el('waTextarea').removeAttribute('readonly');
+      el('waTextarea').select();
+      document.execCommand('copy');
+      if(!STATE.editingTemplateFarol) el('waTextarea').setAttribute('readonly','readonly');
+      el('copiedMsgFarol').classList.add('show');
+      setTimeout(function(){ el('copiedMsgFarol').classList.remove('show'); }, 2200);
+    });
+  });
+
+  window.addEventListener('beforeunload', function(e){
+    if(isDirty()){ e.preventDefault(); e.returnValue=''; }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+})();
+
+</script></body></html>
