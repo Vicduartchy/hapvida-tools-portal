@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Design System HAC — Centro de Operações Azul Clínico.
+   Tokens globais do portal; as ferramentas HTML preservadas usam seus próprios estilos internos. */
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -43,17 +46,17 @@
 }
 
 :root {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-600);
-  --sidebar-primary-foreground: var(--color-blue-50);
-  --chart-1: var(--color-blue-300);
-  --chart-2: var(--color-blue-500);
-  --chart-3: var(--color-blue-600);
-  --chart-4: var(--color-blue-700);
-  --chart-5: var(--color-blue-800);
+  --primary: oklch(0.44 0.16 258);
+  --primary-foreground: oklch(0.98 0.01 258);
+  --sidebar-primary: oklch(0.54 0.16 258);
+  --sidebar-primary-foreground: oklch(0.98 0.01 258);
+  --chart-1: oklch(0.54 0.16 258);
+  --chart-2: oklch(0.7 0.15 88);
+  --chart-3: oklch(0.62 0.14 165);
+  --chart-4: oklch(0.48 0.12 300);
+  --chart-5: oklch(0.62 0.18 25);
   --radius: 0.65rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.975 0.008 255);
   --foreground: oklch(0.235 0.015 65);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.235 0.015 65);
@@ -69,7 +72,7 @@
   --destructive-foreground: oklch(0.985 0 0);
   --border: oklch(0.92 0.004 286.32);
   --input: oklch(0.92 0.004 286.32);
-  --ring: oklch(0.623 0.214 259.815);
+  --ring: oklch(0.54 0.16 258);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.235 0.015 65);
   --sidebar-accent: oklch(0.967 0.001 286.375);
@@ -79,10 +82,10 @@
 }
 
 .dark {
-  --primary: var(--color-blue-700);
-  --primary-foreground: var(--color-blue-50);
-  --sidebar-primary: var(--color-blue-500);
-  --sidebar-primary-foreground: var(--color-blue-50);
+  --primary: oklch(0.54 0.16 258);
+  --primary-foreground: oklch(0.98 0.01 258);
+  --sidebar-primary: oklch(0.54 0.16 258);
+  --sidebar-primary-foreground: oklch(0.98 0.01 258);
   --background: oklch(0.141 0.005 285.823);
   --foreground: oklch(0.85 0.005 65);
   --card: oklch(0.21 0.006 285.885);
