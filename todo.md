@@ -7,3 +7,6 @@
 - [ ] Configurar e validar a publicação no GitHub Pages.
 - [ ] Configurar e validar o deploy na Vercel.
 - [ ] Entregar os links e instruções de uso.
+- [ ] Diagnosticar o CSS ausente no deploy da Vercel.
+- [ ] Corrigir caminhos de CSS e assets no build de produção.
+- [ ] Validar visualmente a Vercel e o GitHub Pages após a correção.
