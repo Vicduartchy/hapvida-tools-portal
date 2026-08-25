@@ -1140,8 +1140,30 @@ function renderAnomaliaCard(){
   } else { c.style.display='none'; }
 }
 
+function getKpiTotals(){
+  var base = STATE.totals;
+  var cls = STATE.resultClassificacao;
+  if(!cls) return base; // sem filtro: mantém os totais combinados (Origem em Branco + Task Avulsa)
+
+  var totalSemOrigem = 0, qtdTasksSemOrigem = 0, squadsImpactadas = 0;
+  Object.keys(STATE.squads).forEach(function(k){
+    var tasks = (STATE.squads[k].tasks || []).filter(function(t){ return t.tipoDemanda===cls; });
+    if(tasks.length){
+      squadsImpactadas++;
+      tasks.forEach(function(t){ totalSemOrigem += (Number(t.completedWork)||0); qtdTasksSemOrigem++; });
+    }
+  });
+  return Object.assign({}, base, {
+    totalSemOrigem: totalSemOrigem,
+    qtdTasksSemOrigem: qtdTasksSemOrigem,
+    squadsImpactadas: squadsImpactadas,
+    pctSemOrigem: base.totalGeral>0 ? (totalSemOrigem/base.totalGeral*100) : 0
+  });
+}
+
 function renderKPIs(){
-  var t = STATE.totals;
+  var t = getKpiTotals();
+  var classLabel = STATE.resultClassificacao || 'Origem em Branco + Task Avulsa';
   var trendHtml = '';
   if(t.trendDelta!==null){
     var arrow = t.trendUp ? '▲' : '▼';
@@ -1154,7 +1176,7 @@ function renderKPIs(){
       '<div class="lbl">Horas sem rastreabilidade</div>'+
       '<div class="val">'+fmtNum(t.totalSemOrigem)+'<small> h</small></div>'+
       trendHtml+
-      '<div class="foot">Origem em Branco + Task Avulsa</div>'+
+      '<div class="foot">'+esc(classLabel)+'</div>'+
     '</div>'+
     '<div class="kpi-card">'+
       '<div class="lbl">% do total registrado</div>'+
@@ -1705,6 +1727,7 @@ function wireStaticUI(){
     STATE.resultClassificacao = this.value;
     STATE.page = 1;
     STATE.openDrill = null;
+    renderKPIs();
     renderRanking();
   });
   populateResultClassFilter();
