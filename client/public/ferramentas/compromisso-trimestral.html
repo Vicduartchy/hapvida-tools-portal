@@ -72,6 +72,9 @@
   .toolbar input[type=text]{
     padding:8px 12px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; min-width:220px;
   }
+  .toolbar select{
+    padding:8px 12px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; background:var(--branco); color:var(--cinza-texto);
+  }
   .chip{
     border:1px solid var(--cinza-borda); background:var(--branco); border-radius:999px;
     padding:6px 14px; font-size:12.5px; cursor:pointer; user-select:none; color:var(--cinza-texto);
@@ -193,6 +196,11 @@
     <div class="toolbar">
       <div id="diretoriaChips"></div>
       <input type="text" id="squadSearch" placeholder="Buscar squad (Team Project)...">
+      <select id="statusFiltro" title="Filtrar por status de compromisso">
+        <option value="">Todos os status</option>
+        <option value="com">Com Compromisso</option>
+        <option value="sem">Sem Compromisso</option>
+      </select>
       <div class="spacer"></div>
       <button class="btn ghost" id="btnResetFiltros">Limpar filtros</button>
     </div>
@@ -310,6 +318,7 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
     diretorias: [],
     diretoriaFiltro: new Set(),
     squadBusca: '',
+    statusFiltro: '',
     sortKey: 'total',
     sortDir: 'desc'
   };
@@ -458,6 +467,8 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
     return rows.filter(function(r){
       if (state.diretoriaFiltro.size > 0 && !state.diretoriaFiltro.has(r.diretoria)) return false;
       if (state.squadBusca && r.squad.toLowerCase().indexOf(state.squadBusca.toLowerCase()) === -1) return false;
+      if (state.statusFiltro === 'com' && r.compromisso !== 1) return false;
+      if (state.statusFiltro === 'sem' && r.compromisso === 1) return false;
       return true;
     });
   }
@@ -689,7 +700,9 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
     state.diretorias = Array.from(new Set(rows.map(function(r){ return r.diretoria; }))).sort();
     state.diretoriaFiltro = new Set();
     state.squadBusca = '';
+    state.statusFiltro = '';
     document.getElementById('squadSearch').value = '';
+    if (document.getElementById('statusFiltro')) document.getElementById('statusFiltro').value = '';
 
     var meta = { origem: origemLabel, importadoEm: new Date().toISOString(), totalRegistros: rows.length };
     salvarLocalStorage(rows, meta);
@@ -770,10 +783,16 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
       state.squadBusca = e.target.value;
       renderTudo();
     });
+    document.getElementById('statusFiltro').addEventListener('change', function(e){
+      state.statusFiltro = e.target.value;
+      renderTudo();
+    });
     document.getElementById('btnResetFiltros').addEventListener('click', function(){
       state.diretoriaFiltro = new Set();
       state.squadBusca = '';
+      state.statusFiltro = '';
       document.getElementById('squadSearch').value = '';
+      document.getElementById('statusFiltro').value = '';
       renderTudo();
     });
     document.getElementById('fileInput').addEventListener('change', function(e){
