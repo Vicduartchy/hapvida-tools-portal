@@ -1,0 +1,27 @@
+/**
+ * Fonte única de verdade da identidade visual Hapvida (2025) usada em todas
+ * as ferramentas do Hub do Agile Coach.
+ *
+ * IMPORTANTE: este arquivo NÃO é carregado em runtime pelas ferramentas.
+ * Cada ferramenta em client/public/ferramentas/*.html continua sendo um
+ * HTML single-file, 100% offline, com o :root inline (padrão obrigatório
+ * — ver skill hapvida-html-tools). Este arquivo é só a referência canônica
+ * que os testes em tests/design-tokens.test.ts usam para checar que as
+ * cores de marca (primárias) não divergem entre ferramentas ao longo do
+ * tempo, por causa de copy-paste manual entre arquivos.
+ *
+ * Tokens secundários (cinza-bg, cinza-borda, cinza-texto, sombra) têm
+ * variação legítima observada entre ferramentas hoje (25/08/2026) e NÃO
+ * são cobertos pelo teste — alinhar isso exigiria QA visual em cada
+ * ferramenta, decisão que cabe ao Vic, não deve ser feita silenciosamente
+ * numa tarefa de arquitetura.
+ */
+:root {
+  --azul: #1A3DAA;
+  --azul-escuro: #0F2370;
+  --vermelho: #E8272A;
+  --laranja: #F47920;
+  --amarelo: #FFC20E;
+  --branco: #FFFFFF;
+  --preto: #000000;
+}
