@@ -18,7 +18,7 @@ describe("horas-sem-rastreabilidade: getKpiTotals respeita o filtro de classific
   beforeEach(() => {
     tool = loadToolScript(
       "horas-sem-rastreabilidade.html",
-      2,
+      0,
       "__capture__.STATE = STATE; __capture__.aggregate = aggregate; __capture__.getKpiTotals = getKpiTotals;",
     );
 
