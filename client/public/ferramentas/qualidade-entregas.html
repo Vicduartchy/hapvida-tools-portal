@@ -280,6 +280,8 @@ footer.brand-footer{
   <footer class="brand-footer">Hub do Agile Coach · Hapvida — ferramenta offline, sem dependências externas. Dados processados localmente no navegador.</footer>
 </div>
 
+<script src="/shared/data/squad-canon.js"></script>
+<script src="/shared/data/sm-mapping.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script>
@@ -469,9 +471,21 @@ function hideBanners(){
 }
 
 /* ============================================================
-   SM MAPPING — importado do Dashboard_SMs_x_Squads_Hapvida.html
+   SM MAPPING — sincronizado automaticamente do Dashboard SMs x Squads
+   (via /shared/data/squad-canon.js + sm-mapping.js). Upload manual do
+   arquivo continua funcionando como alternativa/fallback.
    ============================================================ */
 function loadSmMapping(){
+  if(typeof window.getSmSquadMapping === 'function'){
+    var shared = window.getSmSquadMapping();
+    var sharedCount = Object.keys(shared || {}).length;
+    if(sharedCount > 0){
+      STATE.smMapping = shared;
+      STATE.smMappingMeta = {loadedAt: new Date().toISOString(), total: sharedCount, source:'shared'};
+      STATE._smMappingVersion++;
+      return;
+    }
+  }
   try{
     var raw = localStorage.getItem(LS_SM_MAPPING);
     if(raw){
@@ -576,7 +590,9 @@ function importSmMappingFromFile(file){
 function renderSmMappingBadge(){
   var badge = el('smMappingBadge');
   if(!badge) return;
-  if(STATE.smMappingMeta){
+  if(STATE.smMappingMeta && STATE.smMappingMeta.source === 'shared'){
+    badge.innerHTML = '<span style="color:#1C8C4A;font-size:12px;">✅ '+esc(STATE.smMappingMeta.total)+' squads sincronizadas automaticamente do <b>Dashboard SMs x Squads</b></span>';
+  } else if(STATE.smMappingMeta){
     var dt = new Date(STATE.smMappingMeta.loadedAt).toLocaleDateString('pt-BR');
     badge.innerHTML = '<span style="color:#1C8C4A;font-size:12px;">✅ '+esc(STATE.smMappingMeta.total)+' squads importadas de <b>'+esc(STATE.smMappingMeta.fileName)+'</b> ('+dt+')</span>';
   } else {
