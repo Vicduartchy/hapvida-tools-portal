@@ -424,6 +424,7 @@
       <button class="clearbtn" id="btnClearSm">Limpar filtros</button>
       <button class="btn btn-outline btn-sm" id="btnExpandAllSm">Expandir tudo</button>
       <button class="btn btn-outline btn-sm" id="btnCollapseAllSm">Recolher tudo</button>
+      <button class="btn btn-outline btn-sm" id="btnExportSmXlsx">📊 Exportar Excel</button>
     </div>
 
     <div class="resultcount" id="smCount"></div>
@@ -480,6 +481,7 @@
       <button class="clearbtn" id="btnClearSquad">Limpar filtros</button>
       <button class="btn btn-outline btn-sm" id="btnExpandAll">Expandir tudo</button>
       <button class="btn btn-outline btn-sm" id="btnCollapseAll">Recolher tudo</button>
+      <button class="btn btn-outline btn-sm" id="btnExportSquadXlsx">📊 Exportar Excel</button>
     </div>
 
     <div class="resultcount" id="squadCount"></div>
@@ -1122,6 +1124,22 @@ function buildUnified(){
    ============================================================ */
 const SM_ROLE_RE = /\bSM\b|SCRUM ?MASTER|PMO\s*\/\s*SM/i;
 let SM_VIEW = [];        // um item por SM real
+let LAST_SM_ROWS_FILTERED = [];
+let LAST_SQUAD_ROWS_FILTERED = [];
+
+function exportRowsToXlsx(rows, columns, filename){
+  if(!rows || !rows.length){ alert('Nenhuma linha para exportar com os filtros atuais.'); return; }
+  var aoa = [columns.map(function(c){ return c.label; })];
+  rows.forEach(function(r){
+    aoa.push(columns.map(function(c){ return c.get(r); }));
+  });
+  var ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = columns.map(function(c){ return {wch: c.width || 18}; });
+  var wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Dados');
+  var ts = new Date().toISOString().slice(0,10);
+  XLSX.writeFile(wb, filename.replace('{date}', ts));
+}
 let SQUADS_SEM_SM = [];  // squads da base que ninguém declarou no levantamento
 
 function buildSMView(){
@@ -1309,6 +1327,7 @@ function renderSMsTab(){
   });
 
   document.getElementById('smCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+SM_VIEW.length+'</b> SMs encontrados';
+  LAST_SM_ROWS_FILTERED = rows;
 
   const maxPageSm = Math.max(1, Math.ceil(rows.length/PAGE_SIZE));
   if(SM_PAGE > maxPageSm) SM_PAGE = maxPageSm;
@@ -1424,6 +1443,16 @@ document.getElementById('btnExpandAllSm').addEventListener('click', ()=>{
 document.getElementById('btnCollapseAllSm').addEventListener('click', ()=>{
   OPEN_SM_ROWS.clear();
   renderSMsTab();
+});
+document.getElementById('btnExportSmXlsx').addEventListener('click', ()=>{
+  exportRowsToXlsx(LAST_SM_ROWS_FILTERED, [
+    {label:'SM', get:function(r){return r.nome;}, width:28},
+    {label:'Squads', get:function(r){return r.squadCount;}, width:10},
+    {label:'Diretoria(s)', get:function(r){return r.diretorias.join(', ');}, width:32},
+    {label:'Pessoas (únicas)', get:function(r){return r.pessoasUnicas;}, width:14},
+    {label:'Boards', get:function(r){return r.totalBoards;}, width:10},
+    {label:'Divergência SM', get:function(r){return r.divergencias.length;}, width:14},
+  ], 'Hapvida_SMs_{date}.xlsx');
 });
 
 /* ============================================================
@@ -1603,6 +1632,7 @@ function renderSquadsTab(){
   });
 
   document.getElementById('squadCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+UNIFIED.length+'</b> squads encontradas';
+  LAST_SQUAD_ROWS_FILTERED = rows;
 
   const total = UNIFIED.length;
   const totalHandover = UNIFIED.filter(s=>s.source==='handover').length;
@@ -1703,6 +1733,17 @@ document.getElementById('btnExpandAll').addEventListener('click', ()=>{
 document.getElementById('btnCollapseAll').addEventListener('click', ()=>{
   OPEN_ROWS.clear();
   renderSquadsTab();
+});
+document.getElementById('btnExportSquadXlsx').addEventListener('click', ()=>{
+  exportRowsToXlsx(LAST_SQUAD_ROWS_FILTERED, [
+    {label:'Squad', get:function(r){return r.squad;}, width:38},
+    {label:'Diretoria', get:function(r){return r.diretoria||'';}, width:24},
+    {label:'Diretor', get:function(r){return r.diretor||'';}, width:24},
+    {label:'Gerente', get:function(r){return r.gerente||'';}, width:24},
+    {label:'SM', get:function(r){return r.temSM ? r.levantamento_sm : 'Sem SM';}, width:24},
+    {label:'Recursos', get:function(r){return r.recursos.length;}, width:10},
+    {label:'Boards', get:function(r){return r.boards.length;}, width:10},
+  ], 'Hapvida_Squads_{date}.xlsx');
 });
 
 /* ============================================================
