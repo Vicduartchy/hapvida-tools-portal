@@ -192,14 +192,17 @@
 
   <div class="panel">
     <h2>Filtros</h2>
-    <div class="desc">Clique nas diretorias para incluir/excluir. Busca por squad filtra gráficos e tabela.</div>
+    <div class="desc">Clique nas diretorias para incluir/excluir. Busca geral filtra por squad, título, responsável ou Lecom. Filtro de State e de status de compromisso combinam entre si.</div>
     <div class="toolbar">
       <div id="diretoriaChips"></div>
-      <input type="text" id="squadSearch" placeholder="Buscar squad (Team Project)...">
+      <input type="text" id="squadSearch" placeholder="Buscar squad, título, responsável, Lecom...">
       <select id="statusFiltro" title="Filtrar por status de compromisso">
         <option value="">Todos os status</option>
         <option value="com">Com Compromisso</option>
         <option value="sem">Sem Compromisso</option>
+      </select>
+      <select id="estadoFiltro" title="Filtrar por State (Azure DevOps)">
+        <option value="">Todos os states</option>
       </select>
       <div class="spacer"></div>
       <button class="btn ghost" id="btnResetFiltros">Limpar filtros</button>
@@ -226,6 +229,12 @@
   </div>
 
   <div class="panel">
+    <h2>Por State</h2>
+    <div class="desc">Contagem de Features com e sem sinalização, agrupadas por State nativo do Azure DevOps (Active, Closed, Resolved, etc.).</div>
+    <div class="chart-tall"><canvas id="chartState"></canvas></div>
+  </div>
+
+  <div class="panel">
     <div class="toolbar">
       <h2 style="margin:0;">Tabela — Squads</h2>
       <div class="spacer"></div>
@@ -238,6 +247,7 @@
           <tr>
             <th data-key="diretoria">Diretoria <span class="sort-arrow">↕</span></th>
             <th data-key="squad">Squad (Team Project) <span class="sort-arrow">↕</span></th>
+            <th data-key="estados">Estados <span class="sort-arrow">↕</span></th>
             <th data-key="total">Total Features <span class="sort-arrow">↕</span></th>
             <th data-key="com">Com Compromisso <span class="sort-arrow">↕</span></th>
             <th data-key="sem">Sem Compromisso <span class="sort-arrow">↕</span></th>
@@ -245,6 +255,29 @@
           </tr>
         </thead>
         <tbody id="squadTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="toolbar">
+      <h2 style="margin:0;">Tabela — States</h2>
+      <div class="spacer"></div>
+      <button class="btn secondary" id="btnExportXlsxEstados">Exportar Excel</button>
+    </div>
+    <div class="desc">Clique nos cabeçalhos para ordenar. Reflete os mesmos filtros aplicados acima.</div>
+    <div style="overflow-x:auto;">
+      <table id="stateTable">
+        <thead>
+          <tr>
+            <th data-key="estado">State <span class="sort-arrow">↕</span></th>
+            <th data-key="total">Total Features <span class="sort-arrow">↕</span></th>
+            <th data-key="com">Com Compromisso <span class="sort-arrow">↕</span></th>
+            <th data-key="sem">Sem Compromisso <span class="sort-arrow">↕</span></th>
+            <th data-key="pct">% Com Compromisso <span class="sort-arrow">↕</span></th>
+          </tr>
+        </thead>
+        <tbody id="stateTableBody"></tbody>
       </table>
     </div>
   </div>
@@ -280,11 +313,15 @@
   var state = {
     rows: [],
     diretorias: [],
+    estados: [],
     diretoriaFiltro: new Set(),
     squadBusca: '',
     statusFiltro: '',
+    estadoFiltro: '',
     sortKey: 'total',
-    sortDir: 'desc'
+    sortDir: 'desc',
+    stateSortKey: 'total',
+    stateSortDir: 'desc'
   };
 
   var charts = {};
@@ -406,13 +443,16 @@
   function agregarPorSquad(rows){
     var map = {};
     rows.forEach(function(r){
-      if (!map[r.squad]) map[r.squad] = { squad:r.squad, diretoria:r.diretoria, total:0, com:0, sem:0 };
+      if (!map[r.squad]) map[r.squad] = { squad:r.squad, diretoria:r.diretoria, total:0, com:0, sem:0, estadosSet:{} };
       map[r.squad].total++;
       if (r.compromisso === 1) map[r.squad].com++; else map[r.squad].sem++;
+      if (r.estado) map[r.squad].estadosSet[r.estado] = true;
     });
     return Object.keys(map).map(function(k){
       var o = map[k];
       o.pct = o.total ? Math.round((o.com/o.total)*1000)/10 : 0;
+      o.estados = Object.keys(o.estadosSet).sort().join(', ');
+      delete o.estadosSet;
       return o;
     });
   }
@@ -427,12 +467,32 @@
     return Object.keys(map).map(function(k){ return map[k]; }).sort(function(a,b){ return b.total - a.total; });
   }
 
+  function agregarPorState(rows){
+    var map = {};
+    rows.forEach(function(r){
+      var estado = r.estado || '(sem state)';
+      if (!map[estado]) map[estado] = { estado:estado, total:0, com:0, sem:0 };
+      map[estado].total++;
+      if (r.compromisso === 1) map[estado].com++; else map[estado].sem++;
+    });
+    return Object.keys(map).map(function(k){
+      var o = map[k];
+      o.pct = o.total ? Math.round((o.com/o.total)*1000)/10 : 0;
+      return o;
+    }).sort(function(a,b){ return b.total - a.total; });
+  }
+
   function aplicarFiltros(rows){
     return rows.filter(function(r){
       if (state.diretoriaFiltro.size > 0 && !state.diretoriaFiltro.has(r.diretoria)) return false;
-      if (state.squadBusca && r.squad.toLowerCase().indexOf(state.squadBusca.toLowerCase()) === -1) return false;
+      if (state.squadBusca) {
+        var q = state.squadBusca.toLowerCase();
+        var alvo = (r.squad + ' ' + r.titulo + ' ' + r.responsavel + ' ' + r.lecom).toLowerCase();
+        if (alvo.indexOf(q) === -1) return false;
+      }
       if (state.statusFiltro === 'com' && r.compromisso !== 1) return false;
       if (state.statusFiltro === 'sem' && r.compromisso === 1) return false;
+      if (state.estadoFiltro && r.estado !== state.estadoFiltro) return false;
       return true;
     });
   }
@@ -482,6 +542,17 @@
       });
       wrap.appendChild(chip);
     });
+  }
+
+  function renderSelectEstados(){
+    var select = document.getElementById('estadoFiltro');
+    if (!select) return;
+    var valorAtual = state.estadoFiltro;
+    var html = '<option value="">Todos os states</option>';
+    state.estados.forEach(function(e){
+      html += '<option value="' + e + '"' + (e === valorAtual ? ' selected' : '') + '>' + e + '</option>';
+    });
+    select.innerHTML = html;
   }
 
   // ---------- Render: Gráficos ----------
@@ -551,6 +622,34 @@
     });
   }
 
+  function renderState(rows){
+    destruirChart('state');
+    var agg = agregarPorState(rows);
+    var ctx = document.getElementById('chartState').getContext('2d');
+    charts.state = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: agg.map(function(a){ return a.estado; }),
+        datasets: [
+          { label: 'Com Compromisso', data: agg.map(function(a){ return a.com; }), backgroundColor: PALETA.verde, stack:'s' },
+          { label: 'Sem Compromisso', data: agg.map(function(a){ return a.sem; }), backgroundColor: PALETA.vermelho, stack:'s' }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        scales: { x: { stacked:true }, y: { stacked:true, beginAtZero:true, ticks:{ precision:0 } } },
+        plugins: {
+          legend: { position:'bottom', labels:{ boxWidth:12, font:{ size:12 } } },
+          datalabels: {
+            color: '#FFFFFF',
+            font: { weight:'700', size: 11 },
+            formatter: function(value){ return value > 0 ? value : ''; }
+          }
+        }
+      }
+    });
+  }
+
   function renderSquad(rows){
     destruirChart('squad');
     var agg = agregarPorSquad(rows).sort(function(a,b){ return b.total - a.total; });
@@ -600,6 +699,7 @@
       html += '<tr class="' + (alerta ? 'row-alert' : '') + '">' +
         '<td>' + s.diretoria + '</td>' +
         '<td>' + s.squad + (alerta ? '<span class="tag-zero">0% flagged</span>' : '') + '</td>' +
+        '<td>' + s.estados + '</td>' +
         '<td class="num">' + s.total + '</td>' +
         '<td class="num">' + s.com + '</td>' +
         '<td class="num">' + s.sem + '</td>' +
@@ -617,7 +717,7 @@
           state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
         } else {
           state.sortKey = key;
-          state.sortDir = key === 'squad' || key === 'diretoria' ? 'asc' : 'desc';
+          state.sortDir = key === 'squad' || key === 'diretoria' || key === 'estados' ? 'asc' : 'desc';
         }
         document.querySelectorAll('#squadTable th').forEach(function(h){
           h.classList.remove('sort-active');
@@ -630,6 +730,52 @@
     });
   }
 
+  function renderTabelaEstados(rows){
+    var agg = agregarPorState(rows);
+    agg.sort(function(a,b){
+      var va = a[state.stateSortKey], vb = b[state.stateSortKey];
+      if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+      if (va < vb) return state.stateSortDir === 'asc' ? -1 : 1;
+      if (va > vb) return state.stateSortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+    var body = document.getElementById('stateTableBody');
+    if (!body) return;
+    var html = '';
+    agg.forEach(function(s){
+      var alerta = s.com === 0;
+      html += '<tr class="' + (alerta ? 'row-alert' : '') + '">' +
+        '<td>' + s.estado + (alerta ? '<span class="tag-zero">0% flagged</span>' : '') + '</td>' +
+        '<td class="num">' + s.total + '</td>' +
+        '<td class="num">' + s.com + '</td>' +
+        '<td class="num">' + s.sem + '</td>' +
+        '<td><div class="pct-bar-wrap"><div class="pct-bar"><div class="pct-bar-fill" style="width:' + s.pct + '%"></div></div><span>' + s.pct + '%</span></div></td>' +
+      '</tr>';
+    });
+    body.innerHTML = html;
+  }
+
+  function bindSortEstados(){
+    document.querySelectorAll('#stateTable th').forEach(function(th){
+      th.addEventListener('click', function(){
+        var key = th.getAttribute('data-key');
+        if (state.stateSortKey === key) {
+          state.stateSortDir = state.stateSortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+          state.stateSortKey = key;
+          state.stateSortDir = key === 'estado' ? 'asc' : 'desc';
+        }
+        document.querySelectorAll('#stateTable th').forEach(function(h){
+          h.classList.remove('sort-active');
+          var a = h.querySelector('.sort-arrow'); if(a) a.textContent = '↕';
+        });
+        th.classList.add('sort-active');
+        var arrow = th.querySelector('.sort-arrow'); if(arrow) arrow.textContent = state.stateSortDir==='asc' ? '▲' : '▼';
+        renderTabelaEstados(aplicarFiltros(state.rows));
+      });
+    });
+  }
+
   // ---------- Render geral ----------
   function renderTudo(){
     var filtradas = aplicarFiltros(state.rows);
@@ -637,8 +783,10 @@
     renderKPIs(filtradas);
     renderDonut(filtradas);
     renderDiretoria(filtradas);
+    renderState(filtradas);
     renderSquad(filtradas);
     renderTabela(filtradas);
+    renderTabelaEstados(filtradas);
   }
 
   // ---------- Import ----------
@@ -662,11 +810,14 @@
 
     state.rows = rows;
     state.diretorias = Array.from(new Set(rows.map(function(r){ return r.diretoria; }))).sort();
+    state.estados = Array.from(new Set(rows.map(function(r){ return r.estado; }).filter(Boolean))).sort();
     state.diretoriaFiltro = new Set();
     state.squadBusca = '';
     state.statusFiltro = '';
+    state.estadoFiltro = '';
     document.getElementById('squadSearch').value = '';
     if (document.getElementById('statusFiltro')) document.getElementById('statusFiltro').value = '';
+    renderSelectEstados();
 
     var meta = { origem: origemLabel, importadoEm: new Date().toISOString(), totalRegistros: rows.length };
     salvarLocalStorage(rows, meta);
@@ -725,6 +876,7 @@
       return {
         'Diretoria': s.diretoria,
         'Squad (Team Project)': s.squad,
+        'Estados': s.estados,
         'Total Features': s.total,
         'Com Compromisso Trimestral': s.com,
         'Sem Compromisso Trimestral': s.sem,
@@ -732,13 +884,35 @@
       };
     });
     var ws = XLSX.utils.json_to_sheet(linhas);
-    ws['!cols'] = [ {wch:16}, {wch:44}, {wch:14}, {wch:20}, {wch:20}, {wch:16} ];
+    ws['!cols'] = [ {wch:16}, {wch:44}, {wch:18}, {wch:14}, {wch:20}, {wch:20}, {wch:16} ];
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Compromisso Trimestral');
     var ts = new Date();
     var pad = function(n){ return String(n).padStart(2,'0'); };
     var stamp = ts.getFullYear() + pad(ts.getMonth()+1) + pad(ts.getDate()) + '_' + pad(ts.getHours()) + pad(ts.getMinutes());
     XLSX.writeFile(wb, 'Compromisso_Trimestral_por_Squad_' + stamp + '.xlsx');
+  }
+
+  function exportarExcelEstados(){
+    var filtradas = aplicarFiltros(state.rows);
+    var agg = agregarPorState(filtradas).sort(function(a,b){ return b.total - a.total; });
+    var linhas = agg.map(function(s){
+      return {
+        'State': s.estado,
+        'Total Features': s.total,
+        'Com Compromisso Trimestral': s.com,
+        'Sem Compromisso Trimestral': s.sem,
+        '% Com Compromisso': s.pct
+      };
+    });
+    var ws = XLSX.utils.json_to_sheet(linhas);
+    ws['!cols'] = [ {wch:20}, {wch:14}, {wch:20}, {wch:20}, {wch:16} ];
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Compromisso por State');
+    var ts = new Date();
+    var pad = function(n){ return String(n).padStart(2,'0'); };
+    var stamp = ts.getFullYear() + pad(ts.getMonth()+1) + pad(ts.getDate()) + '_' + pad(ts.getHours()) + pad(ts.getMinutes());
+    XLSX.writeFile(wb, 'Compromisso_Trimestral_por_State_' + stamp + '.xlsx');
   }
 
   // ---------- Bind eventos ----------
@@ -751,12 +925,20 @@
       state.statusFiltro = e.target.value;
       renderTudo();
     });
+    if (document.getElementById('estadoFiltro')) {
+      document.getElementById('estadoFiltro').addEventListener('change', function(e){
+        state.estadoFiltro = e.target.value;
+        renderTudo();
+      });
+    }
     document.getElementById('btnResetFiltros').addEventListener('click', function(){
       state.diretoriaFiltro = new Set();
       state.squadBusca = '';
       state.statusFiltro = '';
+      state.estadoFiltro = '';
       document.getElementById('squadSearch').value = '';
       document.getElementById('statusFiltro').value = '';
+      if (document.getElementById('estadoFiltro')) document.getElementById('estadoFiltro').value = '';
       renderTudo();
     });
     document.getElementById('fileInput').addEventListener('change', function(e){
@@ -768,8 +950,12 @@
       processarNovoDataset(pristine, 'Snapshot original (Compromisso_Tri.csv)');
     });
     document.getElementById('btnExportXlsx').addEventListener('click', exportarExcel);
+    if (document.getElementById('btnExportXlsxEstados')) {
+      document.getElementById('btnExportXlsxEstados').addEventListener('click', exportarExcelEstados);
+    }
     document.getElementById('btnExportPdf').addEventListener('click', function(){ window.print(); });
     bindSort();
+    bindSortEstados();
   }
 
   // ---------- Init ----------
@@ -780,6 +966,8 @@
       var rows = salvo.rows;
       state.rows = rows;
       state.diretorias = Array.from(new Set(rows.map(function(r){ return r.diretoria; }))).sort();
+      state.estados = Array.from(new Set(rows.map(function(r){ return r.estado; }).filter(Boolean))).sort();
+      renderSelectEstados();
       var achados = rodarChecklistQualidade(rows, rows);
       document.getElementById('qualityList').innerHTML = achados.map(function(a){
         return '<li style="color:' + (a.tipo === 'warn' ? '#8A5B00' : '#2E9E44') + '">' + (a.tipo === 'warn' ? '⚠ ' : '✔ ') + a.msg + '</li>';
