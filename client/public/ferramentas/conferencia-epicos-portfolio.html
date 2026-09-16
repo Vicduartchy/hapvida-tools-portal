@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conferência de Épicos — Portfólio x Azure DevOps · Hub do Agile Coach · Hapvida</title>
+<style>
+  :root{
+    --azul:#1A3DAA;
+    --azul-escuro:#0F2370;
+    --vermelho:#E8272A;
+    --laranja:#F47920;
+    --amarelo:#FFC20E;
+    --branco:#FFFFFF;
+    --preto:#000000;
+    --verde:#2E9E44;
+    --cinza-bg:#F4F6FB;
+    --cinza-borda:#DDE3F0;
+    --cinza-texto:#5B6478;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI',Roboto,Arial,sans-serif;
+    background:var(--cinza-bg); color:var(--preto);
+  }
+  header{
+    background:var(--azul-escuro); color:var(--branco);
+    padding:18px 28px; display:flex; align-items:center; gap:16px;
+    flex-wrap:wrap; justify-content:space-between;
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand-text .eyebrow{font-size:12px; letter-spacing:.06em; opacity:.85; text-transform:uppercase;}
+  .brand-text h1{margin:2px 0 0; font-size:20px; font-weight:600;}
+  .badge-offline{
+    background:rgba(255,255,255,.12); border:1px solid rgba(255,255,255,.35);
+    color:var(--branco); font-size:12px; padding:5px 12px; border-radius:999px;
+    white-space:nowrap;
+  }
+  main{max-width:1320px; margin:0 auto; padding:22px 24px 60px;}
+
+  .panel{
+    background:var(--branco); border:1px solid var(--cinza-borda); border-radius:10px;
+    padding:18px 20px; margin-bottom:20px;
+  }
+  .panel h2{margin:0 0 4px; font-size:16px; color:var(--azul-escuro);}
+  .panel .desc{font-size:12.5px; color:var(--cinza-texto); margin-bottom:14px;}
+  .import-highlight{border:2px solid var(--azul); background:#F5F7FD;}
+  .import-highlight h2{color:var(--azul-escuro);}
+  .step-badge{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:22px; height:22px; border-radius:50%; background:var(--azul); color:var(--branco);
+    font-size:12px; font-weight:700; margin-right:8px;
+  }
+
+  .upload-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px;}
+  @media (max-width:900px){ .upload-grid{grid-template-columns:1fr;} }
+  .upload-box{
+    border:2px dashed var(--cinza-borda); border-radius:10px; padding:18px 14px; text-align:center;
+    background:#FAFBFD; transition:border-color .15s ease, background .15s ease;
+  }
+  .upload-box.filled{border-color:var(--azul); background:#EEF3FF;}
+  .upload-box input[type=file]{display:none;}
+  .upload-box label{display:block; cursor:pointer;}
+  .upload-icon{font-size:26px; margin-bottom:6px; color:var(--cinza-texto);}
+  .upload-box.filled .upload-icon{color:var(--azul);}
+  .upload-name{font-size:12.5px; font-weight:700; color:var(--preto); word-break:break-word;}
+  .upload-hint{font-size:11px; color:var(--cinza-texto); margin-top:4px;}
+
+  .run-row{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
+    border-top:1px solid var(--cinza-borda); padding-top:14px;
+  }
+  .run-row .opts{display:flex; flex-wrap:wrap; align-items:center; gap:16px; font-size:12.5px; color:var(--cinza-texto);}
+  .run-row .opts label{display:flex; align-items:center; gap:6px; cursor:pointer;}
+  .quarter-field{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--cinza-texto); font-weight:600;}
+  .quarter-field input{
+    width:80px; padding:7px 10px; border:1px solid var(--cinza-borda); border-radius:6px;
+    font-size:13px; font-weight:700; color:var(--azul-escuro); text-align:center;
+  }
+
+  .btn{
+    border:none; border-radius:6px; padding:10px 18px; font-size:13px; font-weight:700;
+    cursor:pointer; color:var(--branco); background:var(--azul);
+  }
+  .btn:hover{background:var(--azul-escuro);}
+  .btn:disabled{opacity:.45; cursor:not-allowed;}
+  .btn.secondary{background:var(--branco); color:var(--azul); border:1px solid var(--azul);}
+  .btn.secondary:hover{background:#EEF1FB;}
+  .btn.ghost{background:transparent; color:var(--cinza-texto); border:1px solid var(--cinza-borda);}
+  .btn.small{padding:7px 12px; font-size:12px;}
+
+  .status-line{margin-top:10px; font-size:12.5px;}
+  .status-line.error{color:#A32224;}
+  .status-line.ok{color:var(--verde);}
+
+  .kpi-row{display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:20px;}
+  @media (max-width:1100px){ .kpi-row{grid-template-columns:repeat(3,1fr);} }
+  @media (max-width:640px){ .kpi-row{grid-template-columns:repeat(2,1fr);} }
+  .kpi-card{
+    background:var(--branco); border:1px solid var(--cinza-borda); border-radius:10px;
+    padding:14px 15px; border-top:3px solid var(--azul);
+  }
+  .kpi-card.tone-red{border-top-color:var(--vermelho);}
+  .kpi-card.tone-amber{border-top-color:var(--amarelo);}
+  .kpi-card.tone-green{border-top-color:var(--verde);}
+  .kpi-card.tone-slate{border-top-color:var(--cinza-texto);}
+  .kpi-label{font-size:10.5px; color:var(--cinza-texto); text-transform:uppercase; letter-spacing:.04em;}
+  .kpi-value{font-size:24px; font-weight:800; color:var(--azul-escuro); margin-top:3px;}
+  .kpi-hint{font-size:11px; color:var(--cinza-texto); margin-top:2px;}
+
+  .tabs-bar{display:flex; gap:8px; margin-bottom:16px;}
+  .tab-btn{
+    border:1px solid var(--cinza-borda); background:var(--branco); color:var(--cinza-texto);
+    border-radius:8px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .tab-btn.active{background:var(--azul); border-color:var(--azul); color:var(--branco);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .rule-note{
+    display:flex; gap:10px; align-items:flex-start; border:1px solid var(--azul);
+    background:#EEF3FF; border-radius:10px; padding:12px 14px; font-size:12.5px; color:var(--azul-escuro);
+    line-height:1.5; margin-bottom:16px;
+  }
+
+  .squad-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:900px){ .squad-grid{grid-template-columns:1fr;} }
+  .squad-card{
+    background:var(--branco); border:1px solid var(--cinza-borda); border-radius:10px;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+  .squad-card-header{background:#FAFBFD; border-bottom:1px solid var(--cinza-borda); padding:12px 14px;}
+  .squad-card-header .title{font-size:13.5px; font-weight:700; color:var(--azul-escuro);}
+  .squad-card-header .sub{font-size:11px; color:var(--cinza-texto); margin-top:3px;}
+  .squad-badges{display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;}
+  .badge-pill{font-size:10px; font-weight:700; color:var(--branco); padding:3px 8px; border-radius:5px;}
+  .badge-pill.red{background:var(--vermelho);}
+  .badge-pill.amber{background:var(--amarelo); color:#5A4200;}
+  .badge-pill.blue{background:var(--azul);}
+  .badge-pill.slate{background:var(--cinza-texto);}
+  .squad-card-body{padding:12px 14px; display:flex; flex-direction:column; flex:1;}
+  .squad-message{
+    white-space:pre-wrap; font-size:11.5px; line-height:1.5; color:#333; background:#FAFBFD;
+    border:1px solid var(--cinza-borda); border-radius:8px; padding:10px 12px; max-height:280px;
+    overflow-y:auto; flex:1;
+  }
+  .squad-card-footer{
+    display:flex; align-items:center; justify-content:space-between; margin-top:10px;
+    padding-top:10px; border-top:1px solid var(--cinza-borda);
+  }
+  .squad-card-footer .ids{font-size:10px; color:#9AA3B5;}
+
+  .toolbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+  .toolbar input[type=text]{
+    padding:8px 12px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; min-width:220px;
+  }
+  .toolbar select{
+    padding:8px 12px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; background:var(--branco); color:var(--cinza-texto);
+  }
+  .spacer{flex:1;}
+  .filter-chip{
+    border:1px solid var(--cinza-borda); background:var(--branco); border-radius:999px;
+    padding:7px 14px; font-size:12px; font-weight:600; cursor:pointer; color:var(--cinza-texto);
+  }
+  .filter-chip.active{background:var(--azul); border-color:var(--azul); color:var(--branco);}
+  .filter-chip.tone-red.active{background:var(--vermelho); border-color:var(--vermelho);}
+  .filter-chip.tone-amber.active{background:var(--amarelo); border-color:var(--amarelo); color:#5A4200;}
+  .filter-chip.tone-slate.active{background:var(--cinza-texto); border-color:var(--cinza-texto);}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th, td{padding:9px 10px; border-bottom:1px solid var(--cinza-borda); text-align:left; vertical-align:top;}
+  th{background:var(--cinza-bg); color:var(--azul-escuro); cursor:pointer; white-space:nowrap; font-size:11.5px; text-transform:uppercase; letter-spacing:.03em;}
+  th:hover{background:#E7EBF7;}
+  th .sort-arrow{display:inline-block; width:12px; opacity:.5; font-size:10px;}
+  th.sort-active .sort-arrow{opacity:1; color:var(--azul);}
+  tr:hover td{background:#FAFBFE;}
+  td.mono{font-family:'Consolas',monospace;}
+  td.id-cell{font-weight:700; color:var(--azul);}
+  td.truncate{max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .status-tag{
+    display:inline-block; font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:5px;
+    white-space:nowrap; border:1px solid transparent;
+  }
+  .status-tag.red{background:#FDEBEC; color:#A32224; border-color:#F5C3C5;}
+  .status-tag.amber{background:#FFF6E5; color:#8A5A00; border-color:#FFE0AA;}
+  .status-tag.blue{background:#EEF3FF; color:var(--azul); border-color:#C9D6F5;}
+  .status-tag.slate{background:#F1F3F7; color:var(--cinza-texto); border-color:var(--cinza-borda);}
+  .empty-row td{text-align:center; padding:30px; color:#9AA3B5;}
+
+  footer{max-width:1320px; margin:0 auto; padding:0 24px 40px; font-size:12px; color:var(--cinza-texto);}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <svg width="38" height="38" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="28" r="16" fill="#E8272A"/>
+      <circle cx="72" cy="50" r="16" fill="#F47920"/>
+      <circle cx="50" cy="72" r="16" fill="#FFC20E"/>
+      <circle cx="28" cy="50" r="16" fill="#E8272A"/>
+      <circle cx="50" cy="50" r="12" fill="#FFFFFF"/>
+    </svg>
+    <div class="brand-text">
+      <div class="eyebrow">Hub do Agile Coach · Hapvida</div>
+      <h1>Conferência de Épicos — Portfólio x Azure DevOps</h1>
+    </div>
+  </div>
+  <div class="badge-offline">⚡ 100% offline</div>
+</header>
+
+<main>
+
+  <div class="panel import-highlight">
+    <h2><span class="step-badge">1</span>Anexar as três bases</h2>
+    <div class="desc">Cruza o Portfólio priorizado com as Features e Epics do Azure DevOps. A regra ampla mantém em revisão Projects e Demand Types em branco cujo Parent está vazio ou não foi confirmado como Epic.</div>
+
+    <div class="upload-grid">
+      <div class="upload-box" id="box-portfolio">
+        <label for="input-portfolio">
+          <div class="upload-icon">📊</div>
+          <div class="upload-name" id="name-portfolio">Portfólio (Excel)</div>
+          <div class="upload-hint" id="hint-portfolio">Ex: PORTFOLIO_Q3.xlsx</div>
+        </label>
+        <input type="file" id="input-portfolio" accept=".xlsx,.xls">
+      </div>
+      <div class="upload-box" id="box-features">
+        <label for="input-features">
+          <div class="upload-icon">📋</div>
+          <div class="upload-name" id="name-features">Features amplas (CSV)</div>
+          <div class="upload-hint" id="hint-features">Ex: FeaturesQ3_ampla.csv</div>
+        </label>
+        <input type="file" id="input-features" accept=".csv">
+      </div>
+      <div class="upload-box" id="box-epics">
+        <label for="input-epics">
+          <div class="upload-icon">🗂️</div>
+          <div class="upload-name" id="name-epics">Epics amplos (CSV)</div>
+          <div class="upload-hint" id="hint-epics">Ex: EpicQ3_amplo.csv</div>
+        </label>
+        <input type="file" id="input-epics" accept=".csv">
+      </div>
+    </div>
+
+    <div class="run-row">
+      <div class="opts">
+        <span style="font-weight:700;">Excluir da fila ampla:</span>
+        <label><input type="checkbox" id="exc-closed" checked> Closed</label>
+        <label><input type="checkbox" id="exc-resolved"> Resolved</label>
+        <label><input type="checkbox" id="exc-removed"> Removed</label>
+      </div>
+      <div style="display:flex; align-items:center; gap:16px; flex-wrap:wrap;">
+        <div class="quarter-field"><span>Trimestre</span><input type="text" id="quarterInput" value="3T26"></div>
+        <button class="btn" id="btnExecutar" disabled>Executar conferência</button>
+      </div>
+    </div>
+    <div class="status-line" id="statusLine"></div>
+  </div>
+
+  <div id="resultado" style="display:none;">
+
+    <div style="display:flex; justify-content:space-between; align-items:flex-end; gap:10px; flex-wrap:wrap; margin-bottom:16px;">
+      <div>
+        <h2 style="margin:0; font-size:19px; color:var(--azul-escuro);" id="runTitle">Conferência</h2>
+        <div style="font-size:12px; color:var(--cinza-texto);" id="runSubtitle"></div>
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn secondary small" id="btnNovaConferencia">Nova conferência</button>
+        <button class="btn secondary small" id="btnExportCsv">Exportar CSV</button>
+      </div>
+    </div>
+
+    <div class="kpi-row" id="kpiRow"></div>
+
+    <div class="tabs-bar">
+      <button class="tab-btn active" id="tabBtnMensagens" data-tab="mensagens">Mensagens por Squad</button>
+      <button class="tab-btn" id="tabBtnItens" data-tab="itens">Detalhamento</button>
+    </div>
+
+    <div class="tab-panel active" id="tabMensagens">
+      <div class="rule-note">
+        <span>ℹ️</span>
+        <div><strong>Regra desta versão:</strong> a fila ampla consolida Projects e Demand Types em branco vinculados a LECOMs do trimestre quando não há Parent ou quando o Parent não foi confirmado na base de Epics. A mensagem de cada Squad separa cobrança operacional, revisão de classificação, validação manual e histórico.</div>
+      </div>
+      <div class="squad-grid" id="squadGrid"></div>
+    </div>
+
+    <div class="tab-panel" id="tabItens">
+      <div class="toolbar">
+        <button class="filter-chip active" data-filter="ALL">Todos</button>
+        <button class="filter-chip tone-red" data-filter="OPERATIONAL">Cobrança</button>
+        <button class="filter-chip tone-amber" data-filter="BLANK">Demand em branco</button>
+        <button class="filter-chip" data-filter="PARENT">Parent manual</button>
+        <button class="filter-chip tone-slate" data-filter="HISTORICAL">Histórico</button>
+        <div class="spacer"></div>
+        <select id="squadSelect"><option value="ALL">Todas as Squads</option></select>
+        <input type="text" id="searchInput" placeholder="Buscar ID, LECOM ou projeto...">
+      </div>
+      <div style="overflow-x:auto;">
+        <table id="itemsTable">
+          <thead>
+            <tr>
+              <th data-key="workItemId">Feature <span class="sort-arrow">↕</span></th>
+              <th data-key="teamProject">Squad <span class="sort-arrow">↕</span></th>
+              <th data-key="lecom">LECOM <span class="sort-arrow">↕</span></th>
+              <th data-key="portfolioTitle">Projeto Portfólio <span class="sort-arrow">↕</span></th>
+              <th data-key="demandType">Demand <span class="sort-arrow">↕</span></th>
+              <th data-key="state">State <span class="sort-arrow">↕</span></th>
+              <th data-key="parentId">Parent <span class="sort-arrow">↕</span></th>
+              <th data-key="statusCategory">Situação <span class="sort-arrow">↕</span></th>
+              <th>Ação sugerida</th>
+            </tr>
+          </thead>
+          <tbody id="itemsTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer>
+  <div>Conferência ampla: cruza LECOMs priorizados no Portfólio com Features e Epics do Azure DevOps para localizar itens sem vínculo confirmado a um Epic no trimestre.</div>
+  <div style="margin-top:4px;">Todo o processamento acontece no navegador — nenhum arquivo é enviado para fora desta página.</div>
+</footer>
+
+<script src="/shared/vendor/xlsx-full.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  var LS_KEY = 'conferenciaEpicos_ultimoResultado_v1';
+
+  var statusLabels = {
+    PROJECT_SEM_EPIC: 'Project sem Epic',
+    PROJECT_PARENT_INCONCLUSIVO: 'Parent para validar',
+    DEMAND_EM_BRANCO_SEM_PARENT: 'Demand Type em branco',
+    DEMAND_EM_BRANCO_PARENT: 'Demand Type + Parent',
+    PROJECT_SEM_EPIC_HISTORICO: 'Histórico sem Epic'
+  };
+  function statusLabel(v){ return statusLabels[v] || v; }
+  function statusTone(v){
+    if(v === 'PROJECT_SEM_EPIC') return 'red';
+    if(v === 'PROJECT_SEM_EPIC_HISTORICO') return 'slate';
+    if(v && v.indexOf('DEMAND_EM_BRANCO') === 0) return 'amber';
+    if(v === 'PROJECT_PARENT_INCONCLUSIVO') return 'blue';
+    return 'slate';
+  }
+
+  /* ============================================================
+     Núcleo de auditoria — port direto da lógica de negócio original
+     ============================================================ */
+  function clean(v){ if(v === null || v === undefined) return ''; return String(v).replace(/\u00a0/g,' ').trim(); }
+  function norm(v){ return clean(v).replace(/\s+/g,' ').toLowerCase(); }
+  function keyId(v){
+    var s = clean(v);
+    if(/\.0$/.test(s)){ var n = Number(s); if(!isNaN(n)) return String(Math.floor(n)); }
+    return s;
+  }
+  function uniqueJoin(arr, sep){
+    sep = sep || '; ';
+    var seen = {}; var out = [];
+    arr.forEach(function(x){ var c = clean(x); if(c && !seen[c]){ seen[c] = true; out.push(c); } });
+    out.sort();
+    return out.join(sep);
+  }
+
+  var quarterRegex = /([1-4])\s*(?:t|tri|trimestre)\s*([0-9]{2,4})/gi;
+  function extractQuarters(text){
+    var results = {};
+    var re = new RegExp(quarterRegex.source, 'gi');
+    var t = clean(text);
+    var m;
+    while((m = re.exec(t)) !== null){
+      var year = m[2]; if(year.length === 2) year = '20' + year;
+      results[m[1] + 'T' + year] = true;
+    }
+    return Object.keys(results).sort();
+  }
+  function normalizeQuarter(value){
+    var m = clean(value).match(/([1-4])\s*(?:t|tri|trimestre)\s*([0-9]{2,4})/i);
+    if(!m) return norm(value).replace(/\s+/g,'');
+    var year = m[2].length === 2 ? '20' + m[2] : m[2];
+    return (m[1] + 'T' + year).toLowerCase();
+  }
+
+  function parsePortfolioWorkbook(workbook, targetQuarter){
+    var sheetName = workbook.SheetNames.indexOf('Portfólio') > -1 ? 'Portfólio' : workbook.SheetNames[0];
+    var ws = workbook.Sheets[sheetName];
+    var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    var target = normalizeQuarter(targetQuarter);
+    var allRows = [], q3LecomMap = {};
+    rows.forEach(function(r){
+      var rec = {
+        lecom: keyId(r['LECOM']),
+        title: clean(r['TÍTULO'] || r['TITULO'] || r['Título']),
+        initiative: clean(r['INICIATIVA'] || r['Iniciativa']),
+        program: clean(r['PROGRAMA'] || r['Programa']),
+        squad: clean(r['Squad Azure'] || r['SQUAD AZURE'] || r['Squad']),
+        squadId: clean(r['ID Squad Azure'] || r['Id Squad Azure']),
+        projectPhase: clean(r['FASE DO PROJETO'] || r['Fase do Projeto']),
+        projectStatus: clean(r['STATUS DO PROJETO'] || r['Status do Projeto']),
+        commitment: clean(r['COMPROMISSO'] || r['Compromisso']),
+        quarter: clean(r['Trimestre Priorizado'] || r['TRIMESTRE PRIORIZADO'] || r['Trimestre'])
+      };
+      allRows.push(rec);
+      if(normalizeQuarter(rec.quarter) === target && rec.lecom){
+        if(!q3LecomMap[rec.lecom]) q3LecomMap[rec.lecom] = [];
+        q3LecomMap[rec.lecom].push(rec);
+      }
+    });
+    return { allRows: allRows, q3LecomMap: q3LecomMap };
+  }
+
+  function parseAdoCsvText(csvText){
+    var wb = XLSX.read(csvText, { type: 'string' });
+    var ws = wb.Sheets[wb.SheetNames[0]];
+    var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+    return rows.map(function(r){
+      return {
+        id: keyId(r['ID'] || r['Id'] || r['id']),
+        teamProject: clean(r['Team Project'] || r['TeamProject'] || r['Projeto'] || r['Squad']),
+        parent: keyId(r['Parent'] || r['parent']),
+        workItemType: clean(r['Work Item Type'] || r['WorkItemType'] || r['Tipo']),
+        title: clean(r['Title'] || r['title'] || r['Título']),
+        assignedTo: clean(r['Assigned To'] || r['AssignedTo']),
+        state: clean(r['State'] || r['state'] || r['Estado']),
+        lecom: keyId(r['Lecom'] || r['LECOM'] || r['lecom']),
+        createdDate: clean(r['Created Date'] || r['CreatedDate']),
+        demandType: clean(r['Demand Type'] || r['DemandType']),
+        tags: clean(r['Tags'] || r['tags']),
+        iterationPath: clean(r['Iteration Path'] || r['IterationPath'])
+      };
+    });
+  }
+
+  function isFeature(r){ return norm(r.workItemType) === 'feature'; }
+  function isEpic(r){ return norm(r.workItemType) === 'epic'; }
+  var historicalStates = { closed: true, resolved: true, removed: true };
+
+  function performAudit(portfolioWorkbook, featuresCsvText, epicsCsvText, targetQuarter, excludedStates){
+    var parsed = parsePortfolioWorkbook(portfolioWorkbook, targetQuarter);
+    var portfolioRows = parsed.allRows, q3LecomMap = parsed.q3LecomMap;
+    var featureRows = parseAdoCsvText(featuresCsvText).filter(isFeature);
+    var epicRows = parseAdoCsvText(epicsCsvText).filter(isEpic);
+    var featureById = {}; featureRows.forEach(function(r){ if(r.id) featureById[r.id] = r; });
+    var epicById = {}; epicRows.forEach(function(r){ if(r.id) epicById[r.id] = r; });
+    var excluded = {}; excludedStates.forEach(function(s){ excluded[norm(s)] = true; });
+
+    var allQ3Features = featureRows.filter(function(r){ return !!q3LecomMap[keyId(r.lecom)]; });
+    var allQ3Projects = allQ3Features.filter(function(r){ return norm(r.demandType) === 'project'; });
+    var allQ3BlankDemand = allQ3Features.filter(function(r){ return !clean(r.demandType); });
+
+    var preExcludedCandidates = allQ3Features.filter(function(r){
+      var demand = norm(r.demandType);
+      var parentId = keyId(r.parent);
+      return (demand === 'project' || demand === '') && (!parentId || !epicById[parentId]);
+    });
+    var candidateRows = preExcludedCandidates.filter(function(r){ return !excluded[norm(r.state)]; });
+
+    var items = [];
+    var targetNorm = normalizeQuarter(targetQuarter).toUpperCase();
+
+    candidateRows.forEach(function(ado){
+      var lecom = keyId(ado.lecom);
+      var pRecords = q3LecomMap[lecom] || [];
+      var parentId = keyId(ado.parent);
+      var parentEpic = parentId ? epicById[parentId] : undefined;
+      var parentFeature = parentId ? featureById[parentId] : undefined;
+      var demand = norm(ado.demandType);
+      var isProject = demand === 'project';
+      var isBlank = !clean(ado.demandType);
+      var isHistoricalProject = isProject && historicalStates[norm(ado.state)];
+
+      var statusCategory, suggestedAction;
+      if(isProject && !parentId){
+        statusCategory = isHistoricalProject ? 'PROJECT_SEM_EPIC_HISTORICO' : 'PROJECT_SEM_EPIC';
+        suggestedAction = isHistoricalProject
+          ? 'Não cobrar agora; confirmar se o item ainda pertence ao compromisso do Portfólio.'
+          : 'Vincular a Feature ao Epic correto ou corrigir o Demand Type se não for Projeto.';
+      } else if(isProject && parentId){
+        statusCategory = 'PROJECT_PARENT_INCONCLUSIVO';
+        suggestedAction = 'Validar o Parent ' + parentId + ' diretamente no Azure DevOps e confirmar se ele é o Epic correto.';
+      } else if(isBlank && !parentId){
+        statusCategory = 'DEMAND_EM_BRANCO_SEM_PARENT';
+        suggestedAction = 'Preencher o Demand Type. Se for Project, vincular ao Epic correto.';
+      } else {
+        statusCategory = 'DEMAND_EM_BRANCO_PARENT';
+        suggestedAction = 'Preencher o Demand Type e validar se o Parent ' + parentId + ' é o Epic correto.';
+      }
+
+      var portfolioTitles = uniqueJoin(pRecords.map(function(p){ return p.title; }), ' || ');
+      var portfolioSquad = uniqueJoin(pRecords.map(function(p){ return p.squad; }));
+      var squadMatch = pRecords.some(function(p){ return norm(p.squad) === norm(ado.teamProject); });
+      if(!squadMatch && portfolioSquad){
+        suggestedAction += ' Conferir também a divergência entre o Team Project (' + ado.teamProject + ') e a Squad do Portfólio (' + portfolioSquad + ').';
+      }
+
+      var otherQuarters = extractQuarters(ado.tags).concat(extractQuarters(ado.iterationPath)).filter(function(q){ return q !== targetNorm; });
+
+      items.push({
+        workItemId: ado.id, workItemType: ado.workItemType, title: ado.title, teamProject: ado.teamProject,
+        state: ado.state, demandType: ado.demandType, lecom: lecom, parentId: parentId,
+        parentWorkItemType: parentEpic ? 'Epic' : parentFeature ? 'Feature' : '',
+        portfolioTitle: portfolioTitles, portfolioSquad: portfolioSquad,
+        portfolioCommitment: uniqueJoin(pRecords.map(function(p){ return p.commitment; })),
+        portfolioPhase: uniqueJoin(pRecords.map(function(p){ return p.projectPhase; })),
+        statusCategory: statusCategory, hasQuarterMismatch: otherQuarters.length > 0 ? 1 : 0,
+        suggestedAction: suggestedAction
+      });
+    });
+
+    var projectNoParent = allQ3Projects.filter(function(r){ return !keyId(r.parent); });
+    var projectParentInconclusive = allQ3Projects.filter(function(r){ return keyId(r.parent) && !epicById[keyId(r.parent)]; });
+    var projectParentEpic = allQ3Projects.filter(function(r){ return keyId(r.parent) && epicById[keyId(r.parent)]; });
+    var operational = items.filter(function(r){ return r.statusCategory === 'PROJECT_SEM_EPIC'; });
+    var blankReview = items.filter(function(r){ return r.statusCategory === 'DEMAND_EM_BRANCO_SEM_PARENT' || r.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
+    var parentReview = items.filter(function(r){ return r.statusCategory === 'PROJECT_PARENT_INCONCLUSIVO' || r.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
+    var historical = items.filter(function(r){ return r.statusCategory === 'PROJECT_SEM_EPIC_HISTORICO'; });
+    var quarterMismatches = items.filter(function(r){ return r.hasQuarterMismatch === 1; });
+
+    var squadMap = {};
+    items.forEach(function(item){
+      if(!squadMap[item.teamProject]) squadMap[item.teamProject] = [];
+      squadMap[item.teamProject].push(item);
+    });
+
+    var squadSummaries = Object.keys(squadMap).sort().map(function(squad){
+      var squadItems = squadMap[squad];
+      var noParent = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_SEM_EPIC' || x.statusCategory === 'PROJECT_SEM_EPIC_HISTORICO'; });
+      var blank = squadItems.filter(function(x){ return x.statusCategory === 'DEMAND_EM_BRANCO_SEM_PARENT' || x.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
+      var pReview = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_PARENT_INCONCLUSIVO' || x.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
+      var op = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_SEM_EPIC'; });
+      var hist = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_SEM_EPIC_HISTORICO'; });
+      var mismatches = squadItems.filter(function(x){ return x.hasQuarterMismatch === 1; });
+
+      var message = 'Olá, time da Squad *' + squad + '*!\n\n';
+      message += 'Na conferência ampla do Portfólio *' + targetQuarter + '*, identificamos ' + squadItems.length + ' situação(ões) para revisão no Azure DevOps.\n\n';
+      if(op.length){
+        message += '*Projects sem Epic — cobrança operacional (' + op.length + ')*:\n';
+        op.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | ' + it.title + ' | State: ' + it.state + '\n'; });
+        message += 'Ação: vincular ao Epic correto ou corrigir o Demand Type.\n\n';
+      }
+      if(blank.length){
+        message += '*Demand Type em branco (' + blank.length + ')*:\n';
+        blank.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | ' + it.title + ' | Parent: ' + (it.parentId || 'vazio') + '\n'; });
+        message += 'Ação: preencher o Demand Type; se for Project, garantir o vínculo com o Epic.\n\n';
+      }
+      if(pReview.length){
+        message += '*Parent para validação manual (' + pReview.length + ')*:\n';
+        pReview.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | Parent: ' + (it.parentId || 'vazio') + '\n'; });
+        message += 'Ação: confirmar diretamente no Azure DevOps se o Parent é o Epic correto.\n\n';
+      }
+      if(hist.length){
+        message += '*Histórico — sem cobrança imediata (' + hist.length + ')*:\n';
+        hist.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | State: ' + it.state + '\n'; });
+        message += 'Ação: confirmar se ainda pertence ao compromisso do Portfólio.\n\n';
+      }
+      if(mismatches.length){
+        message += '*Divergência de trimestre (' + mismatches.length + ')*: revisar Tags/Iteration Path.\n\n';
+      }
+      message += 'Por favor, revisem os itens e regularizem a origem conforme a situação de cada registro. Obrigado!';
+
+      return {
+        teamProject: squad, totalOperational: op.length, totalBlankDemand: blank.length,
+        totalParentReview: pReview.length, totalHistorical: hist.length, totalMismatch: mismatches.length,
+        featureIds: squadItems.map(function(x){ return x.workItemId; }),
+        lecoms: squadItems.map(function(x){ return x.lecom; }), message: message
+      };
+    });
+
+    return {
+      items: items,
+      summary: {
+        quarter: targetQuarter,
+        totalPortfolioRows: portfolioRows.length,
+        totalPortfolioLecoms: Object.keys(q3LecomMap).length,
+        totalFeatureRows: featureRows.length,
+        totalEpicRows: epicRows.length,
+        totalReviewSituations: items.length,
+        totalFeaturesProject: allQ3Projects.length,
+        totalParentEpic: projectParentEpic.length,
+        totalNoParent: projectNoParent.length,
+        totalParentInconclusive: projectParentInconclusive.length,
+        totalBlankDemandType: allQ3BlankDemand.length,
+        totalQuarterMismatches: quarterMismatches.length,
+        totalOperationalQueue: operational.length,
+        totalDemandBlankReview: blankReview.length,
+        totalParentReview: parentReview.length,
+        totalHistorical: historical.length,
+        squadSummaries: squadSummaries
+      }
+    };
+  }
+
+  /* ============================================================
+     Estado da aplicação / UI
+     ============================================================ */
+  var files = { portfolio: null, features: null, epics: null };
+  var result = null;
+  var uiState = { filterCategory: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+
+  function el(id){ return document.getElementById(id); }
+
+  function setUploadBox(kind, file){
+    files[kind] = file;
+    var box = el('box-' + kind);
+    var name = el('name-' + kind);
+    var hint = el('hint-' + kind);
+    if(file){
+      box.classList.add('filled');
+      name.textContent = file.name;
+      hint.textContent = 'Arquivo selecionado';
+    } else {
+      box.classList.remove('filled');
+    }
+    el('btnExecutar').disabled = !(files.portfolio && files.features && files.epics);
+  }
+
+  ['portfolio','features','epics'].forEach(function(kind){
+    el('input-' + kind).addEventListener('change', function(e){
+      setUploadBox(kind, e.target.files && e.target.files[0] ? e.target.files[0] : null);
+    });
+  });
+
+  function readAsArrayBuffer(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result); };
+      reader.onerror = function(){ reject(reader.error || new Error('Falha ao ler arquivo')); };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+  function readAsText(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(String(reader.result)); };
+      reader.onerror = function(){ reject(reader.error || new Error('Falha ao ler arquivo')); };
+      reader.readAsText(file);
+    });
+  }
+
+  function statusMsg(text, cls){
+    var line = el('statusLine');
+    line.textContent = text || '';
+    line.className = 'status-line' + (cls ? (' ' + cls) : '');
+  }
+
+  el('btnExecutar').addEventListener('click', function(){
+    if(!(files.portfolio && files.features && files.epics)) return;
+    var quarter = el('quarterInput').value.trim() || '3T26';
+    var excludedStates = [];
+    if(el('exc-closed').checked) excludedStates.push('Closed');
+    if(el('exc-resolved').checked) excludedStates.push('Resolved');
+    if(el('exc-removed').checked) excludedStates.push('Removed');
+
+    statusMsg('Processando...', '');
+    el('btnExecutar').disabled = true;
+
+    Promise.all([
+      readAsArrayBuffer(files.portfolio),
+      readAsText(files.features),
+      readAsText(files.epics)
+    ]).then(function(vals){
+      try{
+        var portfolioWb = XLSX.read(vals[0], { type: 'array' });
+        var audit = performAudit(portfolioWb, vals[1], vals[2], quarter, excludedStates);
+        result = {
+          items: audit.items,
+          summary: audit.summary,
+          quarter: quarter,
+          portfolioFileName: files.portfolio.name,
+          featuresFileName: files.features.name,
+          epicsFileName: files.epics.name,
+          executadoEm: new Date().toISOString()
+        };
+        persistResult();
+        statusMsg('Conferência concluída com ' + audit.summary.totalReviewSituations + ' situação(ões) para revisão.', 'ok');
+        uiState = { filterCategory: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+        el('searchInput').value = '';
+        renderResultado();
+      }catch(err){
+        console.error(err);
+        statusMsg('Falha ao processar: ' + err.message, 'error');
+      } finally {
+        el('btnExecutar').disabled = !(files.portfolio && files.features && files.epics);
+      }
+    }).catch(function(err){
+      statusMsg('Falha na leitura dos arquivos: ' + err.message, 'error');
+      el('btnExecutar').disabled = !(files.portfolio && files.features && files.epics);
+    });
+  });
+
+  el('btnNovaConferencia').addEventListener('click', function(){
+    files = { portfolio: null, features: null, epics: null };
+    ['portfolio','features','epics'].forEach(function(kind){
+      el('input-' + kind).value = '';
+      var box = el('box-' + kind);
+      box.classList.remove('filled');
+      el('name-' + kind).textContent = { portfolio: 'Portfólio (Excel)', features: 'Features amplas (CSV)', epics: 'Epics amplos (CSV)' }[kind];
+      el('hint-' + kind).textContent = { portfolio: 'Ex: PORTFOLIO_Q3.xlsx', features: 'Ex: FeaturesQ3_ampla.csv', epics: 'Ex: EpicQ3_amplo.csv' }[kind];
+    });
+    el('btnExecutar').disabled = true;
+    statusMsg('', '');
+    result = null;
+    try{ localStorage.removeItem(LS_KEY); }catch(e){}
+    el('resultado').style.display = 'none';
+  });
+
+  function persistResult(){
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(result)); }catch(e){ console.warn('Falha ao salvar localStorage', e); }
+  }
+  function loadPersistedResult(){
+    try{
+      var raw = localStorage.getItem(LS_KEY);
+      if(raw) return JSON.parse(raw);
+    }catch(e){ console.warn('Falha ao ler localStorage', e); }
+    return null;
+  }
+
+  /* ---------- Render ---------- */
+  function kpiCardHtml(label, value, hint, tone){
+    return '<div class="kpi-card tone-' + tone + '">' +
+      '<div class="kpi-label">' + label + '</div>' +
+      '<div class="kpi-value">' + value + '</div>' +
+      '<div class="kpi-hint">' + hint + '</div>' +
+    '</div>';
+  }
+
+  function renderKpis(){
+    var s = result.summary;
+    var html = '';
+    html += kpiCardHtml('Situações na fila', s.totalReviewSituations, 'revisão ampla', 'blue');
+    html += kpiCardHtml('Projects no trimestre', s.totalFeaturesProject, 'Demand Type Project', 'slate');
+    html += kpiCardHtml('Epic confirmado', s.totalParentEpic, 'Projects regularizados', 'green');
+    html += kpiCardHtml('Cobrança operacional', s.totalOperationalQueue, 'Project sem Epic', 'red');
+    html += kpiCardHtml('Demand em branco', s.totalDemandBlankReview, 'classificar na origem', 'amber');
+    html += kpiCardHtml('Parent manual', s.totalParentReview, s.totalHistorical + ' históricos', 'blue');
+    el('kpiRow').innerHTML = html;
+  }
+
+  function renderSquadGrid(){
+    var grid = el('squadGrid');
+    var summaries = result.summary.squadSummaries || [];
+    grid.innerHTML = summaries.map(function(squad){
+      var badges = '';
+      if(squad.totalOperational > 0) badges += '<span class="badge-pill red">' + squad.totalOperational + ' cobrança</span>';
+      if(squad.totalBlankDemand > 0) badges += '<span class="badge-pill amber">' + squad.totalBlankDemand + ' demand</span>';
+      if(squad.totalParentReview > 0) badges += '<span class="badge-pill blue">' + squad.totalParentReview + ' manual</span>';
+      if(squad.totalHistorical > 0) badges += '<span class="badge-pill slate">' + squad.totalHistorical + ' histórico</span>';
+      var lecomsPreview = (squad.lecoms || []).filter(Boolean);
+      var lecomsTxt = lecomsPreview.slice(0,4).join(', ') + (lecomsPreview.length > 4 ? '...' : '');
+      var idsPreview = (squad.featureIds || []).slice(0,5).join(', ') + ((squad.featureIds || []).length > 5 ? '...' : '');
+      return '<div class="squad-card">' +
+        '<div class="squad-card-header">' +
+          '<div class="title">' + escapeHtml(squad.teamProject) + '</div>' +
+          '<div class="sub">' + (squad.featureIds || []).length + ' situação(ões) · LECOMs: ' + escapeHtml(lecomsTxt) + '</div>' +
+          '<div class="squad-badges">' + badges + '</div>' +
+        '</div>' +
+        '<div class="squad-card-body">' +
+          '<div class="squad-message">' + escapeHtml(squad.message) + '</div>' +
+          '<div class="squad-card-footer">' +
+            '<span class="ids">IDs: ' + escapeHtml(idsPreview) + '</span>' +
+            '<button class="btn secondary small btn-copy" data-squad="' + escapeHtml(squad.teamProject) + '">Copiar mensagem</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') || '<div style="color:#9AA3B5; padding:20px;">Nenhuma squad com situação de revisão.</div>';
+
+    grid.querySelectorAll('.btn-copy').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var squad = summaries.filter(function(s){ return s.teamProject === btn.getAttribute('data-squad'); })[0];
+        if(!squad) return;
+        var done = function(){
+          var original = btn.textContent;
+          btn.textContent = 'Copiado ✓';
+          setTimeout(function(){ btn.textContent = original; }, 2200);
+        };
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(squad.message).then(done).catch(function(){ fallbackCopy(squad.message); done(); });
+        } else {
+          fallbackCopy(squad.message); done();
+        }
+      });
+    });
+  }
+
+  function fallbackCopy(text){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); }catch(e){}
+    document.body.removeChild(ta);
+  }
+
+  function escapeHtml(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+
+  function populateSquadSelect(){
+    var select = el('squadSelect');
+    var squads = Array.from(new Set(result.items.map(function(i){ return i.teamProject; }).filter(Boolean))).sort();
+    var current = uiState.selectedSquad;
+    select.innerHTML = '<option value="ALL">Todas as Squads</option>' +
+      squads.map(function(s){ return '<option value="' + escapeHtml(s) + '"' + (s === current ? ' selected' : '') + '>' + escapeHtml(s) + '</option>'; }).join('');
+  }
+
+  function filteredItems(){
+    var query = uiState.searchQuery.trim().toLowerCase();
+    return result.items.filter(function(item){
+      var category = item.statusCategory || '';
+      var categoryMatches =
+        uiState.filterCategory === 'ALL' ||
+        (uiState.filterCategory === 'OPERATIONAL' && category === 'PROJECT_SEM_EPIC') ||
+        (uiState.filterCategory === 'BLANK' && category.indexOf('DEMAND_EM_BRANCO') === 0) ||
+        (uiState.filterCategory === 'PARENT' && category === 'PROJECT_PARENT_INCONCLUSIVO') ||
+        (uiState.filterCategory === 'HISTORICAL' && category === 'PROJECT_SEM_EPIC_HISTORICO');
+      if(!categoryMatches) return false;
+      if(uiState.selectedSquad !== 'ALL' && item.teamProject !== uiState.selectedSquad) return false;
+      if(!query) return true;
+      return [item.workItemId, item.title, item.teamProject, item.lecom, item.parentId, item.portfolioTitle]
+        .join(' ').toLowerCase().indexOf(query) > -1;
+    });
+  }
+
+  function sortedItems(list){
+    var key = uiState.sortKey, dir = uiState.sortDir;
+    return list.slice().sort(function(a,b){
+      var va = a[key], vb = b[key];
+      if(typeof va === 'string'){ va = va.toLowerCase(); vb = String(vb).toLowerCase(); }
+      if(va < vb) return dir === 'asc' ? -1 : 1;
+      if(va > vb) return dir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+
+  function renderItemsTable(){
+    var list = sortedItems(filteredItems());
+    var body = el('itemsTableBody');
+    if(!list.length){
+      body.innerHTML = '<tr class="empty-row"><td colspan="9">Nenhuma situação encontrada para os filtros selecionados.</td></tr>';
+      return;
+    }
+    body.innerHTML = list.map(function(item){
+      var tone = statusTone(item.statusCategory);
+      return '<tr>' +
+        '<td class="id-cell">' + escapeHtml(item.workItemId) + '</td>' +
+        '<td class="truncate" title="' + escapeHtml(item.teamProject) + '">' + escapeHtml(item.teamProject) + '</td>' +
+        '<td class="mono">' + escapeHtml(item.lecom || '-') + '</td>' +
+        '<td class="truncate" title="' + escapeHtml(item.portfolioTitle) + '">' + escapeHtml(item.portfolioTitle || '(não localizado)') + '</td>' +
+        '<td>' + (item.demandType ? escapeHtml(item.demandType) : '<span class="status-tag slate">em branco</span>') + '</td>' +
+        '<td>' + escapeHtml(item.state) + '</td>' +
+        '<td class="mono">' + (item.parentId ? escapeHtml(item.parentId) : '<b style="color:var(--vermelho)">vazio</b>') + '</td>' +
+        '<td><span class="status-tag ' + tone + '">' + escapeHtml(statusLabel(item.statusCategory)) + '</span></td>' +
+        '<td style="max-width:320px;">' + escapeHtml(item.suggestedAction) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  document.querySelectorAll('.filter-chip').forEach(function(chip){
+    chip.addEventListener('click', function(){
+      uiState.filterCategory = chip.getAttribute('data-filter');
+      document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
+      chip.classList.add('active');
+      renderItemsTable();
+    });
+  });
+  el('squadSelect').addEventListener('change', function(e){
+    uiState.selectedSquad = e.target.value;
+    renderItemsTable();
+  });
+  el('searchInput').addEventListener('input', function(e){
+    uiState.searchQuery = e.target.value;
+    renderItemsTable();
+  });
+  document.querySelectorAll('#itemsTable th[data-key]').forEach(function(th){
+    th.addEventListener('click', function(){
+      var key = th.getAttribute('data-key');
+      if(uiState.sortKey === key){ uiState.sortDir = uiState.sortDir === 'asc' ? 'desc' : 'asc'; }
+      else { uiState.sortKey = key; uiState.sortDir = 'asc'; }
+      document.querySelectorAll('#itemsTable th').forEach(function(h){
+        h.classList.remove('sort-active');
+        var a = h.querySelector('.sort-arrow'); if(a) a.textContent = '↕';
+      });
+      th.classList.add('sort-active');
+      var arrow = th.querySelector('.sort-arrow'); if(arrow) arrow.textContent = uiState.sortDir === 'asc' ? '▲' : '▼';
+      renderItemsTable();
+    });
+  });
+
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+      document.querySelectorAll('.tab-panel').forEach(function(p){ p.classList.remove('active'); });
+      btn.classList.add('active');
+      el('tab' + (btn.getAttribute('data-tab') === 'mensagens' ? 'Mensagens' : 'Itens')).classList.add('active');
+    });
+  });
+
+  el('btnExportCsv').addEventListener('click', function(){
+    var list = sortedItems(filteredItems());
+    if(!list.length) return;
+    var headers = ['Feature','Squad','LECOM','Projeto Portfólio','Demand Type','State','Parent','Situação','Ação'];
+    var escape = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; };
+    var lines = [headers.join(';')];
+    list.forEach(function(item){
+      lines.push([item.workItemId, item.teamProject, item.lecom, item.portfolioTitle, item.demandType, item.state, item.parentId, statusLabel(item.statusCategory), item.suggestedAction].map(escape).join(';'));
+    });
+    var blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'conferencia_epicos_' + (result.quarter || 'Q3') + '_revisao.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  function renderResultado(){
+    el('resultado').style.display = 'block';
+    el('runTitle').textContent = 'Conferência ' + result.quarter + ' — ' + new Date(result.executadoEm).toLocaleDateString('pt-BR');
+    el('runSubtitle').textContent = result.portfolioFileName + ' + ' + result.featuresFileName + ' + ' + result.epicsFileName + ' · Trimestre ' + result.quarter;
+    renderKpis();
+    renderSquadGrid();
+    populateSquadSelect();
+    renderItemsTable();
+  }
+
+  /* ---------- Init ---------- */
+  var persisted = loadPersistedResult();
+  if(persisted && persisted.items){
+    result = persisted;
+    renderResultado();
+  }
+})();
+</script>
+</body>
+</html>
