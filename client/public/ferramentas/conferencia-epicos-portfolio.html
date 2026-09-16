@@ -279,6 +279,13 @@
 
     <div class="kpi-row" id="kpiRow"></div>
 
+    <div class="toolbar" style="margin-bottom:16px;">
+      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Diretoria:</span>
+      <select id="diretoriaSelect"><option value="ALL">Todas as Diretorias</option></select>
+      <div class="spacer"></div>
+      <span style="font-size:11px; color:var(--cinza-texto);">Filtra a tabela e as mensagens por Squad</span>
+    </div>
+
     <div class="tabs-bar">
       <button class="tab-btn active" id="tabBtnMensagens" data-tab="mensagens">Mensagens por Squad</button>
       <button class="tab-btn" id="tabBtnItens" data-tab="itens">Detalhamento</button>
@@ -307,6 +314,7 @@
           <thead>
             <tr>
               <th data-key="workItemId">Feature <span class="sort-arrow">↕</span></th>
+              <th data-key="diretoria">Diretoria <span class="sort-arrow">↕</span></th>
               <th data-key="teamProject">Squad <span class="sort-arrow">↕</span></th>
               <th data-key="lecom">LECOM <span class="sort-arrow">↕</span></th>
               <th data-key="portfolioTitle">Projeto Portfólio <span class="sort-arrow">↕</span></th>
@@ -332,11 +340,45 @@
 </footer>
 
 <script src="/shared/vendor/xlsx-full.min.js"></script>
+<script src="/shared/data/squad-canon.js"></script>
 <script>
 (function(){
   'use strict';
 
-  var LS_KEY = 'conferenciaEpicos_ultimoResultado_v2';
+  var LS_KEY = 'conferenciaEpicos_ultimoResultado_v3';
+
+  /* Squad -> Diretoria via a mesma fonte canônica usada nas outras
+     ferramentas do Hub (window.SQUAD_CANON, vendorizado em
+     /shared/data/squad-canon.js). Casamento em 2 níveis: exato,
+     depois substring nos dois sentidos. */
+  function normSquadKey(s){
+    return clean(s).toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+  var diretoriaIndex = (window.SQUAD_CANON || []).map(function(c){
+    return { squad: c.squad, diretoria: c.diretoria || '', key: normSquadKey(c.squad) };
+  });
+  var diretoriaCache = {};
+  function matchDiretoria(teamProject){
+    var raw = clean(teamProject);
+    if(!raw) return '';
+    if(Object.prototype.hasOwnProperty.call(diretoriaCache, raw)) return diretoriaCache[raw];
+    var k = normSquadKey(raw);
+    var found = '';
+    if(k){
+      for(var i=0;i<diretoriaIndex.length;i++){ if(diretoriaIndex[i].key === k){ found = diretoriaIndex[i].diretoria; break; } }
+      if(!found){
+        for(var j=0;j<diretoriaIndex.length;j++){
+          if(diretoriaIndex[j].key && (diretoriaIndex[j].key.indexOf(k) > -1 || k.indexOf(diretoriaIndex[j].key) > -1)){
+            found = diretoriaIndex[j].diretoria; break;
+          }
+        }
+      }
+    }
+    diretoriaCache[raw] = found;
+    return found;
+  }
 
   var statusLabels = {
     CORRIGIR_AGORA: 'Corrigir agora',
@@ -533,6 +575,7 @@
       }
       out.push({
         workItemId: a.id, workItemType: a.workItemType, title: a.title, teamProject: a.teamProject,
+        diretoria: matchDiretoria(a.teamProject),
         state: a.state, demandType: a.demandType, lecom: a.lecom, parentId: pid,
         parentWorkItemType: parentEpic ? 'Epic' : parentFeature ? 'Feature' : (pid ? 'Não localizado' : ''),
         portfolioTitle: uniq(ps.map(function(x){ return x.title; }), ' || '),
@@ -577,7 +620,7 @@
       msg += 'Por favor, revisem os itens e regularizem a origem conforme a situação de cada registro. Obrigado!';
 
       return {
-        teamProject: s, totalOperational: op.length, totalReviewCadastro: rev.length, totalHistorical: hi.length,
+        teamProject: s, diretoria: matchDiretoria(s), totalOperational: op.length, totalReviewCadastro: rev.length, totalHistorical: hi.length,
         totalMismatch: arr.filter(function(x){ return x.hasQuarterMismatch; }).length,
         featureIds: arr.map(function(x){ return x.workItemId; }),
         lecoms: arr.map(function(x){ return x.lecom; }), message: msg
@@ -613,7 +656,7 @@
      ============================================================ */
   var files = { portfolio: null, features: null, epics: null, reference: null };
   var result = null;
-  var uiState = { filterCategory: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+  var uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
 
   function el(id){ return document.getElementById(id); }
 
@@ -703,7 +746,7 @@
         };
         persistResult();
         statusMsg('Conferência concluída: ' + audit.summary.totalReviewSituations + ' situação(ões) para revisão.', 'ok');
-        uiState = { filterCategory: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+        uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
         el('searchInput').value = '';
         renderResultado();
       }catch(err){
@@ -727,6 +770,7 @@
     el('btnExecutar').disabled = true;
     statusMsg('', '');
     result = null;
+    uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
     try{ localStorage.removeItem(LS_KEY); }catch(e){}
     el('resultado').style.display = 'none';
   });
@@ -765,7 +809,9 @@
 
   function renderSquadGrid(){
     var grid = el('squadGrid');
-    var summaries = result.squads || [];
+    var summaries = (result.squads || []).filter(function(s){
+      return uiState.selectedDiretoria === 'ALL' || (s.diretoria || '(sem diretoria)') === uiState.selectedDiretoria;
+    });
     grid.innerHTML = summaries.map(function(squad){
       var badges = '';
       if(squad.totalOperational > 0) badges += '<span class="badge-pill red">' + squad.totalOperational + ' corrigir</span>';
@@ -778,7 +824,7 @@
       return '<div class="squad-card">' +
         '<div class="squad-card-header">' +
           '<div class="title">' + escapeHtml(squad.teamProject) + '</div>' +
-          '<div class="sub">' + (squad.featureIds || []).length + ' situação(ões) · LECOMs: ' + escapeHtml(lecomsTxt) + '</div>' +
+          '<div class="sub">' + escapeHtml(squad.diretoria || '(sem diretoria)') + ' · ' + (squad.featureIds || []).length + ' situação(ões) · LECOMs: ' + escapeHtml(lecomsTxt) + '</div>' +
           '<div class="squad-badges">' + badges + '</div>' +
         '</div>' +
         '<div class="squad-card-body">' +
@@ -823,9 +869,18 @@
     });
   }
 
+  function populateDiretoriaSelect(){
+    var select = el('diretoriaSelect');
+    var diretorias = Array.from(new Set(result.items.map(function(i){ return i.diretoria || '(sem diretoria)'; }))).sort();
+    var current = uiState.selectedDiretoria;
+    select.innerHTML = '<option value="ALL">Todas as Diretorias</option>' +
+      diretorias.map(function(d){ return '<option value="' + escapeHtml(d) + '"' + (d === current ? ' selected' : '') + '>' + escapeHtml(d) + '</option>'; }).join('');
+  }
+
   function populateSquadSelect(){
     var select = el('squadSelect');
-    var squads = Array.from(new Set(result.items.map(function(i){ return i.teamProject; }).filter(Boolean))).sort();
+    var pool = result.items.filter(function(i){ return uiState.selectedDiretoria === 'ALL' || (i.diretoria || '(sem diretoria)') === uiState.selectedDiretoria; });
+    var squads = Array.from(new Set(pool.map(function(i){ return i.teamProject; }).filter(Boolean))).sort();
     var current = uiState.selectedSquad;
     select.innerHTML = '<option value="ALL">Todas as Squads</option>' +
       squads.map(function(s){ return '<option value="' + escapeHtml(s) + '"' + (s === current ? ' selected' : '') + '>' + escapeHtml(s) + '</option>'; }).join('');
@@ -841,6 +896,7 @@
         (uiState.filterCategory === 'REVIEW' && category === 'REVISAR_CADASTRO') ||
         (uiState.filterCategory === 'HISTORICAL' && category === 'CONFIRMAR_HISTORICO');
       if(!categoryMatches) return false;
+      if(uiState.selectedDiretoria !== 'ALL' && (item.diretoria || '(sem diretoria)') !== uiState.selectedDiretoria) return false;
       if(uiState.selectedSquad !== 'ALL' && item.teamProject !== uiState.selectedSquad) return false;
       if(!query) return true;
       return [item.workItemId, item.title, item.teamProject, item.lecom, item.parentId, item.portfolioTitle]
@@ -863,13 +919,14 @@
     var list = sortedItems(filteredItems());
     var body = el('itemsTableBody');
     if(!list.length){
-      body.innerHTML = '<tr class="empty-row"><td colspan="9">Nenhuma situação encontrada para os filtros selecionados.</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="10">Nenhuma situação encontrada para os filtros selecionados.</td></tr>';
       return;
     }
     body.innerHTML = list.map(function(item){
       var tone = statusTone(item.statusCategory);
       return '<tr>' +
         '<td class="id-cell">' + escapeHtml(item.workItemId) + '</td>' +
+        '<td class="truncate" title="' + escapeHtml(item.diretoria) + '">' + escapeHtml(item.diretoria || '(sem diretoria)') + '</td>' +
         '<td class="truncate" title="' + escapeHtml(item.teamProject) + '">' + escapeHtml(item.teamProject) + '</td>' +
         '<td class="mono">' + escapeHtml(item.lecom || '-') + '</td>' +
         '<td class="truncate" title="' + escapeHtml(item.portfolioTitle) + '">' + escapeHtml(item.portfolioTitle || '(não localizado)') + '</td>' +
@@ -889,6 +946,13 @@
       chip.classList.add('active');
       renderItemsTable();
     });
+  });
+  el('diretoriaSelect').addEventListener('change', function(e){
+    uiState.selectedDiretoria = e.target.value;
+    uiState.selectedSquad = 'ALL';
+    populateSquadSelect();
+    renderSquadGrid();
+    renderItemsTable();
   });
   el('squadSelect').addEventListener('change', function(e){
     uiState.selectedSquad = e.target.value;
@@ -925,11 +989,11 @@
   el('btnExportCsv').addEventListener('click', function(){
     var list = sortedItems(filteredItems());
     if(!list.length) return;
-    var headers = ['Feature','Squad','LECOM','Projeto Portfólio','Demand Type','State','Parent','Situação','Ação'];
+    var headers = ['Feature','Diretoria','Squad','LECOM','Projeto Portfólio','Demand Type','State','Parent','Situação','Ação'];
     var escape = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; };
     var lines = [headers.join(';')];
     list.forEach(function(item){
-      lines.push([item.workItemId, item.teamProject, item.lecom, item.portfolioTitle, item.demandType, item.state, item.parentId, statusLabel(item.statusCategory), item.suggestedAction].map(escape).join(';'));
+      lines.push([item.workItemId, item.diretoria, item.teamProject, item.lecom, item.portfolioTitle, item.demandType, item.state, item.parentId, statusLabel(item.statusCategory), item.suggestedAction].map(escape).join(';'));
     });
     var blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);
@@ -946,6 +1010,7 @@
     var refTxt = result.summary.referenceCount ? ' · Lista restrita: ' + result.summary.referenceCount + ' IDs' : '';
     el('runSubtitle').textContent = result.portfolioFileName + ' + ' + result.featuresFileName + ' + ' + result.epicsFileName + ' · Trimestre ' + result.quarter + refTxt;
     renderKpis();
+    populateDiretoriaSelect();
     renderSquadGrid();
     populateSquadSelect();
     renderItemsTable();
