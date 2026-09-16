@@ -153,6 +153,19 @@ const tools: Tool[] = [
     tags: ["Épicos", "Portfólio", "Azure DevOps"],
     updated: "Nova",
   },
+  {
+    slug: "consolidacao-alocacao-horas-sm",
+    name: "Consolidação de Alocação de Horas dos SMs",
+    shortName: "Consolidação de Horas",
+    description: "Junta as planilhas de alocação dos SMs numa base única, com checklist de qualidade e rastreabilidade.",
+    category: "Governança",
+    icon: FileSpreadsheet,
+    accent: "green",
+    status: "Operacional",
+    version: "1.0",
+    tags: ["SMs", "Alocação", "Consolidação"],
+    updated: "Nova",
+  },
 ];
 
 const categories: { name: ToolCategory | "Todas"; icon: typeof Activity; label: string }[] = [
