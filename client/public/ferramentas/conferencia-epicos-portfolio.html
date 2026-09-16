@@ -52,19 +52,21 @@
     font-size:12px; font-weight:700; margin-right:8px;
   }
 
-  .upload-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:16px;}
-  @media (max-width:900px){ .upload-grid{grid-template-columns:1fr;} }
+  .upload-grid{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:16px;}
+  @media (max-width:1100px){ .upload-grid{grid-template-columns:1fr 1fr;} }
+  @media (max-width:640px){ .upload-grid{grid-template-columns:1fr;} }
   .upload-box{
-    border:2px dashed var(--cinza-borda); border-radius:10px; padding:18px 14px; text-align:center;
+    border:2px dashed var(--cinza-borda); border-radius:10px; padding:16px 12px; text-align:center;
     background:#FAFBFD; transition:border-color .15s ease, background .15s ease;
   }
+  .upload-box.optional{border-style:dotted;}
   .upload-box.filled{border-color:var(--azul); background:#EEF3FF;}
   .upload-box input[type=file]{display:none;}
   .upload-box label{display:block; cursor:pointer;}
-  .upload-icon{font-size:26px; margin-bottom:6px; color:var(--cinza-texto);}
+  .upload-icon{font-size:24px; margin-bottom:6px; color:var(--cinza-texto);}
   .upload-box.filled .upload-icon{color:var(--azul);}
-  .upload-name{font-size:12.5px; font-weight:700; color:var(--preto); word-break:break-word;}
-  .upload-hint{font-size:11px; color:var(--cinza-texto); margin-top:4px;}
+  .upload-name{font-size:12px; font-weight:700; color:var(--preto); word-break:break-word;}
+  .upload-hint{font-size:10.5px; color:var(--cinza-texto); margin-top:4px;}
 
   .run-row{
     display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
@@ -86,7 +88,6 @@
   .btn:disabled{opacity:.45; cursor:not-allowed;}
   .btn.secondary{background:var(--branco); color:var(--azul); border:1px solid var(--azul);}
   .btn.secondary:hover{background:#EEF1FB;}
-  .btn.ghost{background:transparent; color:var(--cinza-texto); border:1px solid var(--cinza-borda);}
   .btn.small{padding:7px 12px; font-size:12px;}
 
   .status-line{margin-top:10px; font-size:12.5px;}
@@ -136,7 +137,6 @@
   .badge-pill{font-size:10px; font-weight:700; color:var(--branco); padding:3px 8px; border-radius:5px;}
   .badge-pill.red{background:var(--vermelho);}
   .badge-pill.amber{background:var(--amarelo); color:#5A4200;}
-  .badge-pill.blue{background:var(--azul);}
   .badge-pill.slate{background:var(--cinza-texto);}
   .squad-card-body{padding:12px 14px; display:flex; flex-direction:column; flex:1;}
   .squad-message{
@@ -183,7 +183,6 @@
   }
   .status-tag.red{background:#FDEBEC; color:#A32224; border-color:#F5C3C5;}
   .status-tag.amber{background:#FFF6E5; color:#8A5A00; border-color:#FFE0AA;}
-  .status-tag.blue{background:#EEF3FF; color:var(--azul); border-color:#C9D6F5;}
   .status-tag.slate{background:#F1F3F7; color:var(--cinza-texto); border-color:var(--cinza-borda);}
   .empty-row td{text-align:center; padding:30px; color:#9AA3B5;}
 
@@ -212,8 +211,8 @@
 <main>
 
   <div class="panel import-highlight">
-    <h2><span class="step-badge">1</span>Anexar as três bases</h2>
-    <div class="desc">Cruza o Portfólio priorizado com as Features e Epics do Azure DevOps. A regra ampla mantém em revisão Projects e Demand Types em branco cujo Parent está vazio ou não foi confirmado como Epic.</div>
+    <h2><span class="step-badge">1</span>Anexar as bases</h2>
+    <div class="desc">Cruza o Portfólio priorizado com as Features e Epics do Azure DevOps. Regra: LECOM no trimestre + Feature com Demand Type Project ou em branco + Parent vazio ou não confirmado como Epic. A lista de IDs é opcional — se anexada, restringe a conferência exatamente àqueles itens.</div>
 
     <div class="upload-grid">
       <div class="upload-box" id="box-portfolio">
@@ -230,7 +229,7 @@
           <div class="upload-name" id="name-features">Features amplas (CSV)</div>
           <div class="upload-hint" id="hint-features">Ex: FeaturesQ3_ampla.csv</div>
         </label>
-        <input type="file" id="input-features" accept=".csv">
+        <input type="file" id="input-features" accept=".csv,.txt">
       </div>
       <div class="upload-box" id="box-epics">
         <label for="input-epics">
@@ -238,7 +237,15 @@
           <div class="upload-name" id="name-epics">Epics amplos (CSV)</div>
           <div class="upload-hint" id="hint-epics">Ex: EpicQ3_amplo.csv</div>
         </label>
-        <input type="file" id="input-epics" accept=".csv">
+        <input type="file" id="input-epics" accept=".csv,.txt">
+      </div>
+      <div class="upload-box optional" id="box-reference">
+        <label for="input-reference">
+          <div class="upload-icon">📎</div>
+          <div class="upload-name" id="name-reference">Lista de IDs (opcional)</div>
+          <div class="upload-hint" id="hint-reference">.md/.txt/.csv, qualquer formato</div>
+        </label>
+        <input type="file" id="input-reference" accept=".md,.txt,.csv">
       </div>
     </div>
 
@@ -280,7 +287,7 @@
     <div class="tab-panel active" id="tabMensagens">
       <div class="rule-note">
         <span>ℹ️</span>
-        <div><strong>Regra desta versão:</strong> a fila ampla consolida Projects e Demand Types em branco vinculados a LECOMs do trimestre quando não há Parent ou quando o Parent não foi confirmado na base de Epics. A mensagem de cada Squad separa cobrança operacional, revisão de classificação, validação manual e histórico.</div>
+        <div><strong>Como ler:</strong> cada Feature cai em uma de três filas — <strong>Corrigir agora</strong> (Project sem Epic), <strong>Revisar cadastro</strong> (Demand Type ou Parent precisam de revisão) ou <strong>Confirmar histórico</strong> (item encerrado que só precisa de confirmação). Com uma lista de IDs anexada, a análise fica restrita exatamente àquela lista.</div>
       </div>
       <div class="squad-grid" id="squadGrid"></div>
     </div>
@@ -288,10 +295,9 @@
     <div class="tab-panel" id="tabItens">
       <div class="toolbar">
         <button class="filter-chip active" data-filter="ALL">Todos</button>
-        <button class="filter-chip tone-red" data-filter="OPERATIONAL">Cobrança</button>
-        <button class="filter-chip tone-amber" data-filter="BLANK">Demand em branco</button>
-        <button class="filter-chip" data-filter="PARENT">Parent manual</button>
-        <button class="filter-chip tone-slate" data-filter="HISTORICAL">Histórico</button>
+        <button class="filter-chip tone-red" data-filter="OPERATIONAL">Corrigir agora</button>
+        <button class="filter-chip tone-amber" data-filter="REVIEW">Revisar cadastro</button>
+        <button class="filter-chip tone-slate" data-filter="HISTORICAL">Confirmar histórico</button>
         <div class="spacer"></div>
         <select id="squadSelect"><option value="ALL">Todas as Squads</option></select>
         <input type="text" id="searchInput" placeholder="Buscar ID, LECOM ou projeto...">
@@ -330,266 +336,274 @@
 (function(){
   'use strict';
 
-  var LS_KEY = 'conferenciaEpicos_ultimoResultado_v1';
+  var LS_KEY = 'conferenciaEpicos_ultimoResultado_v2';
 
   var statusLabels = {
-    PROJECT_SEM_EPIC: 'Project sem Epic',
-    PROJECT_PARENT_INCONCLUSIVO: 'Parent para validar',
-    DEMAND_EM_BRANCO_SEM_PARENT: 'Demand Type em branco',
-    DEMAND_EM_BRANCO_PARENT: 'Demand Type + Parent',
-    PROJECT_SEM_EPIC_HISTORICO: 'Histórico sem Epic'
+    CORRIGIR_AGORA: 'Corrigir agora',
+    REVISAR_CADASTRO: 'Revisar cadastro',
+    CONFIRMAR_HISTORICO: 'Confirmar histórico'
   };
   function statusLabel(v){ return statusLabels[v] || v; }
   function statusTone(v){
-    if(v === 'PROJECT_SEM_EPIC') return 'red';
-    if(v === 'PROJECT_SEM_EPIC_HISTORICO') return 'slate';
-    if(v && v.indexOf('DEMAND_EM_BRANCO') === 0) return 'amber';
-    if(v === 'PROJECT_PARENT_INCONCLUSIVO') return 'blue';
+    if(v === 'CORRIGIR_AGORA') return 'red';
+    if(v === 'CONFIRMAR_HISTORICO') return 'slate';
+    if(v === 'REVISAR_CADASTRO') return 'amber';
     return 'slate';
   }
 
   /* ============================================================
-     Núcleo de auditoria — port direto da lógica de negócio original
+     Núcleo de auditoria — port direto da versão offline mais
+     recente (classify() de 3 categorias, CSV parser próprio com
+     detecção de delimitador, lista de IDs de referência opcional)
      ============================================================ */
   function clean(v){ if(v === null || v === undefined) return ''; return String(v).replace(/\u00a0/g,' ').trim(); }
   function norm(v){ return clean(v).replace(/\s+/g,' ').toLowerCase(); }
-  function keyId(v){
+  function key(v){
     var s = clean(v);
     if(/\.0$/.test(s)){ var n = Number(s); if(!isNaN(n)) return String(Math.floor(n)); }
     return s;
   }
-  function uniqueJoin(arr, sep){
+  function uniq(arr, sep){
     sep = sep || '; ';
     var seen = {}; var out = [];
     arr.forEach(function(x){ var c = clean(x); if(c && !seen[c]){ seen[c] = true; out.push(c); } });
     out.sort();
     return out.join(sep);
   }
+  function aliases(row, arr){
+    for(var i=0;i<arr.length;i++){
+      var k = arr[i];
+      if(Object.prototype.hasOwnProperty.call(row, k) && clean(row[k])) return row[k];
+    }
+    return '';
+  }
 
-  var quarterRegex = /([1-4])\s*(?:t|tri|trimestre)\s*([0-9]{2,4})/gi;
-  function extractQuarters(text){
-    var results = {};
-    var re = new RegExp(quarterRegex.source, 'gi');
-    var t = clean(text);
+  function qnorm(v){
+    var s = norm(v).replace(/\s+/g,'');
+    var m = s.match(/([1-4])(?:t|tri|trimestre)(\d{2,4})/);
+    if(!m) return s;
+    return m[1] + 't' + (m[2].length === 2 ? '20' + m[2] : m[2]);
+  }
+  function qextract(v){
+    var out = [];
+    var re = /(?<![a-z0-9])([1-4])\s*(?:t|tri|trimestre)\s*(\d{2,4})(?![a-z0-9])/gi;
+    var t = clean(v);
     var m;
     while((m = re.exec(t)) !== null){
-      var year = m[2]; if(year.length === 2) year = '20' + year;
-      results[m[1] + 'T' + year] = true;
+      out.push(m[1] + 't' + (m[2].length === 2 ? '20' + m[2] : m[2]));
     }
-    return Object.keys(results).sort();
-  }
-  function normalizeQuarter(value){
-    var m = clean(value).match(/([1-4])\s*(?:t|tri|trimestre)\s*([0-9]{2,4})/i);
-    if(!m) return norm(value).replace(/\s+/g,'');
-    var year = m[2].length === 2 ? '20' + m[2] : m[2];
-    return (m[1] + 'T' + year).toLowerCase();
+    return out;
   }
 
-  function parsePortfolioWorkbook(workbook, targetQuarter){
-    var sheetName = workbook.SheetNames.indexOf('Portfólio') > -1 ? 'Portfólio' : workbook.SheetNames[0];
-    var ws = workbook.Sheets[sheetName];
-    var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    var target = normalizeQuarter(targetQuarter);
-    var allRows = [], q3LecomMap = {};
+  /* Parser de CSV próprio (RFC4180-ish): detecta ; \t , por contagem
+     na primeira linha (exports do Azure DevOps em locale BR costumam
+     vir com ; já que , é separador decimal), lida com aspas e BOM. */
+  function csvRows(text){
+    text = text.replace(/^\uFEFF/, '');
+    var first = text.slice(0, Math.min(10000, text.length)).split(/\r?\n/)[0] || '';
+    var del = (first.split(';').length > first.split(',').length) ? ';'
+      : (first.split('\t').length > first.split(',').length ? '\t' : ',');
+    var rows = [], row = [], field = '', quoted = false;
+    for(var i=0;i<text.length;i++){
+      var ch = text[i];
+      if(ch === '"'){
+        if(quoted && text[i+1] === '"'){ field += '"'; i++; }
+        else quoted = !quoted;
+      } else if(ch === del && !quoted){
+        row.push(field); field = '';
+      } else if((ch === '\n' || ch === '\r') && !quoted){
+        if(ch === '\r' && text[i+1] === '\n') i++;
+        row.push(field);
+        if(row.some(function(x){ return clean(x); })) rows.push(row);
+        row = []; field = '';
+      } else field += ch;
+    }
+    if(field !== '' || row.length){ row.push(field); if(row.some(function(x){ return clean(x); })) rows.push(row); }
+    if(!rows.length) return [];
+    var headers = rows[0].map(function(x){ return clean(x); });
+    return rows.slice(1).map(function(r){
+      var o = {};
+      headers.forEach(function(h,i){ o[h] = r[i] === undefined ? '' : r[i]; });
+      return o;
+    });
+  }
+
+  function refIds(text){
+    var set = {};
+    var re = /\b\d{5,}\b/g;
+    var m;
+    while((m = re.exec(text)) !== null) set[m[0]] = true;
+    return set;
+  }
+
+  function portfolioRows(buffer, target){
+    var wb = XLSX.read(buffer, { type: 'array' });
+    var name = wb.SheetNames.indexOf('Portfólio') > -1 ? 'Portfólio' : wb.SheetNames[0];
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: '' });
+    var all = [], map = {}, qt = qnorm(target);
     rows.forEach(function(r){
       var rec = {
-        lecom: keyId(r['LECOM']),
-        title: clean(r['TÍTULO'] || r['TITULO'] || r['Título']),
-        initiative: clean(r['INICIATIVA'] || r['Iniciativa']),
-        program: clean(r['PROGRAMA'] || r['Programa']),
-        squad: clean(r['Squad Azure'] || r['SQUAD AZURE'] || r['Squad']),
-        squadId: clean(r['ID Squad Azure'] || r['Id Squad Azure']),
-        projectPhase: clean(r['FASE DO PROJETO'] || r['Fase do Projeto']),
-        projectStatus: clean(r['STATUS DO PROJETO'] || r['Status do Projeto']),
-        commitment: clean(r['COMPROMISSO'] || r['Compromisso']),
-        quarter: clean(r['Trimestre Priorizado'] || r['TRIMESTRE PRIORIZADO'] || r['Trimestre'])
+        lecom: key(aliases(r, ['LECOM','Lecom'])),
+        title: clean(aliases(r, ['TÍTULO','TITULO','Título','Titulo'])),
+        initiative: clean(aliases(r, ['INICIATIVA','Iniciativa'])),
+        program: clean(aliases(r, ['PROGRAMA','Programa'])),
+        squad: clean(aliases(r, ['Squad Azure','SQUAD AZURE','Squad'])),
+        phase: clean(aliases(r, ['FASE DO PROJETO','Fase do Projeto'])),
+        status: clean(aliases(r, ['STATUS DO PROJETO','Status do Projeto'])),
+        commitment: clean(aliases(r, ['COMPROMISSO','Compromisso'])),
+        quarter: clean(aliases(r, ['Trimestre Priorizado','TRIMESTRE PRIORIZADO','Trimestre']))
       };
-      allRows.push(rec);
-      if(normalizeQuarter(rec.quarter) === target && rec.lecom){
-        if(!q3LecomMap[rec.lecom]) q3LecomMap[rec.lecom] = [];
-        q3LecomMap[rec.lecom].push(rec);
+      all.push(rec);
+      if(qnorm(rec.quarter) === qt && rec.lecom){
+        if(!map[rec.lecom]) map[rec.lecom] = [];
+        map[rec.lecom].push(rec);
       }
     });
-    return { allRows: allRows, q3LecomMap: q3LecomMap };
+    return { all: all, map: map };
   }
 
-  function parseAdoCsvText(csvText){
-    var wb = XLSX.read(csvText, { type: 'string' });
-    var ws = wb.Sheets[wb.SheetNames[0]];
-    var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
-    return rows.map(function(r){
+  function adoRows(text){
+    return csvRows(text).map(function(r){
       return {
-        id: keyId(r['ID'] || r['Id'] || r['id']),
-        teamProject: clean(r['Team Project'] || r['TeamProject'] || r['Projeto'] || r['Squad']),
-        parent: keyId(r['Parent'] || r['parent']),
-        workItemType: clean(r['Work Item Type'] || r['WorkItemType'] || r['Tipo']),
-        title: clean(r['Title'] || r['title'] || r['Título']),
-        assignedTo: clean(r['Assigned To'] || r['AssignedTo']),
-        state: clean(r['State'] || r['state'] || r['Estado']),
-        lecom: keyId(r['Lecom'] || r['LECOM'] || r['lecom']),
-        createdDate: clean(r['Created Date'] || r['CreatedDate']),
-        demandType: clean(r['Demand Type'] || r['DemandType']),
-        tags: clean(r['Tags'] || r['tags']),
-        iterationPath: clean(r['Iteration Path'] || r['IterationPath'])
+        id: key(aliases(r, ['ID','Id','id'])),
+        teamProject: clean(aliases(r, ['Team Project','TeamProject','Projeto','Squad'])),
+        parent: key(aliases(r, ['Parent','parent'])),
+        workItemType: clean(aliases(r, ['Work Item Type','WorkItemType','Tipo'])),
+        title: clean(aliases(r, ['Title','title','Título'])),
+        assignedTo: clean(aliases(r, ['Assigned To','AssignedTo'])),
+        state: clean(aliases(r, ['State','state','Estado'])),
+        lecom: key(aliases(r, ['Lecom','LECOM','lecom'])),
+        createdDate: clean(aliases(r, ['Created Date','CreatedDate'])),
+        demandType: clean(aliases(r, ['Demand Type','DemandType'])),
+        demandCategory: clean(aliases(r, ['Demand Category','DemandCategory'])),
+        tags: clean(aliases(r, ['Tags','tags'])),
+        iterationPath: clean(aliases(r, ['Iteration Path','IterationPath']))
       };
     });
   }
 
-  function isFeature(r){ return norm(r.workItemType) === 'feature'; }
-  function isEpic(r){ return norm(r.workItemType) === 'epic'; }
-  var historicalStates = { closed: true, resolved: true, removed: true };
+  var terminal = { closed: true, resolved: true, removed: true };
 
-  function performAudit(portfolioWorkbook, featuresCsvText, epicsCsvText, targetQuarter, excludedStates){
-    var parsed = parsePortfolioWorkbook(portfolioWorkbook, targetQuarter);
-    var portfolioRows = parsed.allRows, q3LecomMap = parsed.q3LecomMap;
-    var featureRows = parseAdoCsvText(featuresCsvText).filter(isFeature);
-    var epicRows = parseAdoCsvText(epicsCsvText).filter(isEpic);
-    var featureById = {}; featureRows.forEach(function(r){ if(r.id) featureById[r.id] = r; });
-    var epicById = {}; epicRows.forEach(function(r){ if(r.id) epicById[r.id] = r; });
-    var excluded = {}; excludedStates.forEach(function(s){ excluded[norm(s)] = true; });
+  function classify(ado, parentId, excluded){
+    var demand = norm(ado.demandType);
+    var project = demand === 'project';
+    var historical = project && terminal[norm(ado.state)] && !excluded[norm(ado.state)];
+    if(historical) return { cat: 'CONFIRMAR_HISTORICO', action: 'Confirmar se o item ainda pertence ao compromisso do Portfólio Q3.' };
+    if(project && !parentId) return { cat: 'CORRIGIR_AGORA', action: 'Corrigir agora: vincular ao Epic correto ou ajustar o Demand Type se não for Projeto.' };
+    if(!clean(ado.demandType)) return {
+      cat: 'REVISAR_CADASTRO',
+      action: parentId
+        ? 'Revisar cadastro: preencher o Demand Type e confirmar se o Parent ' + parentId + ' é o Epic correto.'
+        : 'Revisar cadastro: preencher o Demand Type. Se for Project, vincular ao Epic correto.'
+    };
+    return { cat: 'REVISAR_CADASTRO', action: 'Revisar cadastro: confirmar se o Parent ' + parentId + ' é o Epic correto.' };
+  }
 
-    var allQ3Features = featureRows.filter(function(r){ return !!q3LecomMap[keyId(r.lecom)]; });
-    var allQ3Projects = allQ3Features.filter(function(r){ return norm(r.demandType) === 'project'; });
-    var allQ3BlankDemand = allQ3Features.filter(function(r){ return !clean(r.demandType); });
+  function makeAudit(pbuf, featureText, epicText, target, excludedStates, referenceSet){
+    var p = portfolioRows(pbuf, target);
+    var features = adoRows(featureText).filter(function(r){ return norm(r.workItemType) === 'feature'; });
+    var epics = adoRows(epicText).filter(function(r){ return norm(r.workItemType) === 'epic'; });
+    var epicIds = {}; epics.forEach(function(r){ if(r.id) epicIds[r.id] = true; });
+    var featureIds = {}; features.forEach(function(r){ if(r.id) featureIds[r.id] = true; });
+    var q3Features = features.filter(function(r){ return !!p.map[key(r.lecom)]; });
+    var projects = q3Features.filter(function(r){ return norm(r.demandType) === 'project'; });
+    var blanks = q3Features.filter(function(r){ return !clean(r.demandType); });
 
-    var preExcludedCandidates = allQ3Features.filter(function(r){
-      var demand = norm(r.demandType);
-      var parentId = keyId(r.parent);
-      return (demand === 'project' || demand === '') && (!parentId || !epicById[parentId]);
+    var refSize = referenceSet ? Object.keys(referenceSet).length : 0;
+    var pre = q3Features.filter(function(r){
+      if(refSize && !referenceSet[r.id]) return false;
+      var d = norm(r.demandType), pid = key(r.parent);
+      return (d === 'project' || d === '') && (!pid || !epicIds[pid]);
     });
-    var candidateRows = preExcludedCandidates.filter(function(r){ return !excluded[norm(r.state)]; });
+    var excluded = {}; excludedStates.forEach(function(s){ excluded[norm(s)] = true; });
+    var candidates = pre.filter(function(r){ return !excluded[norm(r.state)]; });
 
-    var items = [];
-    var targetNorm = normalizeQuarter(targetQuarter).toUpperCase();
-
-    candidateRows.forEach(function(ado){
-      var lecom = keyId(ado.lecom);
-      var pRecords = q3LecomMap[lecom] || [];
-      var parentId = keyId(ado.parent);
-      var parentEpic = parentId ? epicById[parentId] : undefined;
-      var parentFeature = parentId ? featureById[parentId] : undefined;
-      var demand = norm(ado.demandType);
-      var isProject = demand === 'project';
-      var isBlank = !clean(ado.demandType);
-      var isHistoricalProject = isProject && historicalStates[norm(ado.state)];
-
-      var statusCategory, suggestedAction;
-      if(isProject && !parentId){
-        statusCategory = isHistoricalProject ? 'PROJECT_SEM_EPIC_HISTORICO' : 'PROJECT_SEM_EPIC';
-        suggestedAction = isHistoricalProject
-          ? 'Não cobrar agora; confirmar se o item ainda pertence ao compromisso do Portfólio.'
-          : 'Vincular a Feature ao Epic correto ou corrigir o Demand Type se não for Projeto.';
-      } else if(isProject && parentId){
-        statusCategory = 'PROJECT_PARENT_INCONCLUSIVO';
-        suggestedAction = 'Validar o Parent ' + parentId + ' diretamente no Azure DevOps e confirmar se ele é o Epic correto.';
-      } else if(isBlank && !parentId){
-        statusCategory = 'DEMAND_EM_BRANCO_SEM_PARENT';
-        suggestedAction = 'Preencher o Demand Type. Se for Project, vincular ao Epic correto.';
-      } else {
-        statusCategory = 'DEMAND_EM_BRANCO_PARENT';
-        suggestedAction = 'Preencher o Demand Type e validar se o Parent ' + parentId + ' é o Epic correto.';
+    var out = [];
+    candidates.forEach(function(a){
+      var ps = p.map[a.lecom] || [];
+      var pid = key(a.parent);
+      var parentEpic = pid && epicIds[pid];
+      var parentFeature = pid && featureIds[pid];
+      var c = classify(a, pid, excluded);
+      var portSquad = uniq(ps.map(function(x){ return x.squad; }));
+      var mismatch = qextract(a.tags).concat(qextract(a.iterationPath)).some(function(q){ return q !== qnorm(target); });
+      var action = c.action;
+      if(portSquad && !ps.some(function(x){ return norm(x.squad) === norm(a.teamProject); })){
+        action += ' Conferir também a divergência entre o Team Project (' + a.teamProject + ') e a Squad do Portfólio (' + portSquad + ').';
       }
-
-      var portfolioTitles = uniqueJoin(pRecords.map(function(p){ return p.title; }), ' || ');
-      var portfolioSquad = uniqueJoin(pRecords.map(function(p){ return p.squad; }));
-      var squadMatch = pRecords.some(function(p){ return norm(p.squad) === norm(ado.teamProject); });
-      if(!squadMatch && portfolioSquad){
-        suggestedAction += ' Conferir também a divergência entre o Team Project (' + ado.teamProject + ') e a Squad do Portfólio (' + portfolioSquad + ').';
-      }
-
-      var otherQuarters = extractQuarters(ado.tags).concat(extractQuarters(ado.iterationPath)).filter(function(q){ return q !== targetNorm; });
-
-      items.push({
-        workItemId: ado.id, workItemType: ado.workItemType, title: ado.title, teamProject: ado.teamProject,
-        state: ado.state, demandType: ado.demandType, lecom: lecom, parentId: parentId,
-        parentWorkItemType: parentEpic ? 'Epic' : parentFeature ? 'Feature' : '',
-        portfolioTitle: portfolioTitles, portfolioSquad: portfolioSquad,
-        portfolioCommitment: uniqueJoin(pRecords.map(function(p){ return p.commitment; })),
-        portfolioPhase: uniqueJoin(pRecords.map(function(p){ return p.projectPhase; })),
-        statusCategory: statusCategory, hasQuarterMismatch: otherQuarters.length > 0 ? 1 : 0,
-        suggestedAction: suggestedAction
+      out.push({
+        workItemId: a.id, workItemType: a.workItemType, title: a.title, teamProject: a.teamProject,
+        state: a.state, demandType: a.demandType, lecom: a.lecom, parentId: pid,
+        parentWorkItemType: parentEpic ? 'Epic' : parentFeature ? 'Feature' : (pid ? 'Não localizado' : ''),
+        portfolioTitle: uniq(ps.map(function(x){ return x.title; }), ' || '),
+        portfolioSquad: portSquad,
+        portfolioCommitment: uniq(ps.map(function(x){ return x.commitment; })),
+        portfolioPhase: uniq(ps.map(function(x){ return x.phase; })),
+        statusCategory: c.cat, hasQuarterMismatch: mismatch ? 1 : 0, suggestedAction: action
       });
     });
 
-    var projectNoParent = allQ3Projects.filter(function(r){ return !keyId(r.parent); });
-    var projectParentInconclusive = allQ3Projects.filter(function(r){ return keyId(r.parent) && !epicById[keyId(r.parent)]; });
-    var projectParentEpic = allQ3Projects.filter(function(r){ return keyId(r.parent) && epicById[keyId(r.parent)]; });
-    var operational = items.filter(function(r){ return r.statusCategory === 'PROJECT_SEM_EPIC'; });
-    var blankReview = items.filter(function(r){ return r.statusCategory === 'DEMAND_EM_BRANCO_SEM_PARENT' || r.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
-    var parentReview = items.filter(function(r){ return r.statusCategory === 'PROJECT_PARENT_INCONCLUSIVO' || r.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
-    var historical = items.filter(function(r){ return r.statusCategory === 'PROJECT_SEM_EPIC_HISTORICO'; });
-    var quarterMismatches = items.filter(function(r){ return r.hasQuarterMismatch === 1; });
+    var operational = out.filter(function(x){ return x.statusCategory === 'CORRIGIR_AGORA'; });
+    var review = out.filter(function(x){ return x.statusCategory === 'REVISAR_CADASTRO'; });
+    var historical = out.filter(function(x){ return x.statusCategory === 'CONFIRMAR_HISTORICO'; });
+    var mismatchAll = out.filter(function(x){ return x.hasQuarterMismatch; });
 
-    var squadMap = {};
-    items.forEach(function(item){
-      if(!squadMap[item.teamProject]) squadMap[item.teamProject] = [];
-      squadMap[item.teamProject].push(item);
-    });
+    var smap = {};
+    out.forEach(function(x){ if(!smap[x.teamProject]) smap[x.teamProject] = []; smap[x.teamProject].push(x); });
 
-    var squadSummaries = Object.keys(squadMap).sort().map(function(squad){
-      var squadItems = squadMap[squad];
-      var noParent = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_SEM_EPIC' || x.statusCategory === 'PROJECT_SEM_EPIC_HISTORICO'; });
-      var blank = squadItems.filter(function(x){ return x.statusCategory === 'DEMAND_EM_BRANCO_SEM_PARENT' || x.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
-      var pReview = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_PARENT_INCONCLUSIVO' || x.statusCategory === 'DEMAND_EM_BRANCO_PARENT'; });
-      var op = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_SEM_EPIC'; });
-      var hist = squadItems.filter(function(x){ return x.statusCategory === 'PROJECT_SEM_EPIC_HISTORICO'; });
-      var mismatches = squadItems.filter(function(x){ return x.hasQuarterMismatch === 1; });
+    var squads = Object.keys(smap).sort().map(function(s){
+      var arr = smap[s];
+      var op = arr.filter(function(x){ return x.statusCategory === 'CORRIGIR_AGORA'; });
+      var rev = arr.filter(function(x){ return x.statusCategory === 'REVISAR_CADASTRO'; });
+      var hi = arr.filter(function(x){ return x.statusCategory === 'CONFIRMAR_HISTORICO'; });
 
-      var message = 'Olá, time da Squad *' + squad + '*!\n\n';
-      message += 'Na conferência ampla do Portfólio *' + targetQuarter + '*, identificamos ' + squadItems.length + ' situação(ões) para revisão no Azure DevOps.\n\n';
+      var msg = 'Olá, time da Squad *' + s + '*!\n\n';
+      msg += 'Na conferência ampla do Portfólio *' + target + '*, identificamos ' + arr.length + ' situação(ões) para revisão no Azure DevOps.\n\n';
       if(op.length){
-        message += '*Projects sem Epic — cobrança operacional (' + op.length + ')*:\n';
-        op.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | ' + it.title + ' | State: ' + it.state + '\n'; });
-        message += 'Ação: vincular ao Epic correto ou corrigir o Demand Type.\n\n';
+        msg += '*Corrigir agora (' + op.length + ')*:\n';
+        op.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | ' + x.title + ' | State: ' + x.state + '\n'; });
+        msg += 'Ação: vincular ao Epic correto ou corrigir o Demand Type.\n\n';
       }
-      if(blank.length){
-        message += '*Demand Type em branco (' + blank.length + ')*:\n';
-        blank.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | ' + it.title + ' | Parent: ' + (it.parentId || 'vazio') + '\n'; });
-        message += 'Ação: preencher o Demand Type; se for Project, garantir o vínculo com o Epic.\n\n';
+      if(rev.length){
+        msg += '*Revisar cadastro (' + rev.length + ')*:\n';
+        rev.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | ' + x.title + ' | Demand Type: ' + (x.demandType || 'em branco') + ' | Parent: ' + (x.parentId || 'vazio') + '\n'; });
+        msg += 'Ação: preencher o Demand Type e confirmar o Parent. Se for Project, garantir o vínculo com o Epic.\n\n';
       }
-      if(pReview.length){
-        message += '*Parent para validação manual (' + pReview.length + ')*:\n';
-        pReview.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | Parent: ' + (it.parentId || 'vazio') + '\n'; });
-        message += 'Ação: confirmar diretamente no Azure DevOps se o Parent é o Epic correto.\n\n';
+      if(hi.length){
+        msg += '*Confirmar histórico (' + hi.length + ')*:\n';
+        hi.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | State: ' + x.state + '\n'; });
+        msg += 'Ação: confirmar se ainda pertence ao compromisso do Portfólio Q3.\n\n';
       }
-      if(hist.length){
-        message += '*Histórico — sem cobrança imediata (' + hist.length + ')*:\n';
-        hist.forEach(function(it){ message += '- Feature ' + it.workItemId + ' | LECOM ' + (it.lecom || 'N/A') + ' | State: ' + it.state + '\n'; });
-        message += 'Ação: confirmar se ainda pertence ao compromisso do Portfólio.\n\n';
-      }
-      if(mismatches.length){
-        message += '*Divergência de trimestre (' + mismatches.length + ')*: revisar Tags/Iteration Path.\n\n';
-      }
-      message += 'Por favor, revisem os itens e regularizem a origem conforme a situação de cada registro. Obrigado!';
+      msg += 'Por favor, revisem os itens e regularizem a origem conforme a situação de cada registro. Obrigado!';
 
       return {
-        teamProject: squad, totalOperational: op.length, totalBlankDemand: blank.length,
-        totalParentReview: pReview.length, totalHistorical: hist.length, totalMismatch: mismatches.length,
-        featureIds: squadItems.map(function(x){ return x.workItemId; }),
-        lecoms: squadItems.map(function(x){ return x.lecom; }), message: message
+        teamProject: s, totalOperational: op.length, totalReviewCadastro: rev.length, totalHistorical: hi.length,
+        totalMismatch: arr.filter(function(x){ return x.hasQuarterMismatch; }).length,
+        featureIds: arr.map(function(x){ return x.workItemId; }),
+        lecoms: arr.map(function(x){ return x.lecom; }), message: msg
       };
     });
 
     return {
-      items: items,
+      items: out,
+      squads: squads,
       summary: {
-        quarter: targetQuarter,
-        totalPortfolioRows: portfolioRows.length,
-        totalPortfolioLecoms: Object.keys(q3LecomMap).length,
-        totalFeatureRows: featureRows.length,
-        totalEpicRows: epicRows.length,
-        totalReviewSituations: items.length,
-        totalFeaturesProject: allQ3Projects.length,
-        totalParentEpic: projectParentEpic.length,
-        totalNoParent: projectNoParent.length,
-        totalParentInconclusive: projectParentInconclusive.length,
-        totalBlankDemandType: allQ3BlankDemand.length,
-        totalQuarterMismatches: quarterMismatches.length,
+        quarter: target,
+        totalPortfolioRows: p.all.length,
+        totalPortfolioLecoms: Object.keys(p.map).length,
+        totalFeatureRows: features.length,
+        totalEpicRows: epics.length,
+        totalReviewSituations: out.length,
+        totalFeaturesProject: projects.length,
+        totalParentEpic: projects.filter(function(r){ return r.parent && epicIds[key(r.parent)]; }).length,
+        totalNoParent: projects.filter(function(r){ return !r.parent; }).length,
+        totalParentInconclusive: projects.filter(function(r){ return r.parent && !epicIds[key(r.parent)]; }).length,
+        totalBlankDemandType: blanks.length,
+        totalQuarterMismatches: mismatchAll.length,
         totalOperationalQueue: operational.length,
-        totalDemandBlankReview: blankReview.length,
-        totalParentReview: parentReview.length,
-        totalHistorical: historical.length,
-        squadSummaries: squadSummaries
+        totalReviewCadastro: review.length,
+        totalConfirmHistory: historical.length,
+        referenceCount: refSize
       }
     };
   }
@@ -597,11 +611,18 @@
   /* ============================================================
      Estado da aplicação / UI
      ============================================================ */
-  var files = { portfolio: null, features: null, epics: null };
+  var files = { portfolio: null, features: null, epics: null, reference: null };
   var result = null;
   var uiState = { filterCategory: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
 
   function el(id){ return document.getElementById(id); }
+
+  var uploadDefaults = {
+    portfolio: { name: 'Portfólio (Excel)', hint: 'Ex: PORTFOLIO_Q3.xlsx' },
+    features: { name: 'Features amplas (CSV)', hint: 'Ex: FeaturesQ3_ampla.csv' },
+    epics: { name: 'Epics amplos (CSV)', hint: 'Ex: EpicQ3_amplo.csv' },
+    reference: { name: 'Lista de IDs (opcional)', hint: '.md/.txt/.csv, qualquer formato' }
+  };
 
   function setUploadBox(kind, file){
     files[kind] = file;
@@ -614,11 +635,13 @@
       hint.textContent = 'Arquivo selecionado';
     } else {
       box.classList.remove('filled');
+      name.textContent = uploadDefaults[kind].name;
+      hint.textContent = uploadDefaults[kind].hint;
     }
     el('btnExecutar').disabled = !(files.portfolio && files.features && files.epics);
   }
 
-  ['portfolio','features','epics'].forEach(function(kind){
+  ['portfolio','features','epics','reference'].forEach(function(kind){
     el('input-' + kind).addEventListener('change', function(e){
       setUploadBox(kind, e.target.files && e.target.files[0] ? e.target.files[0] : null);
     });
@@ -637,7 +660,7 @@
       var reader = new FileReader();
       reader.onload = function(){ resolve(String(reader.result)); };
       reader.onerror = function(){ reject(reader.error || new Error('Falha ao ler arquivo')); };
-      reader.readAsText(file);
+      reader.readAsText(file, 'utf-8');
     });
   }
 
@@ -655,34 +678,37 @@
     if(el('exc-resolved').checked) excludedStates.push('Resolved');
     if(el('exc-removed').checked) excludedStates.push('Removed');
 
-    statusMsg('Processando...', '');
+    statusMsg('Lendo as bases localmente no navegador...', '');
     el('btnExecutar').disabled = true;
 
     Promise.all([
       readAsArrayBuffer(files.portfolio),
       readAsText(files.features),
-      readAsText(files.epics)
+      readAsText(files.epics),
+      files.reference ? readAsText(files.reference) : Promise.resolve('')
     ]).then(function(vals){
       try{
-        var portfolioWb = XLSX.read(vals[0], { type: 'array' });
-        var audit = performAudit(portfolioWb, vals[1], vals[2], quarter, excludedStates);
+        var referenceSet = vals[3] ? refIds(vals[3]) : {};
+        var audit = makeAudit(vals[0], vals[1], vals[2], quarter, excludedStates, referenceSet);
         result = {
           items: audit.items,
+          squads: audit.squads,
           summary: audit.summary,
           quarter: quarter,
           portfolioFileName: files.portfolio.name,
           featuresFileName: files.features.name,
           epicsFileName: files.epics.name,
+          referenceFileName: files.reference ? files.reference.name : '',
           executadoEm: new Date().toISOString()
         };
         persistResult();
-        statusMsg('Conferência concluída com ' + audit.summary.totalReviewSituations + ' situação(ões) para revisão.', 'ok');
+        statusMsg('Conferência concluída: ' + audit.summary.totalReviewSituations + ' situação(ões) para revisão.', 'ok');
         uiState = { filterCategory: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
         el('searchInput').value = '';
         renderResultado();
       }catch(err){
         console.error(err);
-        statusMsg('Falha ao processar: ' + err.message, 'error');
+        statusMsg('Não foi possível processar os arquivos: ' + (err.message || err), 'error');
       } finally {
         el('btnExecutar').disabled = !(files.portfolio && files.features && files.epics);
       }
@@ -693,13 +719,10 @@
   });
 
   el('btnNovaConferencia').addEventListener('click', function(){
-    files = { portfolio: null, features: null, epics: null };
-    ['portfolio','features','epics'].forEach(function(kind){
+    files = { portfolio: null, features: null, epics: null, reference: null };
+    ['portfolio','features','epics','reference'].forEach(function(kind){
       el('input-' + kind).value = '';
-      var box = el('box-' + kind);
-      box.classList.remove('filled');
-      el('name-' + kind).textContent = { portfolio: 'Portfólio (Excel)', features: 'Features amplas (CSV)', epics: 'Epics amplos (CSV)' }[kind];
-      el('hint-' + kind).textContent = { portfolio: 'Ex: PORTFOLIO_Q3.xlsx', features: 'Ex: FeaturesQ3_ampla.csv', epics: 'Ex: EpicQ3_amplo.csv' }[kind];
+      setUploadBox(kind, null);
     });
     el('btnExecutar').disabled = true;
     statusMsg('', '');
@@ -734,23 +757,23 @@
     html += kpiCardHtml('Situações na fila', s.totalReviewSituations, 'revisão ampla', 'blue');
     html += kpiCardHtml('Projects no trimestre', s.totalFeaturesProject, 'Demand Type Project', 'slate');
     html += kpiCardHtml('Epic confirmado', s.totalParentEpic, 'Projects regularizados', 'green');
-    html += kpiCardHtml('Cobrança operacional', s.totalOperationalQueue, 'Project sem Epic', 'red');
-    html += kpiCardHtml('Demand em branco', s.totalDemandBlankReview, 'classificar na origem', 'amber');
-    html += kpiCardHtml('Parent manual', s.totalParentReview, s.totalHistorical + ' históricos', 'blue');
+    html += kpiCardHtml('Corrigir agora', s.totalOperationalQueue, 'Project sem Epic', 'red');
+    html += kpiCardHtml('Revisar cadastro', s.totalReviewCadastro, 'Demand Type ou Parent', 'amber');
+    html += kpiCardHtml('Confirmar histórico', s.totalConfirmHistory, 'sem cobrança imediata', 'slate');
     el('kpiRow').innerHTML = html;
   }
 
   function renderSquadGrid(){
     var grid = el('squadGrid');
-    var summaries = result.summary.squadSummaries || [];
+    var summaries = result.squads || [];
     grid.innerHTML = summaries.map(function(squad){
       var badges = '';
-      if(squad.totalOperational > 0) badges += '<span class="badge-pill red">' + squad.totalOperational + ' cobrança</span>';
-      if(squad.totalBlankDemand > 0) badges += '<span class="badge-pill amber">' + squad.totalBlankDemand + ' demand</span>';
-      if(squad.totalParentReview > 0) badges += '<span class="badge-pill blue">' + squad.totalParentReview + ' manual</span>';
+      if(squad.totalOperational > 0) badges += '<span class="badge-pill red">' + squad.totalOperational + ' corrigir</span>';
+      if(squad.totalReviewCadastro > 0) badges += '<span class="badge-pill amber">' + squad.totalReviewCadastro + ' revisar</span>';
       if(squad.totalHistorical > 0) badges += '<span class="badge-pill slate">' + squad.totalHistorical + ' histórico</span>';
       var lecomsPreview = (squad.lecoms || []).filter(Boolean);
-      var lecomsTxt = lecomsPreview.slice(0,4).join(', ') + (lecomsPreview.length > 4 ? '...' : '');
+      var uniqueLecoms = Array.from(new Set(lecomsPreview));
+      var lecomsTxt = uniqueLecoms.slice(0,4).join(', ') + (uniqueLecoms.length > 4 ? '...' : '');
       var idsPreview = (squad.featureIds || []).slice(0,5).join(', ') + ((squad.featureIds || []).length > 5 ? '...' : '');
       return '<div class="squad-card">' +
         '<div class="squad-card-header">' +
@@ -814,10 +837,9 @@
       var category = item.statusCategory || '';
       var categoryMatches =
         uiState.filterCategory === 'ALL' ||
-        (uiState.filterCategory === 'OPERATIONAL' && category === 'PROJECT_SEM_EPIC') ||
-        (uiState.filterCategory === 'BLANK' && category.indexOf('DEMAND_EM_BRANCO') === 0) ||
-        (uiState.filterCategory === 'PARENT' && category === 'PROJECT_PARENT_INCONCLUSIVO') ||
-        (uiState.filterCategory === 'HISTORICAL' && category === 'PROJECT_SEM_EPIC_HISTORICO');
+        (uiState.filterCategory === 'OPERATIONAL' && category === 'CORRIGIR_AGORA') ||
+        (uiState.filterCategory === 'REVIEW' && category === 'REVISAR_CADASTRO') ||
+        (uiState.filterCategory === 'HISTORICAL' && category === 'CONFIRMAR_HISTORICO');
       if(!categoryMatches) return false;
       if(uiState.selectedSquad !== 'ALL' && item.teamProject !== uiState.selectedSquad) return false;
       if(!query) return true;
@@ -827,9 +849,9 @@
   }
 
   function sortedItems(list){
-    var key = uiState.sortKey, dir = uiState.sortDir;
+    var key2 = uiState.sortKey, dir = uiState.sortDir;
     return list.slice().sort(function(a,b){
-      var va = a[key], vb = b[key];
+      var va = a[key2], vb = b[key2];
       if(typeof va === 'string'){ va = va.toLowerCase(); vb = String(vb).toLowerCase(); }
       if(va < vb) return dir === 'asc' ? -1 : 1;
       if(va > vb) return dir === 'asc' ? 1 : -1;
@@ -851,7 +873,7 @@
         '<td class="truncate" title="' + escapeHtml(item.teamProject) + '">' + escapeHtml(item.teamProject) + '</td>' +
         '<td class="mono">' + escapeHtml(item.lecom || '-') + '</td>' +
         '<td class="truncate" title="' + escapeHtml(item.portfolioTitle) + '">' + escapeHtml(item.portfolioTitle || '(não localizado)') + '</td>' +
-        '<td>' + (item.demandType ? escapeHtml(item.demandType) : '<span class="status-tag slate">em branco</span>') + '</td>' +
+        '<td>' + (item.demandType ? escapeHtml(item.demandType) : '<span class="status-tag amber">em branco</span>') + '</td>' +
         '<td>' + escapeHtml(item.state) + '</td>' +
         '<td class="mono">' + (item.parentId ? escapeHtml(item.parentId) : '<b style="color:var(--vermelho)">vazio</b>') + '</td>' +
         '<td><span class="status-tag ' + tone + '">' + escapeHtml(statusLabel(item.statusCategory)) + '</span></td>' +
@@ -878,9 +900,9 @@
   });
   document.querySelectorAll('#itemsTable th[data-key]').forEach(function(th){
     th.addEventListener('click', function(){
-      var key = th.getAttribute('data-key');
-      if(uiState.sortKey === key){ uiState.sortDir = uiState.sortDir === 'asc' ? 'desc' : 'asc'; }
-      else { uiState.sortKey = key; uiState.sortDir = 'asc'; }
+      var k = th.getAttribute('data-key');
+      if(uiState.sortKey === k){ uiState.sortDir = uiState.sortDir === 'asc' ? 'desc' : 'asc'; }
+      else { uiState.sortKey = k; uiState.sortDir = 'asc'; }
       document.querySelectorAll('#itemsTable th').forEach(function(h){
         h.classList.remove('sort-active');
         var a = h.querySelector('.sort-arrow'); if(a) a.textContent = '↕';
@@ -921,7 +943,8 @@
   function renderResultado(){
     el('resultado').style.display = 'block';
     el('runTitle').textContent = 'Conferência ' + result.quarter + ' — ' + new Date(result.executadoEm).toLocaleDateString('pt-BR');
-    el('runSubtitle').textContent = result.portfolioFileName + ' + ' + result.featuresFileName + ' + ' + result.epicsFileName + ' · Trimestre ' + result.quarter;
+    var refTxt = result.summary.referenceCount ? ' · Lista restrita: ' + result.summary.referenceCount + ' IDs' : '';
+    el('runSubtitle').textContent = result.portfolioFileName + ' + ' + result.featuresFileName + ' + ' + result.epicsFileName + ' · Trimestre ' + result.quarter + refTxt;
     renderKpis();
     renderSquadGrid();
     populateSquadSelect();
