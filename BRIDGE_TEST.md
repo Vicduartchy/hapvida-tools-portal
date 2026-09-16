@@ -1,1 +1,0 @@
-Teste do bridge de deploy via GET — arquivo criado automaticamente para validar o fluxo end-to-end. Pode ser apagado.
