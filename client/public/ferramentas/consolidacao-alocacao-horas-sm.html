@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Consolidação de Alocação de Horas dos SMs — Hub do Agile Coach</title>
+<style>
+:root{
+  --azul:#1A3DAA; --azul-escuro:#0F2370; --vermelho:#E8272A; --laranja:#F47920; --amarelo:#FFC20E;
+  --branco:#FFFFFF; --preto:#000000; --verde:#2E9E44;
+  --bg:#F4F6FB; --card:#FFFFFF; --texto:#1B1F2A; --texto-suave:#5B6270; --borda:#E1E5F0;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--texto);}
+header{background:var(--azul-escuro);color:#fff;padding:20px 28px;display:flex;align-items:center;gap:16px;}
+header svg{width:38px;height:38px;flex-shrink:0;}
+.hc-eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.85;margin:0 0 2px;}
+.hc-title{font-size:20px;font-weight:700;margin:0;}
+.hc-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);
+  padding:4px 12px;border-radius:999px;font-size:12px;white-space:nowrap;}
+.hc-tricolor{height:4px;background:linear-gradient(90deg,var(--vermelho) 0 33%,var(--laranja) 33% 66%,var(--amarelo) 66% 100%);}
+main{max-width:920px;margin:0 auto;padding:28px 20px 60px;}
+.hc-step{display:none;}
+.hc-step-active{display:block;}
+.hc-panel{background:var(--card);border:1px solid var(--borda);border-radius:12px;padding:24px;margin-bottom:20px;}
+.hc-panel h2{margin:0 0 6px;font-size:18px;color:var(--azul-escuro);}
+.hc-panel p.hc-desc{margin:0 0 18px;color:var(--texto-suave);font-size:14px;}
+.hc-field{margin-bottom:18px;}
+.hc-field label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;}
+input[type=file]{display:block;width:100%;padding:10px;border:1px dashed var(--borda);border-radius:8px;background:#FAFBFF;font-size:13px;}
+.hc-status{margin-top:8px;font-size:13px;color:var(--texto-suave);}
+.hc-btn{background:var(--azul);color:#fff;border:none;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+.hc-btn:disabled{background:#B8C1DC;cursor:not-allowed;}
+.hc-btn-secondary{background:#fff;color:var(--azul);border:1px solid var(--azul);margin:4px 6px 4px 0;font-weight:500;padding:8px 14px;}
+.hc-h3{font-size:15px;color:var(--azul-escuro);margin:22px 0 10px;border-top:1px solid var(--borda);padding-top:16px;}
+.hc-summary{font-size:14px;color:var(--texto-suave);margin-bottom:6px;}
+.hc-card{border:1px solid var(--borda);border-radius:8px;padding:14px 16px;margin-bottom:10px;background:#FCFDFF;}
+.hc-card-block{border-left:4px solid var(--vermelho);}
+.hc-card-ok{border-left:4px solid var(--verde);color:#1B1F2A;font-size:14px;}
+.hc-filename{font-weight:600;margin-bottom:8px;font-size:14px;}
+.hc-label{display:block;font-size:12px;color:var(--texto-suave);margin-bottom:4px;}
+.hc-input{width:100%;padding:8px 10px;border:1px solid var(--borda);border-radius:6px;font-size:14px;}
+.hc-meta{font-size:12px;color:var(--texto-suave);margin-top:8px;}
+.hc-conflict-row label{display:block;font-size:14px;margin:6px 0;cursor:pointer;}
+.hc-warn{color:var(--laranja);font-weight:600;}
+.hc-error{color:var(--vermelho);font-weight:600;}
+.hc-ok{color:var(--verde);font-weight:600;}
+.hc-opts{margin-top:6px;}
+footer{max-width:920px;margin:0 auto;padding:0 20px 40px;color:var(--texto-suave);font-size:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="28" r="16" fill="#E8272A"/>
+    <circle cx="72" cy="50" r="16" fill="#F47920"/>
+    <circle cx="50" cy="72" r="16" fill="#FFC20E"/>
+    <circle cx="28" cy="50" r="16" fill="#E8272A"/>
+    <circle cx="50" cy="50" r="10" fill="#FFFFFF"/>
+  </svg>
+  <div>
+    <p class="hc-eyebrow">Hub do Agile Coach · Hapvida</p>
+    <p class="hc-title">Consolidação de Alocação de Horas dos SMs</p>
+  </div>
+  <span class="hc-badge">100% offline</span>
+</header>
+<div class="hc-tricolor"></div>
+
+<main>
+
+  <section id="step-1" class="hc-step hc-step-active">
+    <div class="hc-panel">
+      <h2>1. Upload</h2>
+      <p class="hc-desc">Envie a planilha de referência do trimestre e, em seguida, as planilhas dos SMs — um arquivo .xlsx por vez, vários de uma vez, ou um único .zip. Nada é enviado a nenhum servidor; todo o processamento acontece neste navegador.</p>
+      <div class="hc-field">
+        <label>Planilha de referência (gabarito do trimestre)</label>
+        <input type="file" id="refInput" accept=".xlsx"/>
+        <div class="hc-status" id="refStatus"></div>
+      </div>
+      <div class="hc-field">
+        <label>Planilhas dos SMs (.xlsx múltiplos ou .zip)</label>
+        <input type="file" id="smInput" accept=".xlsx,.zip" multiple/>
+        <div class="hc-status" id="smStatus"></div>
+      </div>
+      <button class="hc-btn" id="btnProcessar" disabled>Rodar checklist de qualidade</button>
+    </div>
+  </section>
+
+  <section id="step-2" class="hc-step">
+    <div class="hc-panel">
+      <h2>2. Pontos de decisão</h2>
+      <p class="hc-desc">Resultado do checklist automático. Resolva os itens bloqueantes abaixo — nenhuma linha é inserida na consolidação sem confirmação.</p>
+      <div id="checklistBody"></div>
+    </div>
+    <div class="hc-panel">
+      <h2>3. Gerar consolidado</h2>
+      <p class="hc-status" id="geracaoStatus">Aguardando checklist.</p>
+      <button class="hc-btn" id="btnGerar" disabled>Gerar arquivo consolidado (.xlsx)</button>
+    </div>
+  </section>
+
+  <section id="step-3" class="hc-step">
+    <div class="hc-panel">
+      <h2>Consolidação concluída</h2>
+      <p class="hc-desc">O download do arquivo consolidado foi iniciado pelo navegador. A aba NOTAS_CONSOLIDACAO dentro do arquivo traz o rastro completo desta rodada — arquivos processados, conflitos e a decisão tomada em cada um.</p>
+      <button class="hc-btn hc-btn-secondary" onclick="location.reload()">Iniciar nova rodada</button>
+    </div>
+  </section>
+
+</main>
+<footer>Ferramenta interna Hapvida — uso exclusivo da governança ágil do DX Hub. Nenhum dado é armazenado entre sessões.</footer>
+
+<script src="/shared/vendor/jszip-3.10.2.min.js"></script>
+<script src="/shared/vendor/xlsx-core.min.js"></script>
+<script>
+/* ==========================================================================
+   Consolidação de Alocação de Horas dos SMs — Hub do Agile Coach (Hapvida)
+   Lógica 100% client-side. Nenhum dado sai do navegador.
+   ========================================================================== */
+
+const COL = {
+  COLABORADOR: 0, GESTOR_DIRETO: 1, GERENTE: 2, GERENTE_EXEC: 3, DIRETORIA: 4, CARGO: 5,
+  SQUAD1: 6, SQUAD2: 7, SQUAD3: 8, SQUAD4: 9, SQUAD5: 10, SQUAD6: 11,
+  ID_PROJETO: 12, PROJETO: 13, ORDEM: 14, MELHORIA: 15, PROJETO_PCT: 16, TOTAL: 17
+};
+const AJUSTE_NCOLS = 9;
+
+const state = {
+  referencia: null,        // {wb, baseRows: [[...]], consultaWs, headerRows: [row0,row1], colabSet:Set}
+  arquivos: [],            // por arquivo SM: {nome, smSugerido, smConfirmado, status, wb, baseRows, ajusteRows, filledRows, erros, semProjeto, sheetsBase, sheetEscolhida}
+  colaboradorMap: {},       // colaborador -> [{arquivoIdx, smNome, row, idProjeto, projeto, melhoria, projetoPct}]
+  conflitos: [],            // {colaborador, idProjeto, entradas:[...], resolucao: null|'a'|'b'|'ambas'}
+  semProjetoPendentes: [],  // {arquivoIdx, rowIdx, colaborador, resolucao: null|'incluir'|'excluir'}
+  nomesPendentes: [],       // {arquivoIdx, resolucao: null|nome confirmado}
+  estruturaRejeitados: [],  // {nome, motivo}
+  abaDuplicadaPendente: [], // {arquivoIdx, opcoes:[sheetNames], escolhida:null}
+};
+
+function $(sel) { return document.querySelector(sel); }
+function $all(sel) { return Array.from(document.querySelectorAll(sel)); }
+function fmtPct(v) { const n = parseFloat(v) || 0; return Math.round(n * 100) + '%'; }
+function isEmpty(v) { return v === null || v === undefined || v === '' || v === 0; }
+function normNum(v) { const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+
+function timestamp() {
+  const d = new Date();
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}${p(d.getMonth()+1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
+}
+
+/* -------------------- Leitura de planilhas -------------------- */
+
+function sheetAOA(wb, sheetName) {
+  const ws = wb.Sheets[sheetName];
+  if (!ws) return null;
+  return XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: null });
+}
+
+function guessSmName(filename) {
+  let base = filename.replace(/\.xlsx$/i, '');
+  base = base.replace(/^REF_Base_ordem_x_Projeto_Setembro\.?2?0?2?6?\.?/i, '');
+  base = base.replace(/^Base_ordem_x_Projeto_Setembro.*?\)_/i, '');
+  base = base.replace(/^Confer[eê]ncia.*?_/i, '');
+  const parts = base.split(/[_\-]/).filter(Boolean);
+  const nameLike = parts.filter(p => /^[A-ZÀ-Ý][a-zà-ÿA-ZÀ-Ý]*$/.test(p) || /^[A-ZÀ-Ý]{2,}$/.test(p));
+  const guess = (nameLike.length ? nameLike : parts).join(' ').trim();
+  return guess || base;
+}
+
+async function readFileAsWorkbook(file) {
+  const ab = await file.arrayBuffer();
+  return XLSX.read(ab, { type: 'array' });
+}
+
+async function expandZipIfNeeded(file) {
+  if (!/\.zip$/i.test(file.name)) return [file];
+  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+  const out = [];
+  for (const [path, entry] of Object.entries(zip.files)) {
+    if (entry.dir || !/\.xlsx$/i.test(path)) continue;
+    const blob = await entry.async('blob');
+    const name = path.split('/').pop();
+    out.push(new File([blob], name, { type: file.type }));
+  }
+  return out;
+}
+
+/* -------------------- Processamento -------------------- */
+
+async function processarReferencia(file) {
+  const wb = await readFileAsWorkbook(file);
+  if (!wb.Sheets['BASE_SET.26']) throw new Error('A planilha de referência não contém a aba BASE_SET.26.');
+  const aoa = sheetAOA(wb, 'BASE_SET.26');
+  const headerRows = [aoa[0], aoa[1]];
+  const baseRows = aoa.slice(2).filter(r => r && r[COL.COLABORADOR]);
+  const colabSet = new Set(baseRows.map(r => r[COL.COLABORADOR]));
+  const dupCheck = {};
+  let duplicados = 0;
+  baseRows.forEach(r => { const c = r[COL.COLABORADOR]; dupCheck[c] = (dupCheck[c]||0)+1; if (dupCheck[c]===2) duplicados++; });
+  state.referencia = { wb, headerRows, baseRows, colabSet, consultaWs: wb.Sheets['CONSULTA'] || null, duplicados, nome: file.name };
+  return state.referencia;
+}
+
+async function processarArquivoSM(file, idx) {
+  const item = { idx, nome: file.name, smSugerido: guessSmName(file.name), smConfirmado: null,
+    status: 'ok', motivo: null, baseRows: [], ajusteRows: [], filledRows: [], erros: [], semProjeto: [],
+    sheetsBase: [], sheetEscolhida: null, wb: null };
+  let wb;
+  try { wb = await readFileAsWorkbook(file); }
+  catch (e) { item.status = 'rejeitado'; item.motivo = 'Não foi possível abrir o arquivo (' + e.message + ').'; return item; }
+  item.wb = wb;
+
+  const baseSheets = wb.SheetNames.filter(n => n === 'BASE_SET.26' || n.startsWith('BASE_SET.26 ('));
+  const temEstruturaPadrao = wb.Sheets['CONSULTA'] && wb.Sheets['AJUSTE'] && baseSheets.length >= 1;
+  if (!temEstruturaPadrao) {
+    item.status = 'rejeitado';
+    item.motivo = 'Estrutura fora do padrão — não contém as três abas BASE_SET.26 / CONSULTA / AJUSTE.';
+    return item;
+  }
+  item.sheetsBase = baseSheets;
+  if (baseSheets.length > 1) {
+    item.status = 'aba_duplicada_pendente';
+    item.opcoesBase = baseSheets.map(name => {
+      const aoa = sheetAOA(wb, name) || [];
+      const rows = aoa.slice(2).filter(r => r && r[COL.COLABORADOR]);
+      const filled = rows.filter(r => !isEmpty(r[COL.MELHORIA]) || !isEmpty(r[COL.PROJETO_PCT]));
+      return { name, totalLinhas: rows.length, preenchidas: filled.length };
+    });
+    return item;
+  }
+  item.sheetEscolhida = baseSheets[0];
+  finalizarLeituraArquivo(item, wb, baseSheets[0]);
+  return item;
+}
+
+function finalizarLeituraArquivo(item, wb, sheetName) {
+  const aoa = sheetAOA(wb, sheetName) || [];
+  const rows = aoa.slice(2).filter(r => r && r[COL.COLABORADOR]);
+  item.baseRows = rows;
+  item.filledRows = rows.filter(r => !isEmpty(r[COL.MELHORIA]) || !isEmpty(r[COL.PROJETO_PCT]));
+
+  item.filledRows.forEach(r => {
+    const m = normNum(r[COL.MELHORIA]), p = normNum(r[COL.PROJETO_PCT]);
+    if (Math.abs((m + p) - 1) > 0.005) {
+      item.erros.push({ tipo: 'soma', colaborador: r[COL.COLABORADOR], melhoria: m, projeto: p });
+    }
+    if (isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) {
+      item.semProjeto.push(r);
+    }
+  });
+
+  const ajusteAOA = sheetAOA(wb, 'AJUSTE') || [];
+  item.ajusteRows = ajusteAOA.slice(1).filter(r => r && r[0]).map(r => r.slice(0, AJUSTE_NCOLS));
+}
+
+/* -------------------- Consolidação de decisões (cross-arquivo) -------------------- */
+
+function calcularDecisoesCruzadas() {
+  state.colaboradorMap = {};
+  state.conflitos = [];
+  state.semProjetoPendentes = [];
+  state.nomesPendentes = [];
+  state.estruturaRejeitados = [];
+  state.abaDuplicadaPendente = [];
+
+  state.arquivos.forEach((item, idx) => {
+    if (item.status === 'rejeitado') { state.estruturaRejeitados.push(item); return; }
+    if (item.status === 'aba_duplicada_pendente') { state.abaDuplicadaPendente.push(item); return; }
+    if (!item.smConfirmado) state.nomesPendentes.push(item);
+
+    item.filledRows.forEach(r => {
+      const colab = r[COL.COLABORADOR];
+      if (!state.referencia.colabSet.has(colab)) {
+        item.erros.push({ tipo: 'colaborador_ausente', colaborador: colab });
+        return;
+      }
+      if (isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) return; // já capturado em semProjeto
+      if (!state.colaboradorMap[colab]) state.colaboradorMap[colab] = [];
+      state.colaboradorMap[colab].push({
+        arquivoIdx: idx, smNome: item.smConfirmado || item.smSugerido, row: r,
+        idProjeto: r[COL.ID_PROJETO], projeto: r[COL.PROJETO],
+        melhoria: normNum(r[COL.MELHORIA]), projetoPct: normNum(r[COL.PROJETO_PCT])
+      });
+    });
+
+    item.semProjeto.forEach((r, rIdx) => {
+      state.semProjetoPendentes.push({ arquivoIdx: idx, rowIdx: rIdx, colaborador: r[COL.COLABORADOR], row: r, resolucao: null });
+    });
+  });
+
+  // Conflitos: mesmo colaborador + mesmo ID de projeto vindos de SMs diferentes, com % divergente
+  Object.entries(state.colaboradorMap).forEach(([colab, entradas]) => {
+    const bySm = {};
+    entradas.forEach(e => { (bySm[e.smNome] = bySm[e.smNome] || []).push(e); });
+    const sms = Object.keys(bySm);
+    if (sms.length < 2) return;
+    for (let i = 0; i < sms.length; i++) {
+      for (let j = i + 1; j < sms.length; j++) {
+        bySm[sms[i]].forEach(ea => {
+          bySm[sms[j]].forEach(eb => {
+            const mesmoId = ea.idProjeto && eb.idProjeto && String(ea.idProjeto) === String(eb.idProjeto);
+            if (mesmoId && (ea.melhoria !== eb.melhoria || ea.projetoPct !== eb.projetoPct)) {
+              state.conflitos.push({ colaborador: colab, idProjeto: ea.idProjeto, a: ea, b: eb, resolucao: null });
+            }
+          });
+        });
+      }
+    }
+  });
+}
+
+function temPendenciasBloqueantes() {
+  return state.nomesPendentes.some(i => !i.smConfirmado) ||
+         state.abaDuplicadaPendente.some(i => !i.sheetEscolhida) ||
+         state.conflitos.some(c => !c.resolucao) ||
+         state.semProjetoPendentes.some(p => !p.resolucao) ||
+         state.arquivos.some(i => i.erros && i.erros.some(e => e.tipo === 'soma' || e.tipo === 'colaborador_ausente'));
+}
+
+/* -------------------- Geração do arquivo final -------------------- */
+
+function gerarConsolidado() {
+  const excluidos = new Set(); // "arquivoIdx|colaborador|idProjeto" a excluir por resolução de conflito/sem-projeto
+
+  state.conflitos.forEach(c => {
+    if (c.resolucao === 'a') excluidos.add(c.b.arquivoIdx + '|' + c.b.row.join('§'));
+    if (c.resolucao === 'b') excluidos.add(c.a.arquivoIdx + '|' + c.a.row.join('§'));
+  });
+  state.semProjetoPendentes.forEach(p => {
+    if (p.resolucao === 'excluir') excluidos.add(p.arquivoIdx + '|' + p.row.join('§'));
+  });
+
+  const smPorColaborador = {}; // colaborador -> [{row, sm}]
+  state.arquivos.forEach((item, idx) => {
+    if (item.status !== 'ok') return;
+    const smNome = item.smConfirmado || item.smSugerido;
+    item.filledRows.forEach(r => {
+      const key = idx + '|' + r.join('§');
+      if (excluidos.has(key)) return;
+      const colab = r[COL.COLABORADOR];
+      if (!state.referencia.colabSet.has(colab)) return;
+      (smPorColaborador[colab] = smPorColaborador[colab] || []).push({ row: r, sm: smNome });
+    });
+  });
+
+  const headerRows = state.referencia.headerRows;
+  const outBase = [headerRows[0].concat(['SM RESPONSAVEL (consolidacao)']), headerRows[1].concat(['SM RESPONSAVEL (consolidacao)'])];
+  let coberturaPreenchida = 0;
+  state.referencia.baseRows.forEach(r => {
+    const colab = r[COL.COLABORADOR];
+    const entradas = smPorColaborador[colab];
+    if (entradas && entradas.length) {
+      coberturaPreenchida++;
+      entradas.forEach(e => outBase.push(e.row.concat([e.sm])));
+    } else {
+      outBase.push(r.concat(['BASE (nao preenchido)']));
+    }
+  });
+
+  const outAjuste = [['COLABORADOR','GESTOR DIRETO','GERENTE','GERENTE EXECUTIVO','DIRETORIA','CARGO','SQUAD','ANTES','DEPOIS','SM RESPONSAVEL']];
+  state.arquivos.forEach(item => {
+    if (item.status !== 'ok') return;
+    const smNome = item.smConfirmado || item.smSugerido;
+    item.ajusteRows.forEach(r => outAjuste.push(r.concat([smNome])));
+  });
+
+  const totalColab = state.referencia.baseRows.length;
+  const smsValidos = state.arquivos.filter(a => a.status === 'ok');
+  const notas = [];
+  notas.push(['Consolidação Base Ordem x Projeto — gerada em ' + new Date().toLocaleString('pt-BR')]);
+  notas.push(['']);
+  notas.push([`Arquivos processados: ${state.arquivos.length}. Consolidados: ${smsValidos.length}. Rejeitados: ${state.estruturaRejeitados.length}.`]);
+  state.estruturaRejeitados.forEach(r => notas.push([`  Rejeitado — ${r.nome}: ${r.motivo}`]));
+  notas.push(['']);
+  notas.push(['SMs consolidados: ' + smsValidos.map(a => a.smConfirmado || a.smSugerido).join('; ')]);
+  notas.push(['']);
+  notas.push([`Cobertura: ${coberturaPreenchida} de ${totalColab} colaboradores da base de referência receberam preenchimento nesta rodada (${Math.round(100*coberturaPreenchida/totalColab)}%).`]);
+  notas.push(['']);
+  if (state.conflitos.length) {
+    notas.push(['Conflitos identificados e resolução:']);
+    state.conflitos.forEach(c => {
+      const escolha = c.resolucao === 'a' ? (c.a.smNome + ' prevaleceu') : c.resolucao === 'b' ? (c.b.smNome + ' prevaleceu') : 'ambos mantidos';
+      notas.push([`  ${c.colaborador} (ID ${c.idProjeto}): ${c.a.smNome} (${fmtPct(c.a.melhoria)}/${fmtPct(c.a.projetoPct)}) x ${c.b.smNome} (${fmtPct(c.b.melhoria)}/${fmtPct(c.b.projetoPct)}) — decisão: ${escolha}`]);
+    });
+    notas.push(['']);
+  }
+  if (state.semProjetoPendentes.length) {
+    notas.push(['Linhas preenchidas sem indicação de projeto e sua resolução:']);
+    state.semProjetoPendentes.forEach(p => notas.push([`  ${p.colaborador} — decisão: ${p.resolucao === 'incluir' ? 'incluída sem projeto vinculado' : 'excluída, aguardando complementação'}`]));
+    notas.push(['']);
+  }
+  notas.push(['Aba AJUSTE: ' + (outAjuste.length - 1) + ' movimentações consolidadas.']);
+  notas.push(['Coluna "SM RESPONSAVEL (consolidacao)" em BASE_SET.26 indica a origem de cada linha, ou "BASE (nao preenchido)" para colaboradores ainda sem % registrado.']);
+
+  const wbOut = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(outBase), 'BASE_SET.26');
+  if (state.referencia.consultaWs) {
+    XLSX.utils.book_append_sheet(wbOut, state.referencia.consultaWs, 'CONSULTA');
+  }
+  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(outAjuste), 'AJUSTE');
+  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(notas), 'NOTAS_CONSOLIDACAO');
+
+  const nomeArquivo = `CONSOLIDADO_Base_ordem_x_Projeto_${timestamp()}.xlsx`;
+  XLSX.writeFile(wbOut, nomeArquivo);
+  return nomeArquivo;
+}
+
+</script>
+<script>
+/* ==========================================================================
+   Interface — Consolidação de Alocação de Horas dos SMs
+   ========================================================================== */
+
+function el(tag, cls, html) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (html !== undefined) e.innerHTML = html;
+  return e;
+}
+
+function setStep(n) {
+  $all('.hc-step').forEach(s => s.classList.remove('hc-step-active'));
+  const step = $('#step-' + n);
+  if (step) step.classList.add('hc-step-active');
+}
+
+/* -------------------- Passo 1: uploads -------------------- */
+
+$('#refInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $('#refStatus').textContent = 'Lendo referência…';
+  try {
+    const ref = await processarReferencia(file);
+    $('#refStatus').innerHTML = `<strong>${ref.nome}</strong> — ${ref.baseRows.length} colaboradores na base` +
+      (ref.duplicados ? ` <span class="hc-warn">(${ref.duplicados} nomes duplicados na base — verifique)</span>` : '');
+    atualizarBotaoProcessar();
+  } catch (err) {
+    $('#refStatus').innerHTML = `<span class="hc-error">Erro: ${err.message}</span>`;
+  }
+});
+
+$('#smInput').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files);
+  $('#smStatus').textContent = 'Lendo arquivos…';
+  let expandidos = [];
+  for (const f of files) {
+    expandidos = expandidos.concat(await expandZipIfNeeded(f));
+  }
+  $('#smStatus').textContent = `${expandidos.length} arquivo(s) .xlsx identificado(s) (incluindo os extraídos de zip).`;
+  state._pendingFiles = expandidos;
+  atualizarBotaoProcessar();
+});
+
+function atualizarBotaoProcessar() {
+  $('#btnProcessar').disabled = !(state.referencia && state._pendingFiles && state._pendingFiles.length);
+}
+
+$('#btnProcessar').addEventListener('click', async () => {
+  $('#btnProcessar').disabled = true;
+  $('#btnProcessar').textContent = 'Processando…';
+  state.arquivos = [];
+  for (let i = 0; i < state._pendingFiles.length; i++) {
+    const item = await processarArquivoSM(state._pendingFiles[i], i);
+    state.arquivos.push(item);
+  }
+  calcularDecisoesCruzadas();
+  renderChecklist();
+  setStep(2);
+  $('#btnProcessar').textContent = 'Rodar checklist de qualidade';
+});
+
+/* -------------------- Passo 2: checklist / pontos de decisão -------------------- */
+
+function renderChecklist() {
+  const c = $('#checklistBody');
+  c.innerHTML = '';
+
+  // Resumo
+  const okCount = state.arquivos.filter(a => a.status === 'ok').length;
+  const resumo = el('div', 'hc-summary');
+  resumo.innerHTML = `<strong>${state.arquivos.length}</strong> arquivo(s) recebido(s) ·
+    <strong>${okCount}</strong> com estrutura válida ·
+    <strong>${state.estruturaRejeitados.length}</strong> rejeitado(s) ·
+    <strong>${state.conflitos.length}</strong> conflito(s) ·
+    <strong>${state.semProjetoPendentes.length}</strong> linha(s) sem projeto`;
+  c.appendChild(resumo);
+
+  if (state.estruturaRejeitados.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Arquivos rejeitados (fora do padrão)'));
+    state.estruturaRejeitados.forEach(item => {
+      const box = el('div', 'hc-card hc-card-block');
+      box.innerHTML = `<strong>${item.nome}</strong><div>${item.motivo}</div>`;
+      c.appendChild(box);
+    });
+  }
+
+  if (state.abaDuplicadaPendente.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Arquivos com abas BASE_SET.26 duplicadas — escolha qual usar'));
+    state.abaDuplicadaPendente.forEach(item => {
+      const box = el('div', 'hc-card hc-card-block');
+      box.innerHTML = `<strong>${item.nome}</strong><div class="hc-opts"></div>`;
+      const opts = box.querySelector('.hc-opts');
+      item.opcoesBase.forEach(op => {
+        const btn = el('button', 'hc-btn hc-btn-secondary',
+          `${op.name} — ${op.totalLinhas} linhas, ${op.preenchidas} preenchidas`);
+        btn.onclick = () => {
+          item.sheetEscolhida = op.name;
+          finalizarLeituraArquivo(item, item.wb, op.name);
+          item.status = 'ok';
+          calcularDecisoesCruzadas();
+          renderChecklist();
+        };
+        opts.appendChild(btn);
+      });
+      c.appendChild(box);
+    });
+  }
+
+  if (state.nomesPendentes.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Confirmação do SM por arquivo'));
+    state.arquivos.filter(a => a.status === 'ok').forEach(item => {
+      const box = el('div', 'hc-card');
+      box.innerHTML = `<div class="hc-filename">${item.nome}</div>
+        <label class="hc-label">SM responsável</label>
+        <input type="text" class="hc-input" value="${item.smConfirmado || item.smSugerido}" data-idx="${item.idx}"/>
+        <div class="hc-meta">${item.filledRows.length} linha(s) preenchida(s) · ${item.ajusteRows.length} ajuste(s)</div>`;
+      const input = box.querySelector('input');
+      input.oninput = () => { item.smConfirmado = input.value.trim(); calcularDecisoesCruzadas(); atualizarStatusGeracao(); };
+      item.smConfirmado = item.smConfirmado || item.smSugerido;
+      c.appendChild(box);
+    });
+  }
+
+  const errosSoma = [];
+  const errosColab = [];
+  state.arquivos.forEach(item => {
+    (item.erros || []).forEach(e => {
+      if (e.tipo === 'soma') errosSoma.push({ item, e });
+      if (e.tipo === 'colaborador_ausente') errosColab.push({ item, e });
+    });
+  });
+  if (errosSoma.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Erros de soma (MELHORIA + PROJETO ≠ 100%)'));
+    errosSoma.forEach(({item, e}) => {
+      const box = el('div', 'hc-card hc-card-block');
+      box.innerHTML = `<strong>${e.colaborador}</strong> em ${item.nome} — Melhoria ${fmtPct(e.melhoria)}, Projeto ${fmtPct(e.projeto)}`;
+      c.appendChild(box);
+    });
+  }
+  if (errosColab.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Colaboradores preenchidos fora da base de referência'));
+    errosColab.forEach(({item, e}) => {
+      const box = el('div', 'hc-card hc-card-block');
+      box.innerHTML = `<strong>${e.colaborador}</strong> em ${item.nome} — não encontrado na base de referência`;
+      c.appendChild(box);
+    });
+  }
+
+  if (state.conflitos.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Conflitos entre SMs (mesmo colaborador, mesmo projeto, % divergente)'));
+    state.conflitos.forEach((conf, ci) => {
+      const box = el('div', 'hc-card');
+      box.innerHTML = `<div class="hc-filename">${conf.colaborador} — ID ${conf.idProjeto}</div>
+        <div class="hc-conflict-row">
+          <label><input type="radio" name="conf${ci}" value="a"> ${conf.a.smNome}: Melhoria ${fmtPct(conf.a.melhoria)} / Projeto ${fmtPct(conf.a.projetoPct)}</label>
+          <label><input type="radio" name="conf${ci}" value="b"> ${conf.b.smNome}: Melhoria ${fmtPct(conf.b.melhoria)} / Projeto ${fmtPct(conf.b.projetoPct)}</label>
+          <label><input type="radio" name="conf${ci}" value="ambas"> Manter as duas linhas (são projetos/squads diferentes)</label>
+        </div>`;
+      box.querySelectorAll('input[type=radio]').forEach(r => {
+        r.onchange = () => { conf.resolucao = r.value; atualizarStatusGeracao(); };
+      });
+      c.appendChild(box);
+    });
+  }
+
+  if (state.semProjetoPendentes.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Linhas preenchidas sem indicação de projeto'));
+    state.semProjetoPendentes.forEach((p, pi) => {
+      const box = el('div', 'hc-card');
+      box.innerHTML = `<div class="hc-filename">${p.colaborador} — Melhoria ${fmtPct(p.row[COL.MELHORIA])} / Projeto ${fmtPct(p.row[COL.PROJETO_PCT])}</div>
+        <div class="hc-conflict-row">
+          <label><input type="radio" name="semproj${pi}" value="incluir"> Incluir mesmo assim, sem projeto vinculado</label>
+          <label><input type="radio" name="semproj${pi}" value="excluir"> Excluir, aguardar complementação do SM</label>
+        </div>`;
+      box.querySelectorAll('input[type=radio]').forEach(r => {
+        r.onchange = () => { p.resolucao = r.value; atualizarStatusGeracao(); };
+      });
+      c.appendChild(box);
+    });
+  }
+
+  if (!state.estruturaRejeitados.length && !state.conflitos.length && !state.semProjetoPendentes.length &&
+      !state.abaDuplicadaPendente.length && errosSoma.length === 0 && errosColab.length === 0) {
+    c.appendChild(el('div', 'hc-card hc-card-ok', 'Nenhum ponto bloqueante encontrado — pode revisar os nomes de SM acima e gerar o consolidado.'));
+  }
+
+  atualizarStatusGeracao();
+}
+
+function atualizarStatusGeracao() {
+  const bloqueado = temPendenciasBloqueantes();
+  $('#btnGerar').disabled = bloqueado;
+  $('#geracaoStatus').textContent = bloqueado
+    ? 'Resolva os pontos de decisão acima para habilitar a geração do arquivo.'
+    : 'Pronto para gerar o arquivo consolidado.';
+}
+
+$('#btnGerar').addEventListener('click', () => {
+  const nome = gerarConsolidado();
+  $('#geracaoStatus').innerHTML = `<span class="hc-ok">Arquivo gerado: ${nome}</span>`;
+  setStep(3);
+});
+
+</script>
+</body>
+</html>
