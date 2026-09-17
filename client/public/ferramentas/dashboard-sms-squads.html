@@ -1074,8 +1074,13 @@ function applySquadOverrides(list){
     .filter(s=> MANUAL_OVERRIDES.deletedSquadIds.indexOf(s.id) === -1)
     .map(s=>{
       const ov = MANUAL_OVERRIDES.squads[s.id];
-      if(!ov) return s;
-      return Object.assign({}, s, ov, { _manual: Object.keys(ov) });
+      const merged = ov ? Object.assign({}, s, ov, { _manual: Object.keys(ov) }) : Object.assign({}, s);
+      // temSM precisa ser recalculado AQUI, depois do override — se calculado antes (como no
+      // list = REGISTRY.map(...) de buildUnified), marcar uma squad como "Sem SM" grava
+      // levantamento_sm='' corretamente mas a flag temSM fica presa no valor antigo (true),
+      // e a squad continua contando como "com SM" em todo filtro/KPI que olha só pra temSM.
+      merged.temSM = !isBlank(merged.levantamento_sm);
+      return merged;
     });
 }
 /* nome efetivo de um SM depois de renomeio/remoção manual — nunca mexe no
