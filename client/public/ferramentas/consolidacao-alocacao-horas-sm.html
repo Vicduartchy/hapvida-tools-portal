@@ -236,19 +236,35 @@ async function expandZipIfNeeded(file) {
   return out;
 }
 
+/* Busca de aba tolerante a maiúsculas/minúsculas e espaços extras — SMs digitam
+   o nome da aba manualmente e a capitalização varia (BASE_SET.26 vs BASE_Set.26,
+   por exemplo), mas a estrutura é a mesma. */
+function findSheetCI(wb, target) {
+  const t = target.trim().toLowerCase();
+  return wb.SheetNames.find(n => n.trim().toLowerCase() === t) || null;
+}
+function findBaseSheets(wb) {
+  return wb.SheetNames.filter(n => {
+    const norm = n.trim().toLowerCase();
+    return norm === 'base_set.26' || norm.startsWith('base_set.26 (');
+  });
+}
+
 /* -------------------- Processamento -------------------- */
 
 async function processarReferencia(file) {
   const wb = await readFileAsWorkbook(file);
-  if (!wb.Sheets['BASE_SET.26']) throw new Error('A planilha de referência não contém a aba BASE_SET.26.');
-  const aoa = sheetAOA(wb, 'BASE_SET.26');
+  const baseSheetName = findSheetCI(wb, 'BASE_SET.26');
+  if (!baseSheetName) throw new Error('A planilha de referência não contém a aba BASE_SET.26.');
+  const aoa = sheetAOA(wb, baseSheetName);
   const headerRows = [aoa[0], aoa[1]];
   const baseRows = aoa.slice(2).filter(r => r && r[COL.COLABORADOR]);
   const colabSet = new Set(baseRows.map(r => r[COL.COLABORADOR]));
   const dupCheck = {};
   let duplicados = 0;
   baseRows.forEach(r => { const c = r[COL.COLABORADOR]; dupCheck[c] = (dupCheck[c]||0)+1; if (dupCheck[c]===2) duplicados++; });
-  state.referencia = { wb, headerRows, baseRows, colabSet, consultaWs: wb.Sheets['CONSULTA'] || null, duplicados, nome: file.name };
+  const consultaSheetName = findSheetCI(wb, 'CONSULTA');
+  state.referencia = { wb, headerRows, baseRows, colabSet, consultaWs: consultaSheetName ? wb.Sheets[consultaSheetName] : null, duplicados, nome: file.name };
   return state.referencia;
 }
 
@@ -261,8 +277,8 @@ async function processarArquivoSM(file, idx) {
   catch (e) { item.status = 'rejeitado'; item.motivo = 'Não foi possível abrir o arquivo (' + e.message + ').'; return item; }
   item.wb = wb;
 
-  const baseSheets = wb.SheetNames.filter(n => n === 'BASE_SET.26' || n.startsWith('BASE_SET.26 ('));
-  const temEstruturaPadrao = wb.Sheets['CONSULTA'] && wb.Sheets['AJUSTE'] && baseSheets.length >= 1;
+  const baseSheets = findBaseSheets(wb);
+  const temEstruturaPadrao = findSheetCI(wb, 'CONSULTA') && findSheetCI(wb, 'AJUSTE') && baseSheets.length >= 1;
   if (!temEstruturaPadrao) {
     item.status = 'rejeitado';
     item.motivo = 'Estrutura fora do padrão — não contém as três abas BASE_SET.26 / CONSULTA / AJUSTE.';
@@ -305,7 +321,7 @@ function finalizarLeituraArquivo(item, wb, sheetName) {
     }
   });
 
-  const ajusteAOA = sheetAOA(wb, 'AJUSTE') || [];
+  const ajusteAOA = sheetAOA(wb, findSheetCI(wb, 'AJUSTE')) || [];
   item.ajusteRows = ajusteAOA.slice(1).filter(r => r && r[0]).map(r => r.slice(0, AJUSTE_NCOLS));
 }
 
