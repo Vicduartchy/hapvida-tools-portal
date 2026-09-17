@@ -46,6 +46,14 @@ input[type=file]{display:block;width:100%;padding:10px;border:1px dashed var(--b
 .hc-error{color:var(--vermelho);font-weight:600;}
 .hc-ok{color:var(--verde);font-weight:600;}
 .hc-opts{margin-top:6px;}
+.hc-h4{font-size:13px;color:var(--azul-escuro);margin:16px 0 8px;font-weight:700;}
+.hc-subcard{border:1px solid var(--borda);border-radius:6px;padding:10px 12px;margin-bottom:8px;background:#fff;}
+.hc-soma-inputs{display:flex;align-items:flex-end;gap:12px;margin-top:6px;}
+.hc-soma-inputs label{font-size:12px;color:var(--texto-suave);}
+.hc-soma-inputs input{width:80px;}
+.hc-soma-status,.hc-colab-status{font-size:12px;font-weight:600;margin-left:4px;}
+.hc-colab-status{display:inline-block;margin-top:4px;}
+.hc-excluir-linha{display:block;margin-top:8px;font-size:13px;cursor:pointer;color:var(--texto-suave);}
 footer{max-width:920px;margin:0 auto;padding:0 20px 40px;color:var(--texto-suave);font-size:12px;}
 </style>
 </head>
@@ -135,6 +143,11 @@ const state = {
   nomesPendentes: [],       // {arquivoIdx, resolucao: null|nome confirmado}
   estruturaRejeitados: [],  // {nome, motivo}
   abaDuplicadaPendente: [], // {arquivoIdx, opcoes:[sheetNames], escolhida:null}
+  somaPendentes: [],        // recalculado a cada calcularDecisoesCruzadas: linhas com soma != 100% ainda não resolvidas
+  colaboradorAusentePendentes: [], // idem, colaboradores fora da base de referência ainda não resolvidos
+  somaExcluidas: new Set(),              // chaves "arquivoIdx|row.join('§')" excluídas manualmente (erro de soma)
+  colaboradorAusenteExcluidas: new Set(), // idem, colaborador fora da base
+  _resolucoesConflito: new Map(),        // chave (par de linhas) -> resolução, sobrevive a recálculos
 };
 
 function $(sel) { return document.querySelector(sel); }
@@ -241,9 +254,12 @@ function finalizarLeituraArquivo(item, wb, sheetName) {
   item.filledRows = rows.filter(r => !isEmpty(r[COL.MELHORIA]) || !isEmpty(r[COL.PROJETO_PCT]));
 
   item.filledRows.forEach(r => {
-    const m = normNum(r[COL.MELHORIA]), p = normNum(r[COL.PROJETO_PCT]);
-    if (Math.abs((m + p) - 1) > 0.005) {
-      item.erros.push({ tipo: 'soma', colaborador: r[COL.COLABORADOR], melhoria: m, projeto: p });
+    // guarda o valor original uma única vez, antes de qualquer correção manual —
+    // é o que permite ao NOTAS_CONSOLIDACAO relatar "de X para Y" depois.
+    if (r.__origMelhoria === undefined) {
+      r.__origMelhoria = r[COL.MELHORIA];
+      r.__origProjetoPct = r[COL.PROJETO_PCT];
+      r.__origColaborador = r[COL.COLABORADOR];
     }
     if (isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) {
       item.semProjeto.push(r);
@@ -263,6 +279,8 @@ function calcularDecisoesCruzadas() {
   state.nomesPendentes = [];
   state.estruturaRejeitados = [];
   state.abaDuplicadaPendente = [];
+  state.somaPendentes = [];
+  state.colaboradorAusentePendentes = [];
 
   state.arquivos.forEach((item, idx) => {
     if (item.status === 'rejeitado') { state.estruturaRejeitados.push(item); return; }
@@ -271,10 +289,16 @@ function calcularDecisoesCruzadas() {
 
     item.filledRows.forEach(r => {
       const colab = r[COL.COLABORADOR];
-      if (!state.referencia.colabSet.has(colab)) {
-        item.erros.push({ tipo: 'colaborador_ausente', colaborador: colab });
-        return;
+      const chave = idx + '|' + r.join('§');
+      const m = normNum(r[COL.MELHORIA]), p = normNum(r[COL.PROJETO_PCT]);
+      if (Math.abs((m + p) - 1) > 0.005 && !state.somaExcluidas.has(chave)) {
+        state.somaPendentes.push({ arquivoIdx: idx, row: r, colaborador: colab });
       }
+      const naBase = state.referencia.colabSet.has(colab);
+      if (!naBase && !state.colaboradorAusenteExcluidas.has(chave)) {
+        state.colaboradorAusentePendentes.push({ arquivoIdx: idx, row: r, colaboradorOriginal: colab });
+      }
+      if (!naBase) return;
       if (isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) return; // já capturado em semProjeto
       if (!state.colaboradorMap[colab]) state.colaboradorMap[colab] = [];
       state.colaboradorMap[colab].push({
@@ -285,7 +309,7 @@ function calcularDecisoesCruzadas() {
     });
 
     item.semProjeto.forEach((r, rIdx) => {
-      state.semProjetoPendentes.push({ arquivoIdx: idx, rowIdx: rIdx, colaborador: r[COL.COLABORADOR], row: r, resolucao: null });
+      state.semProjetoPendentes.push({ arquivoIdx: idx, rowIdx: rIdx, colaborador: r[COL.COLABORADOR], row: r, resolucao: r.__resolucaoSemProjeto || null });
     });
   });
 
@@ -301,7 +325,8 @@ function calcularDecisoesCruzadas() {
           bySm[sms[j]].forEach(eb => {
             const mesmoId = ea.idProjeto && eb.idProjeto && String(ea.idProjeto) === String(eb.idProjeto);
             if (mesmoId && (ea.melhoria !== eb.melhoria || ea.projetoPct !== eb.projetoPct)) {
-              state.conflitos.push({ colaborador: colab, idProjeto: ea.idProjeto, a: ea, b: eb, resolucao: null });
+              const chaveConflito = ea.row.join('§') + '::' + eb.row.join('§');
+              state.conflitos.push({ colaborador: colab, idProjeto: ea.idProjeto, a: ea, b: eb, chave: chaveConflito, resolucao: state._resolucoesConflito.get(chaveConflito) || null });
             }
           });
         });
@@ -315,13 +340,14 @@ function temPendenciasBloqueantes() {
          state.abaDuplicadaPendente.some(i => !i.sheetEscolhida) ||
          state.conflitos.some(c => !c.resolucao) ||
          state.semProjetoPendentes.some(p => !p.resolucao) ||
-         state.arquivos.some(i => i.erros && i.erros.some(e => e.tipo === 'soma' || e.tipo === 'colaborador_ausente'));
+         state.somaPendentes.length > 0 ||
+         state.colaboradorAusentePendentes.length > 0;
 }
 
 /* -------------------- Geração do arquivo final -------------------- */
 
 function gerarConsolidado() {
-  const excluidos = new Set(); // "arquivoIdx|colaborador|idProjeto" a excluir por resolução de conflito/sem-projeto
+  const excluidos = new Set([...state.somaExcluidas, ...state.colaboradorAusenteExcluidas]); // "arquivoIdx|colaborador|idProjeto" a excluir por resolução de conflito/sem-projeto/soma/colaborador-ausente
 
   state.conflitos.forEach(c => {
     if (c.resolucao === 'a') excluidos.add(c.b.arquivoIdx + '|' + c.b.row.join('§'));
@@ -388,6 +414,30 @@ function gerarConsolidado() {
   if (state.semProjetoPendentes.length) {
     notas.push(['Linhas preenchidas sem indicação de projeto e sua resolução:']);
     state.semProjetoPendentes.forEach(p => notas.push([`  ${p.colaborador} — decisão: ${p.resolucao === 'incluir' ? 'incluída sem projeto vinculado' : 'excluída, aguardando complementação'}`]));
+    notas.push(['']);
+  }
+  const correcoes = [];
+  state.arquivos.forEach(item => {
+    if (item.status !== 'ok') return;
+    const smNome = item.smConfirmado || item.smSugerido;
+    item.filledRows.forEach(r => {
+      if (r.__origMelhoria !== undefined &&
+          (Math.abs(normNum(r[COL.MELHORIA]) - normNum(r.__origMelhoria)) > 0.0001 ||
+           Math.abs(normNum(r[COL.PROJETO_PCT]) - normNum(r.__origProjetoPct)) > 0.0001)) {
+        correcoes.push(`  ${r[COL.COLABORADOR]} (${smNome}): soma original ${fmtPct(r.__origMelhoria)}/${fmtPct(r.__origProjetoPct)} corrigida para ${fmtPct(r[COL.MELHORIA])}/${fmtPct(r[COL.PROJETO_PCT])}`);
+      }
+      if (r.__origColaborador !== undefined && r[COL.COLABORADOR] !== r.__origColaborador) {
+        correcoes.push(`  "${r.__origColaborador}" corrigido para "${r[COL.COLABORADOR]}" (${smNome})`);
+      }
+    });
+  });
+  if (correcoes.length) {
+    notas.push(['Correções manuais aplicadas nesta rodada:']);
+    correcoes.forEach(l => notas.push([l]));
+    notas.push(['']);
+  }
+  if (state.somaExcluidas.size || state.colaboradorAusenteExcluidas.size) {
+    notas.push([`Linhas excluídas manualmente: ${state.somaExcluidas.size} por erro de soma, ${state.colaboradorAusenteExcluidas.size} por colaborador fora da base.`]);
     notas.push(['']);
   }
   notas.push(['Aba AJUSTE: ' + (outAjuste.length - 1) + ' movimentações consolidadas.']);
@@ -484,6 +534,8 @@ function renderChecklist() {
     <strong>${okCount}</strong> com estrutura válida ·
     <strong>${state.estruturaRejeitados.length}</strong> rejeitado(s) ·
     <strong>${state.conflitos.length}</strong> conflito(s) ·
+    <strong>${state.somaPendentes.length}</strong> erro(s) de soma ·
+    <strong>${state.colaboradorAusentePendentes.length}</strong> colaborador(es) fora da base ·
     <strong>${state.semProjetoPendentes.length}</strong> linha(s) sem projeto`;
   c.appendChild(resumo);
 
@@ -518,81 +570,139 @@ function renderChecklist() {
     });
   }
 
-  if (state.nomesPendentes.length) {
-    c.appendChild(el('h3', 'hc-h3', 'Confirmação do SM por arquivo'));
-    state.arquivos.filter(a => a.status === 'ok').forEach(item => {
-      const box = el('div', 'hc-card');
-      box.innerHTML = `<div class="hc-filename">${item.nome}</div>
-        <label class="hc-label">SM responsável</label>
-        <input type="text" class="hc-input" value="${item.smConfirmado || item.smSugerido}" data-idx="${item.idx}"/>
-        <div class="hc-meta">${item.filledRows.length} linha(s) preenchida(s) · ${item.ajusteRows.length} ajuste(s)</div>`;
-      const input = box.querySelector('input');
-      input.oninput = () => { item.smConfirmado = input.value.trim(); calcularDecisoesCruzadas(); atualizarStatusGeracao(); };
+  // ---- Bloco por SM: nome do responsável + todas as pendências do levantamento dele ----
+  const arquivosOk = state.arquivos.filter(a => a.status === 'ok');
+  if (arquivosOk.length) {
+    c.appendChild(el('h3', 'hc-h3', 'Por SM — confirme o nome e resolva as pendências de cada levantamento'));
+    arquivosOk.forEach(item => {
+      const somaDoItem = state.somaPendentes.filter(p => p.arquivoIdx === item.idx);
+      const colabAusenteDoItem = state.colaboradorAusentePendentes.filter(p => p.arquivoIdx === item.idx);
+      const semProjDoItem = state.semProjetoPendentes.filter(p => p.arquivoIdx === item.idx);
+      const semPendencias = somaDoItem.length === 0 && colabAusenteDoItem.length === 0 && semProjDoItem.length === 0;
+
+      const box = el('div', 'hc-card' + (semPendencias ? ' hc-card-ok' : ' hc-card-block'));
       item.smConfirmado = item.smConfirmado || item.smSugerido;
+      box.innerHTML = `<div class="hc-filename">SM responsável: <span class="hc-sm-nome">${item.smConfirmado}</span></div>
+        <div class="hc-meta">${item.nome} · ${item.filledRows.length} linha(s) preenchida(s) · ${item.ajusteRows.length} ajuste(s)</div>
+        <label class="hc-label" style="margin-top:10px;">Confirmar/corrigir nome do SM</label>
+        <input type="text" class="hc-input hc-sm-input" value="${item.smConfirmado}"/>`;
+
+      const smInput = box.querySelector('.hc-sm-input');
+      smInput.oninput = () => {
+        item.smConfirmado = smInput.value.trim();
+        box.querySelector('.hc-sm-nome').textContent = item.smConfirmado || item.smSugerido;
+        atualizarStatusGeracao();
+      };
+
+      if (somaDoItem.length) {
+        box.appendChild(el('h4', 'hc-h4', `Erros de soma — Melhoria + Projeto ≠ 100% (${somaDoItem.length})`));
+        somaDoItem.forEach(p => {
+          const linha = el('div', 'hc-subcard');
+          const m0 = Math.round(normNum(p.row[COL.MELHORIA]) * 100);
+          const p0 = Math.round(normNum(p.row[COL.PROJETO_PCT]) * 100);
+          const chave = p.arquivoIdx + '|' + p.row.join('§');
+          linha.innerHTML = `<div class="hc-filename">${p.colaborador}</div>
+            <div class="hc-soma-inputs">
+              <label class="hc-label">Melhoria %<input type="number" min="0" max="100" class="hc-input hc-soma-m" value="${m0}"/></label>
+              <label class="hc-label">Projeto %<input type="number" min="0" max="100" class="hc-input hc-soma-p" value="${p0}"/></label>
+              <span class="hc-soma-status"></span>
+            </div>
+            <label class="hc-excluir-linha"><input type="checkbox" class="hc-soma-excluir" ${state.somaExcluidas.has(chave) ? 'checked' : ''}> Excluir esta linha da consolidação</label>`;
+          const inputM = linha.querySelector('.hc-soma-m');
+          const inputP = linha.querySelector('.hc-soma-p');
+          const statusSpan = linha.querySelector('.hc-soma-status');
+          const checkboxExcluir = linha.querySelector('.hc-soma-excluir');
+          function atualizarSomaStatus() {
+            const mv = (parseFloat(inputM.value) || 0) / 100, pv = (parseFloat(inputP.value) || 0) / 100;
+            const ok = Math.abs((mv + pv) - 1) <= 0.005;
+            statusSpan.textContent = ok ? '✓ soma 100%' : 'soma ' + Math.round((mv + pv) * 100) + '%';
+            statusSpan.className = 'hc-soma-status ' + (ok ? 'hc-ok' : 'hc-error');
+          }
+          inputM.oninput = () => { p.row[COL.MELHORIA] = (parseFloat(inputM.value) || 0) / 100; atualizarSomaStatus(); calcularDecisoesCruzadas(); atualizarStatusGeracao(); };
+          inputP.oninput = () => { p.row[COL.PROJETO_PCT] = (parseFloat(inputP.value) || 0) / 100; atualizarSomaStatus(); calcularDecisoesCruzadas(); atualizarStatusGeracao(); };
+          checkboxExcluir.onchange = () => {
+            if (checkboxExcluir.checked) state.somaExcluidas.add(chave); else state.somaExcluidas.delete(chave);
+            calcularDecisoesCruzadas();
+            renderChecklist();
+          };
+          atualizarSomaStatus();
+          box.appendChild(linha);
+        });
+      }
+
+      if (colabAusenteDoItem.length) {
+        box.appendChild(el('h4', 'hc-h4', `Colaboradores fora da base de referência (${colabAusenteDoItem.length})`));
+        colabAusenteDoItem.forEach(p => {
+          const linha = el('div', 'hc-subcard');
+          const chave = p.arquivoIdx + '|' + p.row.join('§');
+          linha.innerHTML = `<div class="hc-filename">"${p.colaboradorOriginal}"</div>
+            <label class="hc-label">Corrigir nome (precisa bater exatamente com a base de referência)</label>
+            <input type="text" class="hc-input hc-colab-corrigir" value="${p.colaboradorOriginal}"/>
+            <span class="hc-colab-status"></span>
+            <label class="hc-excluir-linha"><input type="checkbox" class="hc-colab-excluir" ${state.colaboradorAusenteExcluidas.has(chave) ? 'checked' : ''}> Excluir esta linha da consolidação</label>`;
+          const inputNome = linha.querySelector('.hc-colab-corrigir');
+          const statusSpan = linha.querySelector('.hc-colab-status');
+          const checkboxExcluir = linha.querySelector('.hc-colab-excluir');
+          function atualizarColabStatus() {
+            const existe = state.referencia.colabSet.has(inputNome.value.trim());
+            statusSpan.textContent = existe ? '✓ encontrado na base' : 'não encontrado na base';
+            statusSpan.className = 'hc-colab-status ' + (existe ? 'hc-ok' : 'hc-error');
+          }
+          inputNome.oninput = () => { p.row[COL.COLABORADOR] = inputNome.value.trim(); atualizarColabStatus(); calcularDecisoesCruzadas(); atualizarStatusGeracao(); };
+          checkboxExcluir.onchange = () => {
+            if (checkboxExcluir.checked) state.colaboradorAusenteExcluidas.add(chave); else state.colaboradorAusenteExcluidas.delete(chave);
+            calcularDecisoesCruzadas();
+            renderChecklist();
+          };
+          atualizarColabStatus();
+          box.appendChild(linha);
+        });
+      }
+
+      if (semProjDoItem.length) {
+        box.appendChild(el('h4', 'hc-h4', `Linhas preenchidas sem indicação de projeto (${semProjDoItem.length})`));
+        semProjDoItem.forEach((p, pi) => {
+          const linha = el('div', 'hc-subcard');
+          linha.innerHTML = `<div class="hc-filename">${p.colaborador} — Melhoria ${fmtPct(p.row[COL.MELHORIA])} / Projeto ${fmtPct(p.row[COL.PROJETO_PCT])}</div>
+            <div class="hc-conflict-row">
+              <label><input type="radio" name="semproj-${item.idx}-${pi}" value="incluir" ${p.resolucao === 'incluir' ? 'checked' : ''}> Incluir mesmo assim, sem projeto vinculado</label>
+              <label><input type="radio" name="semproj-${item.idx}-${pi}" value="excluir" ${p.resolucao === 'excluir' ? 'checked' : ''}> Excluir, aguardar complementação do SM</label>
+            </div>`;
+          linha.querySelectorAll('input[type=radio]').forEach(r => {
+            r.onchange = () => { p.resolucao = r.value; p.row.__resolucaoSemProjeto = r.value; atualizarStatusGeracao(); };
+          });
+          box.appendChild(linha);
+        });
+      }
+
+      if (semPendencias) {
+        box.appendChild(el('div', 'hc-ok', 'Sem pendências neste levantamento.'));
+      }
+
       c.appendChild(box);
     });
   }
 
-  const errosSoma = [];
-  const errosColab = [];
-  state.arquivos.forEach(item => {
-    (item.erros || []).forEach(e => {
-      if (e.tipo === 'soma') errosSoma.push({ item, e });
-      if (e.tipo === 'colaborador_ausente') errosColab.push({ item, e });
-    });
-  });
-  if (errosSoma.length) {
-    c.appendChild(el('h3', 'hc-h3', 'Erros de soma (MELHORIA + PROJETO ≠ 100%)'));
-    errosSoma.forEach(({item, e}) => {
-      const box = el('div', 'hc-card hc-card-block');
-      box.innerHTML = `<strong>${e.colaborador}</strong> em ${item.nome} — Melhoria ${fmtPct(e.melhoria)}, Projeto ${fmtPct(e.projeto)}`;
-      c.appendChild(box);
-    });
-  }
-  if (errosColab.length) {
-    c.appendChild(el('h3', 'hc-h3', 'Colaboradores preenchidos fora da base de referência'));
-    errosColab.forEach(({item, e}) => {
-      const box = el('div', 'hc-card hc-card-block');
-      box.innerHTML = `<strong>${e.colaborador}</strong> em ${item.nome} — não encontrado na base de referência`;
-      c.appendChild(box);
-    });
-  }
-
+  // Conflitos entre SMs — cruza 2 levantamentos diferentes, fica em bloco próprio
   if (state.conflitos.length) {
     c.appendChild(el('h3', 'hc-h3', 'Conflitos entre SMs (mesmo colaborador, mesmo projeto, % divergente)'));
     state.conflitos.forEach((conf, ci) => {
       const box = el('div', 'hc-card');
       box.innerHTML = `<div class="hc-filename">${conf.colaborador} — ID ${conf.idProjeto}</div>
         <div class="hc-conflict-row">
-          <label><input type="radio" name="conf${ci}" value="a"> ${conf.a.smNome}: Melhoria ${fmtPct(conf.a.melhoria)} / Projeto ${fmtPct(conf.a.projetoPct)}</label>
-          <label><input type="radio" name="conf${ci}" value="b"> ${conf.b.smNome}: Melhoria ${fmtPct(conf.b.melhoria)} / Projeto ${fmtPct(conf.b.projetoPct)}</label>
-          <label><input type="radio" name="conf${ci}" value="ambas"> Manter as duas linhas (são projetos/squads diferentes)</label>
+          <label><input type="radio" name="conf${ci}" value="a" ${conf.resolucao === 'a' ? 'checked' : ''}> ${conf.a.smNome}: Melhoria ${fmtPct(conf.a.melhoria)} / Projeto ${fmtPct(conf.a.projetoPct)}</label>
+          <label><input type="radio" name="conf${ci}" value="b" ${conf.resolucao === 'b' ? 'checked' : ''}> ${conf.b.smNome}: Melhoria ${fmtPct(conf.b.melhoria)} / Projeto ${fmtPct(conf.b.projetoPct)}</label>
+          <label><input type="radio" name="conf${ci}" value="ambas" ${conf.resolucao === 'ambas' ? 'checked' : ''}> Manter as duas linhas (são projetos/squads diferentes)</label>
         </div>`;
       box.querySelectorAll('input[type=radio]').forEach(r => {
-        r.onchange = () => { conf.resolucao = r.value; atualizarStatusGeracao(); };
-      });
-      c.appendChild(box);
-    });
-  }
-
-  if (state.semProjetoPendentes.length) {
-    c.appendChild(el('h3', 'hc-h3', 'Linhas preenchidas sem indicação de projeto'));
-    state.semProjetoPendentes.forEach((p, pi) => {
-      const box = el('div', 'hc-card');
-      box.innerHTML = `<div class="hc-filename">${p.colaborador} — Melhoria ${fmtPct(p.row[COL.MELHORIA])} / Projeto ${fmtPct(p.row[COL.PROJETO_PCT])}</div>
-        <div class="hc-conflict-row">
-          <label><input type="radio" name="semproj${pi}" value="incluir"> Incluir mesmo assim, sem projeto vinculado</label>
-          <label><input type="radio" name="semproj${pi}" value="excluir"> Excluir, aguardar complementação do SM</label>
-        </div>`;
-      box.querySelectorAll('input[type=radio]').forEach(r => {
-        r.onchange = () => { p.resolucao = r.value; atualizarStatusGeracao(); };
+        r.onchange = () => { conf.resolucao = r.value; state._resolucoesConflito.set(conf.chave, r.value); atualizarStatusGeracao(); };
       });
       c.appendChild(box);
     });
   }
 
   if (!state.estruturaRejeitados.length && !state.conflitos.length && !state.semProjetoPendentes.length &&
-      !state.abaDuplicadaPendente.length && errosSoma.length === 0 && errosColab.length === 0) {
+      !state.abaDuplicadaPendente.length && state.somaPendentes.length === 0 && state.colaboradorAusentePendentes.length === 0) {
     c.appendChild(el('div', 'hc-card hc-card-ok', 'Nenhum ponto bloqueante encontrado — pode revisar os nomes de SM acima e gerar o consolidado.'));
   }
 
