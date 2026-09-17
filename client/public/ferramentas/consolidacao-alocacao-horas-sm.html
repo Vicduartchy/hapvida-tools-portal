@@ -261,7 +261,9 @@ function finalizarLeituraArquivo(item, wb, sheetName) {
       r.__origProjetoPct = r[COL.PROJETO_PCT];
       r.__origColaborador = r[COL.COLABORADOR];
     }
-    if (isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) {
+    // Regra: com 100% em Melhoria (ou seja, sem % de Projeto), não referenciar projeto é normal.
+    // O que precisa de decisão é ter alguma % de Projeto SEM indicar qual projeto é.
+    if (normNum(r[COL.PROJETO_PCT]) > 0 && isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) {
       item.semProjeto.push(r);
     }
   });
@@ -299,7 +301,7 @@ function calcularDecisoesCruzadas() {
         state.colaboradorAusentePendentes.push({ arquivoIdx: idx, row: r, colaboradorOriginal: colab });
       }
       if (!naBase) return;
-      if (isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) return; // já capturado em semProjeto
+      if (normNum(r[COL.PROJETO_PCT]) > 0 && isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) return; // já capturado em semProjeto
       if (!state.colaboradorMap[colab]) state.colaboradorMap[colab] = [];
       state.colaboradorMap[colab].push({
         arquivoIdx: idx, smNome: item.smConfirmado || item.smSugerido, row: r,
@@ -412,7 +414,7 @@ function gerarConsolidado() {
     notas.push(['']);
   }
   if (state.semProjetoPendentes.length) {
-    notas.push(['Linhas preenchidas sem indicação de projeto e sua resolução:']);
+    notas.push(['Linhas com % de Projeto mas sem indicação de qual projeto, e sua resolução:']);
     state.semProjetoPendentes.forEach(p => notas.push([`  ${p.colaborador} — decisão: ${p.resolucao === 'incluir' ? 'incluída sem projeto vinculado' : 'excluída, aguardando complementação'}`]));
     notas.push(['']);
   }
@@ -660,7 +662,7 @@ function renderChecklist() {
       }
 
       if (semProjDoItem.length) {
-        box.appendChild(el('h4', 'hc-h4', `Linhas preenchidas sem indicação de projeto (${semProjDoItem.length})`));
+        box.appendChild(el('h4', 'hc-h4', `Com % de Projeto mas sem indicar qual projeto (${semProjDoItem.length})`));
         semProjDoItem.forEach((p, pi) => {
           const linha = el('div', 'hc-subcard');
           linha.innerHTML = `<div class="hc-filename">${p.colaborador} — Melhoria ${fmtPct(p.row[COL.MELHORIA])} / Projeto ${fmtPct(p.row[COL.PROJETO_PCT])}</div>
