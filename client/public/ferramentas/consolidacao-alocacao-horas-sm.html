@@ -54,6 +54,18 @@ input[type=file]{display:block;width:100%;padding:10px;border:1px dashed var(--b
 .hc-soma-status,.hc-colab-status{font-size:12px;font-weight:600;margin-left:4px;}
 .hc-colab-status{display:inline-block;margin-top:4px;}
 .hc-excluir-linha{display:block;margin-top:8px;font-size:13px;cursor:pointer;color:var(--texto-suave);}
+.hc-kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px;}
+@media (max-width:900px){.hc-kpi-row{grid-template-columns:repeat(2,1fr);}}
+.hc-kpi-card{background:#FCFDFF;border:1px solid var(--borda);border-radius:8px;padding:14px;border-top:3px solid var(--azul);}
+.hc-kpi-card.tone-verde{border-top-color:var(--verde);}
+.hc-kpi-card.tone-laranja{border-top-color:var(--laranja);}
+.hc-kpi-card.tone-vermelho{border-top-color:var(--vermelho);}
+.hc-kpi-label{font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.03em;}
+.hc-kpi-value{font-size:26px;font-weight:800;color:var(--azul-escuro);margin-top:4px;}
+.hc-kpi-hint{font-size:11px;color:var(--texto-suave);margin-top:2px;}
+.hc-chart-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;}
+@media (max-width:900px){.hc-chart-row{grid-template-columns:1fr;}}
+.hc-chart-box{border:1px solid var(--borda);border-radius:8px;padding:14px;background:#fff;}
 footer{max-width:920px;margin:0 auto;padding:0 20px 40px;color:var(--texto-suave);font-size:12px;}
 </style>
 </head>
@@ -102,9 +114,33 @@ footer{max-width:920px;margin:0 auto;padding:0 20px 40px;color:var(--texto-suave
       <div id="checklistBody"></div>
     </div>
     <div class="hc-panel">
-      <h2>3. Gerar consolidado</h2>
+      <h2>3. Consolidar</h2>
       <p class="hc-status" id="geracaoStatus">Aguardando checklist.</p>
-      <button class="hc-btn" id="btnGerar" disabled>Gerar arquivo consolidado (.xlsx)</button>
+      <button class="hc-btn" id="btnGerar" disabled>Consolidar e ver prévia</button>
+    </div>
+  </section>
+
+  <section id="step-preview" class="hc-step">
+    <div class="hc-panel">
+      <h2>Prévia da consolidação</h2>
+      <p class="hc-desc">Confira os números antes de gerar o arquivo final. Nada foi baixado ainda.</p>
+      <div class="hc-kpi-row" id="previewKpis"></div>
+      <div class="hc-chart-row">
+        <div class="hc-chart-box">
+          <h3 class="hc-h4">Cobertura da base</h3>
+          <canvas id="chartCobertura" height="220"></canvas>
+        </div>
+        <div class="hc-chart-box">
+          <h3 class="hc-h4">Colaboradores por Diretoria</h3>
+          <canvas id="chartDiretoria" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="hc-panel">
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="hc-btn hc-btn-secondary" id="btnVoltarChecklist">Voltar aos pontos de decisão</button>
+        <button class="hc-btn" id="btnBaixar">Gerar planilha consolidada (.xlsx)</button>
+      </div>
     </div>
   </section>
 
@@ -121,6 +157,7 @@ footer{max-width:920px;margin:0 auto;padding:0 20px 40px;color:var(--texto-suave
 
 <script src="/shared/vendor/jszip-3.10.2.min.js"></script>
 <script src="/shared/vendor/xlsx-core.min.js"></script>
+<script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script>
 /* ==========================================================================
    Consolidação de Alocação de Horas dos SMs — Hub do Agile Coach (Hapvida)
@@ -348,7 +385,7 @@ function temPendenciasBloqueantes() {
 
 /* -------------------- Geração do arquivo final -------------------- */
 
-function gerarConsolidado() {
+function montarConsolidado() {
   const excluidos = new Set([...state.somaExcluidas, ...state.colaboradorAusenteExcluidas]); // "arquivoIdx|colaborador|idProjeto" a excluir por resolução de conflito/sem-projeto/soma/colaborador-ausente
 
   state.conflitos.forEach(c => {
@@ -445,13 +482,55 @@ function gerarConsolidado() {
   notas.push(['Aba AJUSTE: ' + (outAjuste.length - 1) + ' movimentações consolidadas.']);
   notas.push(['Coluna "SM RESPONSAVEL (consolidacao)" em BASE_SET.26 indica a origem de cada linha, ou "BASE (nao preenchido)" para colaboradores ainda sem % registrado.']);
 
+  return { outBase, outAjuste, notas, coberturaPreenchida, totalColab };
+}
+
+function calcularInsights(dados) {
+  const rows = dados.outBase.slice(2); // pula as 2 linhas de cabeçalho
+  const refDiretoriaPorColab = {};
+  state.referencia.baseRows.forEach(r => { refDiretoriaPorColab[r[COL.COLABORADOR]] = r[COL.DIRETORIA] || '(sem diretoria)'; });
+
+  const porColaborador = {};
+  rows.forEach(r => {
+    const colab = r[COL.COLABORADOR];
+    if (!porColaborador[colab]) porColaborador[colab] = { projetos: new Set(), squads: new Set(), preenchido: false };
+    const idProj = r[COL.ID_PROJETO], proj = r[COL.PROJETO];
+    if (!isEmpty(idProj) || !isEmpty(proj)) porColaborador[colab].projetos.add(String(idProj || proj));
+    [COL.SQUAD1, COL.SQUAD2, COL.SQUAD3, COL.SQUAD4, COL.SQUAD5, COL.SQUAD6].forEach(c => {
+      if (!isEmpty(r[c])) porColaborador[colab].squads.add(r[c]);
+    });
+    if (r[r.length - 1] !== 'BASE (nao preenchido)') porColaborador[colab].preenchido = true;
+  });
+
+  const nomes = Object.keys(porColaborador);
+  const maisDeUmProjeto = nomes.filter(n => porColaborador[n].projetos.size > 1).length;
+  const maisDeUmaSquad = nomes.filter(n => porColaborador[n].squads.size > 1).length;
+  const maisDeUmDosDois = nomes.filter(n => porColaborador[n].projetos.size > 1 || porColaborador[n].squads.size > 1).length;
+
+  const porDiretoria = {};
+  nomes.forEach(n => {
+    const d = refDiretoriaPorColab[n] || '(sem diretoria)';
+    porDiretoria[d] = (porDiretoria[d] || 0) + 1;
+  });
+
+  return {
+    totalUnicos: nomes.length,
+    maisDeUmProjeto, maisDeUmaSquad, maisDeUmDosDois,
+    semPreenchimento: dados.totalColab - dados.coberturaPreenchida,
+    coberturaPreenchida: dados.coberturaPreenchida,
+    totalColab: dados.totalColab,
+    porDiretoria,
+  };
+}
+
+function baixarConsolidado(dados) {
   const wbOut = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(outBase), 'BASE_SET.26');
+  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(dados.outBase), 'BASE_SET.26');
   if (state.referencia.consultaWs) {
     XLSX.utils.book_append_sheet(wbOut, state.referencia.consultaWs, 'CONSULTA');
   }
-  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(outAjuste), 'AJUSTE');
-  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(notas), 'NOTAS_CONSOLIDACAO');
+  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(dados.outAjuste), 'AJUSTE');
+  XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(dados.notas), 'NOTAS_CONSOLIDACAO');
 
   const nomeArquivo = `CONSOLIDADO_Base_ordem_x_Projeto_${timestamp()}.xlsx`;
   XLSX.writeFile(wbOut, nomeArquivo);
@@ -715,12 +794,61 @@ function atualizarStatusGeracao() {
   const bloqueado = temPendenciasBloqueantes();
   $('#btnGerar').disabled = bloqueado;
   $('#geracaoStatus').textContent = bloqueado
-    ? 'Resolva os pontos de decisão acima para habilitar a geração do arquivo.'
-    : 'Pronto para gerar o arquivo consolidado.';
+    ? 'Resolva os pontos de decisão acima para habilitar a consolidação.'
+    : 'Pronto para consolidar e ver a prévia.';
+}
+
+let chartCoberturaInst = null, chartDiretoriaInst = null;
+
+function renderPreview() {
+  const dados = montarConsolidado();
+  state._dadosConsolidados = dados;
+  const ins = calcularInsights(dados);
+
+  const kpiHtml = [
+    { label: 'Colaboradores únicos na base final', value: ins.totalUnicos, hint: `${ins.totalColab} na base de referência`, tone: '' },
+    { label: 'Mais de um projeto', value: ins.maisDeUmProjeto, hint: 'atuam em >1 projeto', tone: 'tone-laranja' },
+    { label: 'Mais de uma squad', value: ins.maisDeUmaSquad, hint: 'atuam em >1 squad', tone: 'tone-laranja' },
+    { label: 'Mais de um projeto ou squad', value: ins.maisDeUmDosDois, hint: 'visão combinada', tone: 'tone-laranja' },
+    { label: 'Sem preenchimento nesta rodada', value: ins.semPreenchimento, hint: `${Math.round(100 * ins.coberturaPreenchida / ins.totalColab)}% de cobertura`, tone: ins.semPreenchimento > 0 ? 'tone-vermelho' : 'tone-verde' },
+  ].map(k => `<div class="hc-kpi-card ${k.tone}">
+      <div class="hc-kpi-label">${k.label}</div>
+      <div class="hc-kpi-value">${k.value}</div>
+      <div class="hc-kpi-hint">${k.hint}</div>
+    </div>`).join('');
+  $('#previewKpis').innerHTML = kpiHtml;
+
+  if (chartCoberturaInst) chartCoberturaInst.destroy();
+  chartCoberturaInst = new Chart($('#chartCobertura').getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Preenchidos nesta rodada', 'Sem preenchimento'],
+      datasets: [{ data: [ins.coberturaPreenchida, ins.semPreenchimento], backgroundColor: ['#1A3DAA', '#E1E5F0'] }]
+    },
+    options: { plugins: { legend: { position: 'bottom' } }, maintainAspectRatio: true }
+  });
+
+  const diretoriasOrdenadas = Object.entries(ins.porDiretoria).sort((a, b) => b[1] - a[1]);
+  if (chartDiretoriaInst) chartDiretoriaInst.destroy();
+  chartDiretoriaInst = new Chart($('#chartDiretoria').getContext('2d'), {
+    type: 'bar',
+    data: {
+      labels: diretoriasOrdenadas.map(d => d[0]),
+      datasets: [{ label: 'Colaboradores', data: diretoriasOrdenadas.map(d => d[1]), backgroundColor: '#F47920' }]
+    },
+    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }, maintainAspectRatio: true }
+  });
 }
 
 $('#btnGerar').addEventListener('click', () => {
-  const nome = gerarConsolidado();
+  renderPreview();
+  setStep('preview');
+});
+
+$('#btnVoltarChecklist').addEventListener('click', () => setStep(2));
+
+$('#btnBaixar').addEventListener('click', () => {
+  const nome = baixarConsolidado(state._dadosConsolidados);
   $('#geracaoStatus').innerHTML = `<span class="hc-ok">Arquivo gerado: ${nome}</span>`;
   setStep(3);
 });
