@@ -183,7 +183,7 @@ const state = {
   somaPendentes: [],        // recalculado a cada calcularDecisoesCruzadas: linhas com soma != 100% ainda não resolvidas
   colaboradorAusentePendentes: [], // idem, colaboradores fora da base de referência ainda não resolvidos
   somaExcluidas: new Set(),              // chaves "arquivoIdx|row.join('§')" excluídas manualmente (erro de soma)
-  colaboradorAusenteExcluidas: new Set(), // idem, colaborador fora da base
+  colaboradorAusenteResolucoes: new Map(), // chave -> 'aceitar' (novo colaborador, válido fora da base) | 'excluir'
   _resolucoesConflito: new Map(),        // chave (par de linhas) -> resolução, sobrevive a recálculos
 };
 
@@ -252,6 +252,13 @@ function findBaseSheets(wb) {
 
 /* -------------------- Processamento -------------------- */
 
+// Normaliza um nome pra fins de COMPARAÇÃO apenas (maiúsculas/minúsculas e espaços
+// extras não são erro, são só estilo de digitação de cada SM). O valor exibido/gravado
+// continua sendo a grafia canônica da base de referência.
+function normalizarNome(nome) {
+  return String(nome == null ? '' : nome).trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 async function processarReferencia(file) {
   const wb = await readFileAsWorkbook(file);
   const baseSheetName = findSheetCI(wb, 'BASE_SET.26');
@@ -260,11 +267,13 @@ async function processarReferencia(file) {
   const headerRows = [aoa[0], aoa[1]];
   const baseRows = aoa.slice(2).filter(r => r && r[COL.COLABORADOR]);
   const colabSet = new Set(baseRows.map(r => r[COL.COLABORADOR]));
+  const colabPorNomeNormalizado = new Map();
+  baseRows.forEach(r => { colabPorNomeNormalizado.set(normalizarNome(r[COL.COLABORADOR]), r[COL.COLABORADOR]); });
   const dupCheck = {};
   let duplicados = 0;
   baseRows.forEach(r => { const c = r[COL.COLABORADOR]; dupCheck[c] = (dupCheck[c]||0)+1; if (dupCheck[c]===2) duplicados++; });
   const consultaSheetName = findSheetCI(wb, 'CONSULTA');
-  state.referencia = { wb, headerRows, baseRows, colabSet, consultaWs: consultaSheetName ? wb.Sheets[consultaSheetName] : null, duplicados, nome: file.name };
+  state.referencia = { wb, headerRows, baseRows, colabSet, colabPorNomeNormalizado, consultaWs: consultaSheetName ? wb.Sheets[consultaSheetName] : null, duplicados, nome: file.name };
   return state.referencia;
 }
 
@@ -314,6 +323,14 @@ function finalizarLeituraArquivo(item, wb, sheetName) {
       r.__origProjetoPct = r[COL.PROJETO_PCT];
       r.__origColaborador = r[COL.COLABORADOR];
     }
+    // Maiúscula/minúscula e espaço extra não é erro, é só estilo de digitação do SM —
+    // se o nome bate com a referência ignorando isso, corrige a grafia automaticamente
+    // (silencioso, sem virar pendência) pra manter uma única grafia canônica no consolidado.
+    const nomeCanonico = state.referencia.colabPorNomeNormalizado.get(normalizarNome(r[COL.COLABORADOR]));
+    if (nomeCanonico && nomeCanonico !== r[COL.COLABORADOR]) {
+      r[COL.COLABORADOR] = nomeCanonico;
+      r.__correcaoAutomaticaGrafia = true;
+    }
     // Regra: com 100% em Melhoria (ou seja, sem % de Projeto), não referenciar projeto é normal.
     // O que precisa de decisão é ter alguma % de Projeto SEM indicar qual projeto é.
     if (normNum(r[COL.PROJETO_PCT]) > 0 && isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) {
@@ -350,10 +367,11 @@ function calcularDecisoesCruzadas() {
         state.somaPendentes.push({ arquivoIdx: idx, row: r, colaborador: colab });
       }
       const naBase = state.referencia.colabSet.has(colab);
-      if (!naBase && !state.colaboradorAusenteExcluidas.has(chave)) {
-        state.colaboradorAusentePendentes.push({ arquivoIdx: idx, row: r, colaboradorOriginal: colab });
+      const resolucaoAusente = state.colaboradorAusenteResolucoes.get(chave) || null;
+      if (!naBase) {
+        state.colaboradorAusentePendentes.push({ arquivoIdx: idx, row: r, colaboradorOriginal: colab, resolucao: resolucaoAusente });
       }
-      if (!naBase) return;
+      if (!naBase && resolucaoAusente !== 'aceitar') return; // ainda pendente OU decidido como excluir: não entra no map
       if (normNum(r[COL.PROJETO_PCT]) > 0 && isEmpty(r[COL.ID_PROJETO]) && isEmpty(r[COL.PROJETO])) return; // já capturado em semProjeto
       if (!state.colaboradorMap[colab]) state.colaboradorMap[colab] = [];
       state.colaboradorMap[colab].push({
@@ -396,13 +414,14 @@ function temPendenciasBloqueantes() {
          state.conflitos.some(c => !c.resolucao) ||
          state.semProjetoPendentes.some(p => !p.resolucao) ||
          state.somaPendentes.length > 0 ||
-         state.colaboradorAusentePendentes.length > 0;
+         state.colaboradorAusentePendentes.some(p => !p.resolucao);
 }
 
 /* -------------------- Geração do arquivo final -------------------- */
 
 function montarConsolidado() {
-  const excluidos = new Set([...state.somaExcluidas, ...state.colaboradorAusenteExcluidas]); // "arquivoIdx|colaborador|idProjeto" a excluir por resolução de conflito/sem-projeto/soma/colaborador-ausente
+  const excluidos = new Set(state.somaExcluidas); // "arquivoIdx|row.join('§')" a excluir por resolução de conflito/sem-projeto/soma
+  state.colaboradorAusenteResolucoes.forEach((v, k) => { if (v === 'excluir') excluidos.add(k); });
 
   state.conflitos.forEach(c => {
     if (c.resolucao === 'a') excluidos.add(c.b.arquivoIdx + '|' + c.b.row.join('§'));
@@ -420,7 +439,9 @@ function montarConsolidado() {
       const key = idx + '|' + r.join('§');
       if (excluidos.has(key)) return;
       const colab = r[COL.COLABORADOR];
-      if (!state.referencia.colabSet.has(colab)) return;
+      const naBase = state.referencia.colabSet.has(colab);
+      const aceitoComoNovo = state.colaboradorAusenteResolucoes.get(key) === 'aceitar';
+      if (!naBase && !aceitoComoNovo) return; // ainda pendente, não deveria chegar aqui (geração fica bloqueada até decidir)
       (smPorColaborador[colab] = smPorColaborador[colab] || []).push({ row: r, sm: smNome });
     });
   });
@@ -428,8 +449,10 @@ function montarConsolidado() {
   const headerRows = state.referencia.headerRows;
   const outBase = [headerRows[0].concat(['SM RESPONSAVEL (consolidacao)']), headerRows[1].concat(['SM RESPONSAVEL (consolidacao)'])];
   let coberturaPreenchida = 0;
+  const colaboradoresDaReferencia = new Set();
   state.referencia.baseRows.forEach(r => {
     const colab = r[COL.COLABORADOR];
+    colaboradoresDaReferencia.add(colab);
     const entradas = smPorColaborador[colab];
     if (entradas && entradas.length) {
       coberturaPreenchida++;
@@ -437,6 +460,15 @@ function montarConsolidado() {
     } else {
       outBase.push(r.concat(['BASE (nao preenchido)']));
     }
+  });
+
+  // Colaboradores aceitos como novos (fora da base de referência) não têm uma linha-base
+  // pra "encaixar" — entram como linhas extras no fim, sinalizados na coluna de SM.
+  let novosColaboradores = 0;
+  Object.keys(smPorColaborador).forEach(colab => {
+    if (colaboradoresDaReferencia.has(colab)) return;
+    novosColaboradores++;
+    smPorColaborador[colab].forEach(e => outBase.push(e.row.concat([e.sm + ' (novo colaborador, aceito manualmente)'])));
   });
 
   const outAjuste = [['COLABORADOR','GESTOR DIRETO','GERENTE','GERENTE EXECUTIVO','DIRETORIA','CARGO','SQUAD','ANTES','DEPOIS','SM RESPONSAVEL']];
@@ -471,6 +503,7 @@ function montarConsolidado() {
     state.semProjetoPendentes.forEach(p => notas.push([`  ${p.colaborador} — decisão: ${p.resolucao === 'incluir' ? 'incluída sem projeto vinculado' : 'excluída, aguardando complementação'}`]));
     notas.push(['']);
   }
+  const correcoesGrafia = [];
   const correcoes = [];
   state.arquivos.forEach(item => {
     if (item.status !== 'ok') return;
@@ -482,23 +515,45 @@ function montarConsolidado() {
         correcoes.push(`  ${r[COL.COLABORADOR]} (${smNome}): soma original ${fmtPct(r.__origMelhoria)}/${fmtPct(r.__origProjetoPct)} corrigida para ${fmtPct(r[COL.MELHORIA])}/${fmtPct(r[COL.PROJETO_PCT])}`);
       }
       if (r.__origColaborador !== undefined && r[COL.COLABORADOR] !== r.__origColaborador) {
-        correcoes.push(`  "${r.__origColaborador}" corrigido para "${r[COL.COLABORADOR]}" (${smNome})`);
+        const linha = `  "${r.__origColaborador}" -> "${r[COL.COLABORADOR]}" (${smNome})`;
+        if (r.__correcaoAutomaticaGrafia) correcoesGrafia.push(linha); else correcoes.push(linha);
       }
     });
   });
+  if (correcoesGrafia.length) {
+    notas.push(['Grafia normalizada automaticamente pra bater com a base (maiúscula/minúscula, não é erro):']);
+    correcoesGrafia.forEach(l => notas.push([l]));
+    notas.push(['']);
+  }
   if (correcoes.length) {
     notas.push(['Correções manuais aplicadas nesta rodada:']);
     correcoes.forEach(l => notas.push([l]));
     notas.push(['']);
   }
-  if (state.somaExcluidas.size || state.colaboradorAusenteExcluidas.size) {
-    notas.push([`Linhas excluídas manualmente: ${state.somaExcluidas.size} por erro de soma, ${state.colaboradorAusenteExcluidas.size} por colaborador fora da base.`]);
+  const ausentesAceitos = [], ausentesExcluidos = [];
+  state.colaboradorAusenteResolucoes.forEach((v, k) => {
+    const [idxStr] = k.split('|');
+    const item = state.arquivos[Number(idxStr)];
+    const smNome = item ? (item.smConfirmado || item.smSugerido) : '?';
+    const row = item && item.filledRows.find(r => (Number(idxStr) + '|' + r.join('§')) === k);
+    const nome = row ? row[COL.COLABORADOR] : '?';
+    if (v === 'aceitar') ausentesAceitos.push(`  ${nome} (${smNome})`);
+    if (v === 'excluir') ausentesExcluidos.push(`  ${nome} (${smNome})`);
+  });
+  if (ausentesAceitos.length) {
+    notas.push([`Colaboradores fora da base aceitos como novos (${ausentesAceitos.length}):`]);
+    ausentesAceitos.forEach(l => notas.push([l]));
+    notas.push(['']);
+  }
+  if (state.somaExcluidas.size || ausentesExcluidos.length) {
+    notas.push([`Linhas excluídas manualmente: ${state.somaExcluidas.size} por erro de soma, ${ausentesExcluidos.length} por colaborador fora da base (decisão de exclusão).`]);
+    if (ausentesExcluidos.length) ausentesExcluidos.forEach(l => notas.push([l]));
     notas.push(['']);
   }
   notas.push(['Aba AJUSTE: ' + (outAjuste.length - 1) + ' movimentações consolidadas.']);
-  notas.push(['Coluna "SM RESPONSAVEL (consolidacao)" em BASE_SET.26 indica a origem de cada linha, ou "BASE (nao preenchido)" para colaboradores ainda sem % registrado.']);
+  notas.push(['Coluna "SM RESPONSAVEL (consolidacao)" em BASE_SET.26 indica a origem de cada linha, "BASE (nao preenchido)" para colaboradores ainda sem % registrado, ou "(novo colaborador, aceito manualmente)" para quem não está na base de referência.']);
 
-  return { outBase, outAjuste, notas, coberturaPreenchida, totalColab };
+  return { outBase, outAjuste, notas, coberturaPreenchida, totalColab, novosColaboradores };
 }
 
 function calcularInsights(dados) {
@@ -729,28 +784,41 @@ function renderChecklist() {
 
       if (colabAusenteDoItem.length) {
         box.appendChild(el('h4', 'hc-h4', `Colaboradores fora da base de referência (${colabAusenteDoItem.length})`));
-        colabAusenteDoItem.forEach(p => {
+        colabAusenteDoItem.forEach((p, pi) => {
           const linha = el('div', 'hc-subcard');
           const chave = p.arquivoIdx + '|' + p.row.join('§');
+          const resolucaoAtual = state.colaboradorAusenteResolucoes.get(chave) || null;
           linha.innerHTML = `<div class="hc-filename">"${p.colaboradorOriginal}"</div>
-            <label class="hc-label">Corrigir nome (precisa bater exatamente com a base de referência)</label>
+            <label class="hc-label">Corrigir nome (se for erro de digitação — maiúscula/minúscula não importa)</label>
             <input type="text" class="hc-input hc-colab-corrigir" value="${p.colaboradorOriginal}"/>
             <span class="hc-colab-status"></span>
-            <label class="hc-excluir-linha"><input type="checkbox" class="hc-colab-excluir" ${state.colaboradorAusenteExcluidas.has(chave) ? 'checked' : ''}> Excluir esta linha da consolidação</label>`;
+            <div class="hc-conflict-row" style="margin-top:8px;">
+              <label><input type="radio" name="ausente-${item.idx}-${pi}" value="aceitar" ${resolucaoAtual === 'aceitar' ? 'checked' : ''}> Aceitar como novo colaborador (não está na base, mas é válido)</label>
+              <label><input type="radio" name="ausente-${item.idx}-${pi}" value="excluir" ${resolucaoAtual === 'excluir' ? 'checked' : ''}> Excluir esta linha da consolidação</label>
+            </div>`;
           const inputNome = linha.querySelector('.hc-colab-corrigir');
           const statusSpan = linha.querySelector('.hc-colab-status');
-          const checkboxExcluir = linha.querySelector('.hc-colab-excluir');
           function atualizarColabStatus() {
-            const existe = state.referencia.colabSet.has(inputNome.value.trim());
+            const existe = state.referencia.colabPorNomeNormalizado.has(normalizarNome(inputNome.value));
             statusSpan.textContent = existe ? '✓ encontrado na base' : 'não encontrado na base';
             statusSpan.className = 'hc-colab-status ' + (existe ? 'hc-ok' : 'hc-error');
           }
-          inputNome.oninput = () => { p.row[COL.COLABORADOR] = inputNome.value.trim(); atualizarColabStatus(); calcularDecisoesCruzadas(); atualizarStatusGeracao(); };
-          checkboxExcluir.onchange = () => {
-            if (checkboxExcluir.checked) state.colaboradorAusenteExcluidas.add(chave); else state.colaboradorAusenteExcluidas.delete(chave);
+          inputNome.oninput = () => {
+            const digitado = inputNome.value.trim();
+            const canonico = state.referencia.colabPorNomeNormalizado.get(normalizarNome(digitado));
+            p.row[COL.COLABORADOR] = canonico || digitado;
+            state.colaboradorAusenteResolucoes.delete(chave); // digitar uma correção substitui qualquer aceitar/excluir anterior
+            atualizarColabStatus();
             calcularDecisoesCruzadas();
-            renderChecklist();
+            atualizarStatusGeracao();
           };
+          linha.querySelectorAll('input[type=radio]').forEach(r => {
+            r.onchange = () => {
+              state.colaboradorAusenteResolucoes.set(chave, r.value);
+              calcularDecisoesCruzadas();
+              renderChecklist();
+            };
+          });
           atualizarColabStatus();
           box.appendChild(linha);
         });
@@ -822,7 +890,7 @@ function renderPreview() {
   const ins = calcularInsights(dados);
 
   const kpiHtml = [
-    { label: 'Colaboradores únicos na base final', value: ins.totalUnicos, hint: `${ins.totalColab} na base de referência`, tone: '' },
+    { label: 'Colaboradores únicos na base final', value: ins.totalUnicos, hint: `${ins.totalColab} na referência${dados.novosColaboradores ? ' + ' + dados.novosColaboradores + ' novo(s)' : ''}`, tone: '' },
     { label: 'Mais de um projeto', value: ins.maisDeUmProjeto, hint: 'atuam em >1 projeto', tone: 'tone-laranja' },
     { label: 'Mais de uma squad', value: ins.maisDeUmaSquad, hint: 'atuam em >1 squad', tone: 'tone-laranja' },
     { label: 'Mais de um projeto ou squad', value: ins.maisDeUmDosDois, hint: 'visão combinada', tone: 'tone-laranja' },
