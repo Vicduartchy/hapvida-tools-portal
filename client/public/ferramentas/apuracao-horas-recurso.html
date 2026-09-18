@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apuração de Horas por Recurso — Hub do Agile Coach · Hapvida</title>
+<style>
+  :root{
+    --azul:#1A3DAA; --azul-escuro:#0F2370; --vermelho:#E8272A; --laranja:#F47920; --amarelo:#FFC20E;
+    --branco:#FFFFFF; --preto:#000000; --verde:#2E9E44;
+    --bg:#F4F6FB; --card:#FFFFFF; --texto:#1B1F2A; --texto-suave:#5B6270; --borda:#E1E5F0;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Segoe UI',Arial,sans-serif;background:var(--bg);color:var(--texto);}
+  header{background:var(--azul-escuro);color:#fff;padding:20px 28px;display:flex;align-items:center;gap:16px;}
+  header svg{width:38px;height:38px;flex-shrink:0;}
+  .hc-eyebrow{font-size:12px;letter-spacing:.06em;text-transform:uppercase;opacity:.85;margin:0 0 2px;}
+  .hc-title{font-size:20px;font-weight:700;margin:0;}
+  .hc-badge{margin-left:auto;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.35);
+    padding:4px 12px;border-radius:999px;font-size:12px;white-space:nowrap;}
+  .hc-tricolor{height:4px;background:linear-gradient(90deg,var(--vermelho) 0 33%,var(--laranja) 33% 66%,var(--amarelo) 66% 100%);}
+  main{max-width:1180px;margin:0 auto;padding:28px 20px 60px;}
+  .hc-panel{background:var(--card);border:1px solid var(--borda);border-radius:12px;padding:24px;margin-bottom:20px;}
+  .hc-panel h2{margin:0 0 6px;font-size:18px;color:var(--azul-escuro);}
+  .hc-panel p.hc-desc{margin:0 0 18px;color:var(--texto-suave);font-size:14px;}
+  .hc-upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px;}
+  @media (max-width:800px){.hc-upload-grid{grid-template-columns:1fr;}}
+  .hc-field label{display:block;font-weight:600;font-size:14px;margin-bottom:6px;}
+  input[type=file]{display:block;width:100%;padding:10px;border:1px dashed var(--borda);border-radius:8px;background:#FAFBFF;font-size:13px;}
+  .hc-status{margin-top:8px;font-size:13px;color:var(--texto-suave);}
+  .hc-btn{background:var(--azul);color:#fff;border:none;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;}
+  .hc-btn:hover{background:var(--azul-escuro);}
+  .hc-btn:disabled{background:#B8C1DC;cursor:not-allowed;}
+  .hc-btn-secondary{background:#fff;color:var(--azul);border:1px solid var(--azul);font-weight:500;}
+  .hc-warn{color:#8A5A00;font-weight:600;}
+  .hc-error{color:var(--vermelho);font-weight:600;}
+  .hc-ok{color:var(--verde);font-weight:600;}
+  .hc-alert{border-radius:8px;padding:12px 14px;font-size:13px;margin-bottom:14px;}
+  .hc-alert.warn{background:#FFF6E5;border:1px solid #FFE0AA;color:#8A5A00;}
+  .hc-alert.ok{background:#EAF7EF;border:1px solid #BFE6CC;color:#1B6B3A;}
+  .hc-kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+  @media (max-width:900px){.hc-kpi-row{grid-template-columns:repeat(2,1fr);}}
+  .hc-kpi-card{background:#FCFDFF;border:1px solid var(--borda);border-radius:8px;padding:14px;border-top:3px solid var(--azul);}
+  .hc-kpi-card.tone-vermelho{border-top-color:var(--vermelho);}
+  .hc-kpi-card.tone-laranja{border-top-color:var(--laranja);}
+  .hc-kpi-card.tone-verde{border-top-color:var(--verde);}
+  .hc-kpi-label{font-size:11px;color:var(--texto-suave);text-transform:uppercase;letter-spacing:.03em;}
+  .hc-kpi-value{font-size:26px;font-weight:800;color:var(--azul-escuro);margin-top:4px;}
+  .hc-kpi-hint{font-size:11px;color:var(--texto-suave);margin-top:2px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{padding:8px 10px;border-bottom:1px solid var(--borda);text-align:left;}
+  th{background:var(--bg);color:var(--azul-escuro);font-size:11px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;}
+  .badge{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;background:var(--bg);color:var(--texto-suave);}
+  .badge.red{background:#FDEBEC;color:#A32224;}
+  .badge.amber{background:#FFF6E5;color:#8A5A00;}
+  .badge.green{background:#EAF7EF;color:#1B6B3A;}
+  .hc-h3{font-size:15px;color:var(--azul-escuro);margin:0 0 10px;}
+  .hc-sub{font-size:12px;color:var(--texto-suave);margin:-6px 0 14px;}
+  .hc-empty{padding:18px;font-size:13px;color:var(--verde);display:flex;align-items:center;gap:8px;}
+  footer{max-width:1180px;margin:0 auto;padding:0 20px 40px;color:var(--texto-suave);font-size:12px;}
+</style>
+</head>
+<body>
+
+<header>
+  <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="28" r="16" fill="#E8272A"/>
+    <circle cx="72" cy="50" r="16" fill="#F47920"/>
+    <circle cx="50" cy="72" r="16" fill="#FFC20E"/>
+    <circle cx="28" cy="50" r="16" fill="#E8272A"/>
+    <circle cx="50" cy="50" r="10" fill="#FFFFFF"/>
+  </svg>
+  <div>
+    <p class="hc-eyebrow">Hub do Agile Coach · Hapvida</p>
+    <p class="hc-title">Apuração de Horas por Recurso</p>
+  </div>
+  <span class="hc-badge">100% offline</span>
+</header>
+<div class="hc-tricolor"></div>
+
+<main>
+
+  <div class="hc-panel">
+    <h2>1. Anexar as bases</h2>
+    <p class="hc-desc">Calcula % Melhoria/Projeto por colaborador a partir das horas lançadas no Azure (export do BI GovTI — Cockpit Gerentes) e já devolve pronto no formato BASE_SET.26, usando a Diretoria/Gerente/Cargo/Squads e a aba CONSULTA (Descrição e Ordem por LECOM) direto da base de referência do trimestre — o mesmo arquivo que você já manda pra Consolidação.</p>
+    <div class="hc-upload-grid">
+      <div class="hc-field">
+        <label>Base de referência do trimestre (BASE_SET.26)</label>
+        <input type="file" id="refInput" accept=".xlsx">
+        <div class="hc-status" id="refStatus"></div>
+      </div>
+      <div class="hc-field">
+        <label>Export do BI GovTI (Cockpit - Gerentes)</label>
+        <input type="file" id="biInput" accept=".xlsx,.xls">
+        <div class="hc-status" id="biStatus"></div>
+      </div>
+    </div>
+    <button class="hc-btn" id="btnProcessar" disabled>Calcular horas</button>
+  </div>
+
+  <div id="resultado" style="display:none;">
+
+    <div class="hc-panel">
+      <h2>2. Resultado</h2>
+      <div id="alertArea"></div>
+      <div class="hc-kpi-row" id="kpiRow"></div>
+
+      <div style="margin-bottom:22px;">
+        <div class="hc-h3" style="color:var(--vermelho);">⚠ Pendência de LECOM</div>
+        <div class="hc-sub">Squads com Project ou Melhoria sem número de LECOM preenchido no Azure — precisa ser corrigido na origem antes de confiar no percentual.</div>
+        <div style="overflow-x:auto;">
+          <table id="pendenciaTable">
+            <thead><tr><th>Squad</th><th class="num">Projetos s/ LECOM</th><th class="num">Melhorias s/ LECOM</th><th class="num">Total pendente</th></tr></thead>
+            <tbody id="pendenciaBody"></tbody>
+          </table>
+        </div>
+        <div class="hc-empty" id="pendenciaEmpty" style="display:none;">✅ Nenhuma pendência de LECOM identificada.</div>
+      </div>
+
+      <div>
+        <div class="hc-h3">Resumo por Diretoria (visão Azure)</div>
+        <div class="hc-sub">Agrupado pela Diretoria/Gerente que vêm no próprio export do BI — serve de conferência cruzada com a base de referência.</div>
+        <div style="overflow-x:auto;">
+          <table id="diretoriaTable">
+            <thead><tr><th>Diretoria</th><th class="num">Gerentes</th><th class="num">Squads</th><th class="num">Projetos (LECOMs)</th><th class="num">Melhorias (LECOMs)</th><th class="num">Horas totais</th></tr></thead>
+            <tbody id="diretoriaBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="hc-panel">
+      <h2>3. Baixar no formato BASE_SET.26</h2>
+      <p class="hc-desc" id="downloadDesc">Gera um arquivo com a mesma estrutura de 3 abas (BASE_SET.26 / CONSULTA / AJUSTE) que os SMs preenchem manualmente hoje — já pronto pra subir como um dos arquivos na Consolidação de Alocação de Horas dos SMs.</p>
+      <button class="hc-btn" id="btnBaixar">Baixar planilha (.xlsx)</button>
+    </div>
+
+  </div>
+
+</main>
+<footer>Ferramenta interna Hapvida — uso exclusivo da governança ágil do DX Hub. Nenhum dado é armazenado entre sessões.</footer>
+
+<script src="/shared/vendor/xlsx-full.min.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  var COL = {
+    COLABORADOR:0, GESTOR_DIRETO:1, GERENTE:2, GERENTE_EXEC:3, DIRETORIA:4, CARGO:5,
+    SQUAD1:6, SQUAD2:7, SQUAD3:8, SQUAD4:9, SQUAD5:10, SQUAD6:11,
+    ID_PROJETO:12, PROJETO:13, ORDEM:14, MELHORIA:15, PROJETO_PCT:16, TOTAL:17
+  };
+
+  function el(id){ return document.getElementById(id); }
+  function clean(v){ return v == null ? '' : String(v).trim(); }
+  function normalizarNome(nome){ return clean(nome).replace(/\s+/g, ' ').toLowerCase(); }
+  function fmtHoras(h){ return (Math.round(h * 10) / 10).toLocaleString('pt-BR') + 'h'; }
+  function escapeHtml(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+      return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];
+    });
+  }
+  function findSheetCI(wb, target){
+    var t = target.trim().toLowerCase();
+    return wb.SheetNames.find(function(n){ return n.trim().toLowerCase() === t; }) || null;
+  }
+  function timestamp(){
+    var d = new Date();
+    var p = function(n){ return String(n).padStart(2,'0'); };
+    return d.getFullYear() + p(d.getMonth()+1) + p(d.getDate()) + '_' + p(d.getHours()) + p(d.getMinutes());
+  }
+
+  var state = { referencia: null, resultado: null };
+
+  /* ============================================================
+     Referência do trimestre — mesma leitura da Consolidação:
+     BASE_SET.26 (metadado por colaborador) + CONSULTA (LECOM -> Descrição/Ordem)
+     ============================================================ */
+  function processarReferencia(wb, nomeArquivo){
+    var baseSheetName = findSheetCI(wb, 'BASE_SET.26');
+    if(!baseSheetName) throw new Error('A planilha de referência não contém a aba BASE_SET.26.');
+    var aoa = XLSX.utils.sheet_to_json(wb.Sheets[baseSheetName], { header:1, raw:true, defval:null });
+    var headerRows = [aoa[0], aoa[1]];
+    var baseRows = aoa.slice(2).filter(function(r){ return r && r[COL.COLABORADOR]; });
+
+    var colabPorNomeNormalizado = new Map();
+    baseRows.forEach(function(r){ colabPorNomeNormalizado.set(normalizarNome(r[COL.COLABORADOR]), r); });
+
+    var consultaSheetName = findSheetCI(wb, 'CONSULTA');
+    var lecomPorId = new Map();
+    if(consultaSheetName){
+      var consultaAoa = XLSX.utils.sheet_to_json(wb.Sheets[consultaSheetName], { header:1, raw:true, defval:null });
+      consultaAoa.slice(1).forEach(function(r){
+        if(!r || r[6] == null || r[6] === '') return;
+        var lecomId = clean(r[6]);
+        if(!lecomPorId.has(lecomId)) lecomPorId.set(lecomId, { descricao: clean(r[7]), ordem: r[8] != null ? r[8] : '' });
+      });
+    }
+
+    return {
+      wb: wb, nome: nomeArquivo, headerRows: headerRows, baseRows: baseRows,
+      colabPorNomeNormalizado: colabPorNomeNormalizado, lecomPorId: lecomPorId,
+      consultaWs: consultaSheetName ? wb.Sheets[consultaSheetName] : null
+    };
+  }
+
+  /* ============================================================
+     Export do BI (Cockpit - Gerentes) — motor de cálculo de horas.
+     Port direto da lógica original: soma horas por colaborador em
+     dois grandes baldes (Melhoria x Projeto), gera 1 linha por
+     (colaborador x squad x LECOM), com % e horas absolutas.
+     ============================================================ */
+  function findCol(headers, candidates){
+    for(var i=0;i<candidates.length;i++){
+      var idx = headers.findIndex(function(h){ return h && String(h).trim().toLowerCase() === candidates[i].toLowerCase(); });
+      if(idx >= 0) return idx;
+    }
+    return -1;
+  }
+
+  function parseExportBI(raw){
+    var headerRow = -1;
+    for(var i=0;i<Math.min(raw.length,5);i++){
+      var r = raw[i].map(function(c){ return c ? String(c).trim() : ''; });
+      if(r.some(function(c){ return c === 'USUARIOS' || c.toLowerCase() === 'recurso'; })){ headerRow = i; break; }
+    }
+    var HDR = (raw[headerRow] || []).map(function(c){ return c ? String(c).trim() : ''; });
+    var idx = {
+      recurso: findCol(HDR, ['USUARIOS','Recurso','RECURSO']),
+      demandType: findCol(HDR, ['DEMAND TYPE FINAL','Demand Type','DEMAND TYPE','DemandType']),
+      lecom: findCol(HDR, ['LECOM']),
+      task: findCol(HDR, ['-ID_Title','Task','TASK']),
+      horas: findCol(HDR, ['(Horas Registradas) Completed Work','Completed Work','Horas'])
+    };
+    var COLUNAS_ESPERADAS = [
+      { label:'Recurso', key:'recurso', candidates:idx.recurso >= 0 ? null : ['USUARIOS','Recurso','RECURSO'] },
+      { label:'Demand Type', key:'demandType', candidates:idx.demandType >= 0 ? null : ['DEMAND TYPE FINAL','Demand Type'] },
+      { label:'LECOM', key:'lecom', candidates:idx.lecom >= 0 ? null : ['LECOM'] },
+      { label:'Task', key:'task', candidates:idx.task >= 0 ? null : ['-ID_Title','Task'] },
+      { label:'Horas', key:'horas', candidates:idx.horas >= 0 ? null : ['(Horas Registradas) Completed Work','Completed Work'] }
+    ];
+    if(headerRow < 0){
+      throw new Error('Cabeçalho não encontrado nas primeiras 5 linhas do export do BI (esperava coluna USUARIOS ou Recurso).');
+    }
+    var faltando = COLUNAS_ESPERADAS.filter(function(c){ return idx[c.key] < 0; }).map(function(c){ return c.label; });
+    if(faltando.length){
+      throw new Error('Colunas ausentes no export do BI: ' + faltando.join(', ') + '. Colunas encontradas: ' + HDR.filter(Boolean).join(', '));
+    }
+
+    var MELHORIA_TYPES = { maintenance:true, improvement:true, 'task avulsa':true };
+    var recursos = {};     // nome -> { horasMelhoria, horasProjeto, projectEntries:Map, melhoriaSquads:Set }
+    var diretorias = {};   // nome -> { gerentes:Set, squads:Set, projectLecoms:Set, melhoriaLecoms:Set, horasTotal }
+    var pendencias = {};   // squad -> { projectAreas:Set, melhorias:number }
+
+    for(var r2 = headerRow + 1; r2 < raw.length; r2++){
+      var row = raw[r2];
+      if(!row || row.length < 8) continue;
+      var recurso = row[idx.recurso], demandType = row[idx.demandType], lecomRaw = row[idx.lecom], taskVal = row[idx.task], horas = row[idx.horas];
+      if(!recurso || !demandType || lecomRaw === null || lecomRaw === undefined || !taskVal) continue;
+      var rStr = clean(recurso), dStr = clean(demandType), tStr = clean(taskVal);
+      if(rStr === 'Total' || rStr === 'USUARIOS' || dStr === 'Total' || dStr === 'DEMAND TYPE FINAL' || tStr === 'Total') continue;
+      var prevCols = [row[0], row[1], row[2]].map(clean);
+      if(prevCols.some(function(c){ return c === 'Total'; })) continue;
+
+      var horasNum = typeof horas === 'number' ? horas : (parseFloat(String(horas).replace(',', '.')) || 0);
+      var dtLower = dStr.toLowerCase();
+      var lecomStr = clean(lecomRaw);
+      var lecomNum = lecomStr.replace(/^LECOM:\s*/i, '').trim();
+      var lecomVazio = lecomNum === '';
+      var dirNome = prevCols[0] || 'Sem Diretoria';
+      var gerNome = prevCols[1] || 'Sem Gerente';
+      var squadNome = prevCols[2] || 'Sem Squad';
+      var areaPath = row[5] ? clean(row[5]) : 'Sem Area';
+
+      if(!recursos[rStr]) recursos[rStr] = { horasMelhoria:0, horasProjeto:0, projectEntries:new Map(), melhoriaSquads:new Set() };
+      if(!diretorias[dirNome]) diretorias[dirNome] = { gerentes:new Set(), squads:new Set(), projectLecoms:new Set(), melhoriaLecoms:new Set(), horasTotal:0 };
+      if(!pendencias[squadNome]) pendencias[squadNome] = { projectAreas:new Set(), melhorias:0 };
+
+      diretorias[dirNome].gerentes.add(gerNome);
+      diretorias[dirNome].squads.add(squadNome);
+      diretorias[dirNome].horasTotal += horasNum;
+
+      if(MELHORIA_TYPES[dtLower]){
+        recursos[rStr].horasMelhoria += horasNum;
+        recursos[rStr].melhoriaSquads.add(squadNome);
+        if(lecomNum) diretorias[dirNome].melhoriaLecoms.add(lecomNum);
+        if(dtLower === 'improvement' && lecomVazio) pendencias[squadNome].melhorias++;
+      } else if(dtLower === 'project'){
+        recursos[rStr].horasProjeto += horasNum;
+        if(lecomNum) diretorias[dirNome].projectLecoms.add(lecomNum);
+        var entryKey = lecomVazio ? (squadNome + '|||VAZIO|||' + areaPath) : (squadNome + '|||' + lecomNum);
+        if(!recursos[rStr].projectEntries.has(entryKey)){
+          recursos[rStr].projectEntries.set(entryKey, { squad:squadNome, area:areaPath, lecom:lecomNum, lecomVazio:lecomVazio });
+        }
+        if(lecomVazio) pendencias[squadNome].projectAreas.add(areaPath);
+      }
+    }
+
+    if(Object.keys(recursos).length === 0){
+      throw new Error('Nenhum dado de recurso encontrado. Verifique se o arquivo é o export correto do BI.');
+    }
+
+    var rows = [];
+    var semLecomCount = 0;
+    Object.keys(recursos).forEach(function(nome){
+      var dados = recursos[nome];
+      var totalHoras = dados.horasMelhoria + dados.horasProjeto;
+      if(totalHoras === 0) return;
+      var pctMelhoria = dados.horasMelhoria / totalHoras;
+      var pctProjeto = dados.horasProjeto / totalHoras;
+      var base = { colaborador:nome, pctMelhoria:pctMelhoria, pctProjeto:pctProjeto, horasMelhoria:dados.horasMelhoria, horasProjeto:dados.horasProjeto, horasTotal:totalHoras };
+      var projectSquads = new Set(Array.from(dados.projectEntries.values()).map(function(e){ return e.squad; }));
+      dados.projectEntries.forEach(function(entry){
+        if(entry.lecomVazio) semLecomCount++;
+        rows.push(Object.assign({}, base, { squad:entry.squad, lecom:entry.lecom, lecomVazio:entry.lecomVazio }));
+      });
+      dados.melhoriaSquads.forEach(function(squad){
+        if(!projectSquads.has(squad)) rows.push(Object.assign({}, base, { squad:squad, lecom:'', lecomVazio:false }));
+      });
+    });
+
+    rows.sort(function(a,b){
+      var sc = (a.squad||'').localeCompare(b.squad||'', 'pt-BR');
+      return sc !== 0 ? sc : a.colaborador.localeCompare(b.colaborador, 'pt-BR');
+    });
+
+    return { rows:rows, diretorias:diretorias, pendencias:pendencias, totalRecursos:Object.keys(recursos).length, semLecomCount:semLecomCount };
+  }
+
+  /* ============================================================
+     Cruzamento: linhas calculadas (Azure) x referência do trimestre
+     -> linhas prontas no formato BASE_SET.26
+     ============================================================ */
+  function montarSaidaBaseSet(calculado, referencia){
+    var linhasSaida = [];
+    var naoEncontrados = [];
+    var lecomsSemDescricao = new Set();
+
+    calculado.rows.forEach(function(row){
+      var refRow = referencia.colabPorNomeNormalizado.get(normalizarNome(row.colaborador));
+      var lecomInfo = row.lecom ? referencia.lecomPorId.get(clean(row.lecom)) : null;
+      if(row.lecom && !lecomInfo) lecomsSemDescricao.add(row.lecom);
+
+      var linha = new Array(18).fill('');
+      if(refRow){
+        linha[COL.COLABORADOR] = refRow[COL.COLABORADOR];
+        linha[COL.GESTOR_DIRETO] = refRow[COL.GESTOR_DIRETO];
+        linha[COL.GERENTE] = refRow[COL.GERENTE];
+        linha[COL.GERENTE_EXEC] = refRow[COL.GERENTE_EXEC];
+        linha[COL.DIRETORIA] = refRow[COL.DIRETORIA];
+        linha[COL.CARGO] = refRow[COL.CARGO];
+        for(var s = COL.SQUAD1; s <= COL.SQUAD6; s++) linha[s] = refRow[s];
+      } else {
+        linha[COL.COLABORADOR] = row.colaborador;
+        naoEncontrados.push(row.colaborador);
+      }
+      linha[COL.ID_PROJETO] = row.lecom || '';
+      linha[COL.PROJETO] = lecomInfo ? lecomInfo.descricao : '';
+      linha[COL.ORDEM] = lecomInfo ? lecomInfo.ordem : '';
+      linha[COL.MELHORIA] = Math.round(row.pctMelhoria * 10000) / 10000;
+      linha[COL.PROJETO_PCT] = Math.round(row.pctProjeto * 10000) / 10000;
+      linha[COL.TOTAL] = linha[COL.MELHORIA] + linha[COL.PROJETO_PCT];
+      linha.__squadAzure = row.squad;
+      linha.__horasTotal = row.horasTotal;
+      linhasSaida.push(linha);
+    });
+
+    return {
+      linhasSaida: linhasSaida,
+      naoEncontrados: Array.from(new Set(naoEncontrados)).sort(function(a,b){ return a.localeCompare(b,'pt-BR'); }),
+      lecomsSemDescricao: Array.from(lecomsSemDescricao).sort()
+    };
+  }
+
+  /* ============================================================
+     UI
+     ============================================================ */
+  var pendingFiles = { ref: null, bi: null };
+
+  function atualizarBotaoProcessar(){
+    el('btnProcessar').disabled = !(pendingFiles.ref && pendingFiles.bi);
+  }
+
+  el('refInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file){ pendingFiles.ref = null; atualizarBotaoProcessar(); return; }
+    pendingFiles.ref = file;
+    el('refStatus').textContent = 'Selecionado: ' + file.name;
+    atualizarBotaoProcessar();
+  });
+  el('biInput').addEventListener('change', function(e){
+    var file = e.target.files[0];
+    if(!file){ pendingFiles.bi = null; atualizarBotaoProcessar(); return; }
+    pendingFiles.bi = file;
+    el('biStatus').textContent = 'Selecionado: ' + file.name;
+    atualizarBotaoProcessar();
+  });
+
+  function readAsArrayBuffer(file){
+    return new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(){ resolve(reader.result); };
+      reader.onerror = function(){ reject(reader.error || new Error('Falha ao ler arquivo')); };
+      reader.readAsArrayBuffer(file);
+    });
+  }
+
+  el('btnProcessar').addEventListener('click', function(){
+    el('btnProcessar').disabled = true;
+    el('refStatus').className = 'hc-status';
+    el('biStatus').className = 'hc-status';
+    Promise.all([readAsArrayBuffer(pendingFiles.ref), readAsArrayBuffer(pendingFiles.bi)]).then(function(bufs){
+      try {
+        var refWb = XLSX.read(bufs[0], { type:'array' });
+        var referencia = processarReferencia(refWb, pendingFiles.ref.name);
+        state.referencia = referencia;
+        el('refStatus').innerHTML = '<span class="hc-ok">' + referencia.baseRows.length + ' colaboradores na base · ' + referencia.lecomPorId.size + ' LECOMs cadastrados na CONSULTA</span>';
+
+        var biWb = XLSX.read(bufs[1], { type:'array' });
+        var sheetName = biWb.SheetNames.includes('Dados Analíticos') ? 'Dados Analíticos' : biWb.SheetNames[0];
+        var raw = XLSX.utils.sheet_to_json(biWb.Sheets[sheetName], { header:1, raw:true, defval:null });
+        var calculado = parseExportBI(raw);
+        el('biStatus').innerHTML = '<span class="hc-ok">' + calculado.totalRecursos + ' recursos, ' + calculado.rows.length + ' linhas calculadas</span>';
+
+        var saida = montarSaidaBaseSet(calculado, referencia);
+        state.resultado = { calculado: calculado, saida: saida };
+        renderResultado();
+      } catch(err){
+        console.error(err);
+        if(!state.referencia) el('refStatus').innerHTML = '<span class="hc-error">Erro: ' + escapeHtml(err.message) + '</span>';
+        else el('biStatus').innerHTML = '<span class="hc-error">Erro: ' + escapeHtml(err.message) + '</span>';
+      } finally {
+        atualizarBotaoProcessar();
+      }
+    }).catch(function(err){
+      el('biStatus').innerHTML = '<span class="hc-error">Falha na leitura: ' + escapeHtml(err.message) + '</span>';
+      atualizarBotaoProcessar();
+    });
+  });
+
+  function kpiCardHtml(label, value, hint, tone){
+    return '<div class="hc-kpi-card ' + (tone||'') + '">' +
+      '<div class="hc-kpi-label">' + label + '</div>' +
+      '<div class="hc-kpi-value">' + value + '</div>' +
+      '<div class="hc-kpi-hint">' + hint + '</div>' +
+    '</div>';
+  }
+
+  function renderResultado(){
+    var calculado = state.resultado.calculado, saida = state.resultado.saida;
+    el('resultado').style.display = 'block';
+
+    var alertHtml = '';
+    if(calculado.semLecomCount > 0){
+      alertHtml += '<div class="hc-alert warn">⚠ ' + calculado.semLecomCount + ' projeto(s) sem LECOM identificado no Azure. Veja o quadro de pendência abaixo — o SM precisa corrigir a classificação na origem antes de confiar nesse percentual.</div>';
+    }
+    if(saida.naoEncontrados.length > 0){
+      alertHtml += '<div class="hc-alert warn">⚠ ' + saida.naoEncontrados.length + ' colaborador(es) do export do Azure não foram encontrados na base de referência (provável colaborador novo, ou nome digitado diferente): ' + saida.naoEncontrados.map(escapeHtml).join(', ') + '. Essas linhas entram no arquivo mesmo assim, sem os metadados de Gestor/Gerente/Diretoria — a Consolidação vai pedir a decisão de aceitar como novo colaborador ou excluir.</div>';
+    }
+    if(saida.lecomsSemDescricao.length > 0){
+      alertHtml += '<div class="hc-alert warn">⚠ ' + saida.lecomsSemDescricao.length + ' LECOM(s) usados no Azure não estão cadastrados na aba CONSULTA da referência (ficam sem Descrição/Ordem no arquivo gerado): ' + saida.lecomsSemDescricao.map(escapeHtml).join(', ') + '.</div>';
+    }
+    if(!alertHtml){
+      alertHtml = '<div class="hc-alert ok">✅ Sem pendências — todos os colaboradores e LECOMs foram encontrados.</div>';
+    }
+    el('alertArea').innerHTML = alertHtml;
+
+    var kpis = '';
+    kpis += kpiCardHtml('Colaboradores calculados', calculado.totalRecursos, saida.linhasSaida.length + ' linha(s) geradas', '');
+    kpis += kpiCardHtml('Fora da referência', saida.naoEncontrados.length, 'possíveis novos colaboradores', saida.naoEncontrados.length ? 'tone-laranja' : 'tone-verde');
+    kpis += kpiCardHtml('LECOMs sem descrição', saida.lecomsSemDescricao.length, 'não estão na aba CONSULTA', saida.lecomsSemDescricao.length ? 'tone-laranja' : 'tone-verde');
+    kpis += kpiCardHtml('Pendência de LECOM', calculado.semLecomCount, 'linhas sem número de LECOM', calculado.semLecomCount ? 'tone-vermelho' : 'tone-verde');
+    el('kpiRow').innerHTML = kpis;
+
+    var pendEntries = Object.keys(calculado.pendencias)
+      .map(function(squad){ return { squad:squad, v:calculado.pendencias[squad] }; })
+      .filter(function(e){ return e.v.projectAreas.size > 0 || e.v.melhorias > 0; })
+      .sort(function(a,b){ return (b.v.projectAreas.size + b.v.melhorias) - (a.v.projectAreas.size + a.v.melhorias); });
+
+    if(!pendEntries.length){
+      el('pendenciaTable').style.display = 'none';
+      el('pendenciaEmpty').style.display = 'flex';
+    } else {
+      el('pendenciaTable').style.display = '';
+      el('pendenciaEmpty').style.display = 'none';
+      el('pendenciaBody').innerHTML = pendEntries.map(function(e){
+        var pProj = e.v.projectAreas.size, pMelh = e.v.melhorias;
+        return '<tr><td>' + escapeHtml(e.squad) + '</td>' +
+          '<td class="num">' + (pProj ? '<span class="badge red">' + pProj + '</span>' : '0') + '</td>' +
+          '<td class="num">' + (pMelh ? '<span class="badge amber">' + pMelh + '</span>' : '0') + '</td>' +
+          '<td class="num"><span class="badge red">' + (pProj + pMelh) + '</span></td></tr>';
+      }).join('');
+    }
+
+    var dirRows = Object.keys(calculado.diretorias).map(function(dir){
+      var d = calculado.diretorias[dir];
+      return '<tr><td>' + escapeHtml(dir) + '</td>' +
+        '<td class="num">' + d.gerentes.size + '</td>' +
+        '<td class="num">' + d.squads.size + '</td>' +
+        '<td class="num"><span class="badge amber">' + d.projectLecoms.size + '</span></td>' +
+        '<td class="num"><span class="badge green">' + d.melhoriaLecoms.size + '</span></td>' +
+        '<td class="num">' + fmtHoras(d.horasTotal) + '</td></tr>';
+    }).join('');
+    el('diretoriaBody').innerHTML = dirRows;
+
+    el('downloadDesc').textContent = 'Gera um arquivo com a mesma estrutura de 3 abas (BASE_SET.26 / CONSULTA / AJUSTE) que os SMs preenchem manualmente hoje — ' + saida.linhasSaida.length + ' linha(s) prontas, já pronto pra subir como um dos arquivos na Consolidação de Alocação de Horas dos SMs.';
+  }
+
+  el('btnBaixar').addEventListener('click', function(){
+    var referencia = state.referencia, saida = state.resultado.saida;
+    var outBase = [referencia.headerRows[0], referencia.headerRows[1]].concat(
+      saida.linhasSaida.map(function(l){ return l.slice(0, 18); })
+    );
+    var wbOut = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(outBase), 'BASE_SET.26');
+    if(referencia.consultaWs){
+      XLSX.utils.book_append_sheet(wbOut, referencia.consultaWs, 'CONSULTA');
+    }
+    var outAjuste = [['COLABORADOR','GESTOR DIRETO','GERENTE','GERENTE EXECUTIVO','DIRETORIA','CARGO','SQUAD','ANTES','DEPOIS']];
+    XLSX.utils.book_append_sheet(wbOut, XLSX.utils.aoa_to_sheet(outAjuste), 'AJUSTE');
+    XLSX.writeFile(wbOut, 'Base_ordem_x_Projeto_' + timestamp() + '_CALCULADO_AZURE.xlsx');
+  });
+
+})();
+</script>
+</body>
+</html>
