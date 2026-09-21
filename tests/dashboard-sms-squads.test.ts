@@ -62,6 +62,74 @@ describe("resources-import: normalização e diff da base mensal", () => {
       unchanged: 1,
     });
   });
+
+  it("expande SQUAD 1–6, deduplica linhas de projeto e aplica AJUSTE", () => {
+    const importer = loadResourcesImporter();
+    const baseRows = [
+      {
+        COLABORADOR: "Ana Silva",
+        "GESTOR DIRETO": "Gestor A",
+        GERENTE: "Gerente A",
+        "GERENTE EXECUTIVO": "Executivo A",
+        DIRETORIA: "Digital",
+        CARGO: "DESENVOLVEDOR",
+        "SQUAD 1": "Squad A",
+        "SQUAD 2": "N/A",
+        "SQUAD 3": "N/A",
+        "SQUAD 4": "N/A",
+        "SQUAD 5": "N/A",
+        "SQUAD 6": "N/A",
+      },
+      {
+        COLABORADOR: "Ana Silva",
+        "GESTOR DIRETO": "Gestor A",
+        GERENTE: "Gerente A",
+        "GERENTE EXECUTIVO": "Executivo A",
+        DIRETORIA: "Digital",
+        CARGO: "DESENVOLVEDOR",
+        "SQUAD 1": "Squad A",
+        "SQUAD 2": "N/A",
+        "SQUAD 3": "N/A",
+        "SQUAD 4": "N/A",
+        "SQUAD 5": "N/A",
+        "SQUAD 6": "N/A",
+      },
+      {
+        COLABORADOR: "Bruno Lima",
+        "GESTOR DIRETO": "Gestor B",
+        GERENTE: "Gerente B",
+        "GERENTE EXECUTIVO": "Executivo B",
+        DIRETORIA: "Operadora",
+        CARGO: "SM",
+        "SQUAD 1": "N/A",
+        "SQUAD 2": "N/A",
+        "SQUAD 3": "N/A",
+        "SQUAD 4": "N/A",
+        "SQUAD 5": "N/A",
+        "SQUAD 6": "N/A",
+      },
+    ];
+    const adjustmentRows = [{
+      COLABORADOR: "Bruno Lima",
+      SQUAD: "N/A",
+      ANTES: "SQUAD: N/A",
+      DEPOIS: "SQUAD: Squad B",
+      "SM RESPONSAVEL": "SM B",
+    }];
+
+    const rows = importer.normalizeBaseSetRows(baseRows, adjustmentRows);
+
+    expect(rows).toHaveLength(2);
+    expect(rows.filter((row: any) => row.colaborador === "Ana Silva")).toHaveLength(1);
+    expect(rows.find((row: any) => row.colaborador === "Ana Silva")).toMatchObject({
+      squad: "Squad A",
+      diretoria: "Digital",
+    });
+    expect(rows.find((row: any) => row.colaborador === "Bruno Lima")).toMatchObject({
+      squad: "Squad B",
+      sm_responsavel: "SM B",
+    });
+  });
 });
 
 describe("dashboard-sms-squads: remoção de SM atualiza SEM SM", () => {

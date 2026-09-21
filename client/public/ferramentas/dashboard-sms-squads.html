@@ -975,7 +975,12 @@ function linkResources(idx){
     }
 
     if(sq){
-      (bySquadId[sq.id] = bySquadId[sq.id] || []).push(r);
+      const linked = Object.assign({}, r, {
+        gerente_ti: r.gerente_ti || sq.gerente || '',
+        diretor: r.diretor || sq.diretor || '',
+        diretoria: r.diretoria || sq.diretoria || ''
+      });
+      (bySquadId[sq.id] = bySquadId[sq.id] || []).push(linked);
     } else {
       const k = r.squad.trim();
       (unmatchedMap[k] = unmatchedMap[k] || []).push(r);
@@ -2276,22 +2281,38 @@ document.getElementById('capGroupBy').addEventListener('change', renderCapacityT
    ============================================================ */
 const RESOURCES_SORT = { key: null, dir: 'asc' };
 const resourcesMultiState = { squad: new Set(), diretoria: new Set(), funcao: new Set() };
+function resourceViewRows(){
+  const idx = buildSquadIndexFrom(REGISTRY);
+  return RESOURCES_RAW.filter(r=>MANUAL_OVERRIDES.deletedResourceIds.indexOf(r.id)===-1).map(r=>{
+    const ov = MANUAL_OVERRIDES.resources[r.id];
+    const base = ov ? Object.assign({}, r, ov) : r;
+    const sq = (ov && ov.squadOverrideId)
+      ? REGISTRY.find(x=>x.id===ov.squadOverrideId)
+      : matchSquad(base.squad, idx);
+    return Object.assign({}, base, {
+      gerente_ti: base.gerente_ti || (sq && sq.gerente) || '',
+      diretor: base.diretor || (sq && sq.diretor) || '',
+      diretoria: base.diretoria || (sq && sq.diretoria) || ''
+    });
+  });
+}
 function renderRecursosTab(){
   if(!document.getElementById('recursosBody')) return;
-  document.getElementById('recursosTotalRawCount').textContent = '— ' + RESOURCES_RAW.length + ' linhas na base bruta';
+  const resourceRows = resourceViewRows();
+  document.getElementById('recursosTotalRawCount').textContent = '— ' + resourceRows.length + ' vínculos únicos na base mensal';
 
-  renderMultiSelect('squad', 'mselRecSquad', uniqueSorted(RESOURCES_RAW.map(r=>r.squad)), renderRecursosTab, resourcesMultiState);
+  renderMultiSelect('squad', 'mselRecSquad', uniqueSorted(resourceRows.map(r=>r.squad)), renderRecursosTab, resourcesMultiState);
   wireMultiSelect('squad', 'mselRecSquad', renderRecursosTab, resourcesMultiState);
-  renderMultiSelect('diretoria', 'mselRecDiretoria', uniqueSorted(RESOURCES_RAW.map(r=>r.diretoria)), renderRecursosTab, resourcesMultiState);
+  renderMultiSelect('diretoria', 'mselRecDiretoria', uniqueSorted(resourceRows.map(r=>r.diretoria)), renderRecursosTab, resourcesMultiState);
   wireMultiSelect('diretoria', 'mselRecDiretoria', renderRecursosTab, resourcesMultiState);
-  renderMultiSelect('funcao', 'mselRecFuncao', uniqueSorted(RESOURCES_RAW.map(r=>r.funcao)), renderRecursosTab, resourcesMultiState);
+  renderMultiSelect('funcao', 'mselRecFuncao', uniqueSorted(resourceRows.map(r=>r.funcao)), renderRecursosTab, resourcesMultiState);
   wireMultiSelect('funcao', 'mselRecFuncao', renderRecursosTab, resourcesMultiState);
 
   const q = (document.getElementById('recursosSearch').value||'').trim().toLowerCase();
   const compFilter = document.getElementById('recCompartilhado').value;
   const msSquad = resourcesMultiState.squad, msDir = resourcesMultiState.diretoria, msFunc = resourcesMultiState.funcao;
 
-  let rows = RESOURCES_RAW.filter(r=>
+  let rows = resourceRows.filter(r=>
     (!msSquad.size || msSquad.has(r.squad)) &&
     (!msDir.size || msDir.has(r.diretoria)) &&
     (!msFunc.size || msFunc.has(r.funcao)) &&
@@ -2308,11 +2329,11 @@ function renderRecursosTab(){
     });
   }
 
-  document.getElementById('recursosCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+RESOURCES_RAW.length+'</b> colaboradores encontrados';
+  document.getElementById('recursosCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+resourceRows.length+'</b> vínculos encontrados';
 
-  const totalColab = RESOURCES_RAW.length;
-  const totalSquadsComRecurso = new Set(RESOURCES_RAW.map(r=>r.squad)).size;
-  const compart = RESOURCES_RAW.filter(r=>r.compartilhado==='Sim').length;
+  const totalColab = resourceRows.length;
+  const totalSquadsComRecurso = new Set(resourceRows.map(r=>r.squad)).size;
+  const compart = resourceRows.filter(r=>r.compartilhado==='Sim').length;
   const pctCompart = totalColab ? Math.round(compart/totalColab*100) : 0;
   const kpiRow = document.getElementById('recursosKpiRow');
   kpiRow.innerHTML = '';
