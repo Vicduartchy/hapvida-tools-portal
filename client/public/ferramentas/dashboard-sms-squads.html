@@ -6,6 +6,7 @@
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/data/resources-import.js"></script>
+<script src="/shared/data/quarterly-import.js"></script>
 <script src="/shared/vendor/chartjs-plugin-datalabels-2.2.0.min.js"></script>
 
 <style>
@@ -358,10 +359,24 @@
   .chart-card h4{
     margin:0 0 12px; font-size:13px; color:var(--azul); text-transform:uppercase; letter-spacing:.3px;
   }
+  .source-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:1360px;margin:10px auto 0;padding:0 36px;}
+  .source-card{background:var(--branco);border:1px solid var(--cinza-borda);border-radius:10px;padding:12px;box-shadow:0 2px 8px rgba(15,35,112,.04);}
+  .source-card h3{margin:0 0 8px;color:var(--azul);font-size:12px;}
+  .source-card .source-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+  .source-status{display:block;margin-top:7px;min-height:15px;color:var(--cinza-texto);font-size:10.5px;line-height:1.35;}
+  .data-kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:12px;margin-bottom:16px;}
+  .data-kpi-card{background:var(--branco);border:1px solid var(--cinza-borda);border-radius:10px;padding:15px;box-shadow:0 2px 8px rgba(15,35,112,.04);}
+  .data-kpi-card .value{font-size:25px;font-weight:800;color:var(--azul);line-height:1.1;}
+  .data-kpi-card .label{margin-top:6px;color:var(--cinza-texto);font-size:11.5px;}
+  .data-kpi-card.warn .value{color:var(--laranja);}
+  .data-kpi-card.alert .value{color:var(--vermelho);}
+  .insight-section{margin-top:18px;}
+  .insight-section h3{margin:0 0 10px;color:var(--azul);font-size:15px;border-top:1px solid #E4E7EF;padding-top:18px;}
   .chart-wrap{ position:relative; height:280px; }
   .chart-wrap.chart-tall{ height:420px; }
   @media (max-width: 900px){
     .charts-grid{ grid-template-columns:1fr; }
+    .source-grid{grid-template-columns:1fr;padding:0 18px;}
   }
 </style>
 <body>
@@ -387,33 +402,99 @@
     <div class="offline-badge">100% offline</div>
   </div>
 </header>
-<div class="toolbar-row" aria-label="Atualização da base de recursos">
-  <div class="toolbar-group" style="border-right:none; padding-right:0;">
-    <input id="resourcesUploadInput" type="file" accept=".xlsx,.xls,.csv" style="display:none;">
-    <button class="btn btn-outline btn-sm" id="btnImportResources" type="button">📥 Atualizar base mensal</button>
-    <button class="btn btn-outline btn-sm" id="btnResetResources" type="button">↩️ Usar base publicada</button>
-    <span id="resourcesDataBadge" style="display:inline-flex; align-items:center; min-height:30px; padding:6px 10px; border-radius:8px; background:#E8F0FE; border:1px solid #B7CDF5; color:var(--azul-escuro); font-size:11px; font-weight:700;">Recursos: base publicada</span>
+<div class="source-grid" aria-label="Atualização semanal das bases">
+  <div class="source-card">
+    <h3>1. Recursos e squads</h3>
+    <div class="source-actions">
+      <input id="resourcesUploadInput" type="file" accept=".xlsx,.xls,.csv" style="display:none;">
+      <button class="btn btn-outline btn-sm" id="btnImportResources" type="button">📥 Importar recursos</button>
+      <button class="btn btn-outline btn-sm" id="btnResetResources" type="button">↩️ Restaurar</button>
+    </div>
+    <span id="resourcesDataBadge" class="source-status">Recursos: base publicada</span>
+  </div>
+  <div class="source-card">
+    <h3>2. Portfólio de projetos</h3>
+    <div class="source-actions">
+      <input id="portfolioUploadInput" type="file" accept=".xlsx,.xls,.csv" style="display:none;">
+      <button class="btn btn-outline btn-sm" id="btnImportPortfolio" type="button">📥 Importar portfólio</button>
+      <button class="btn btn-outline btn-sm" id="btnResetPortfolio" type="button">↩️ Limpar</button>
+    </div>
+    <span id="portfolioDataBadge" class="source-status">Portfólio: aguardando upload semanal</span>
+  </div>
+  <div class="source-card">
+    <h3>3. Melhorias do trimestre</h3>
+    <div class="source-actions">
+      <input id="improvementsUploadInput" type="file" accept=".xlsx,.xls,.csv" style="display:none;">
+      <button class="btn btn-outline btn-sm" id="btnImportImprovements" type="button">📥 Importar melhorias</button>
+      <button class="btn btn-outline btn-sm" id="btnResetImprovements" type="button">↩️ Limpar</button>
+    </div>
+    <span id="improvementsDataBadge" class="source-status">Melhorias: aguardando upload semanal</span>
   </div>
 </div>
-<div style="max-width:1360px; margin:4px auto 0; padding:0 36px; font-size:10.5px; color:var(--cinza-texto);">A base mensal é salva somente neste navegador e pode ser substituída ou restaurada pela base publicada.</div>
+<div style="max-width:1360px; margin:6px auto 0; padding:0 36px; font-size:10.5px; color:var(--cinza-texto);">Fluxo semanal: importe as três bases; o navegador salva os últimos arquivos e recalcula recursos, SMs, squads, projetos, melhorias e qualidade dos dados.</div>
 
 <main>
   <div id="resourcesImportStatus" class="importbanner" style="display:none;"></div>
 
   <div class="roadmap-note">
-    Divisão SM × squad: <b>Levantamentos_SMs.xlsx</b>. Nomes/diretor/gerente: conferidos contra De-Para Azure (Jun/24). <b>📥 Atualizar base mensal</b> troca os recursos, recalcula os vínculos por squad, SM, capacity e demais indicadores. <b>✏️ Editar</b> e <b>🗑️ Excluir</b> continuam salvos neste navegador.
+    Divisão SM × squad: <b>Levantamentos_SMs.xlsx</b>. Nomes/diretor/gerente: conferidos contra De-Para Azure (Jun/24). <b>📥 Importar as três bases</b> recalcula o cruzamento por squad, SM, LECOM e qualidade dos dados. <b>✏️ Editar</b> e <b>🗑️ Excluir</b> continuam salvos neste navegador.
   </div>
 
   <div class="tabbar" id="tabBar">
-    <button class="tab active" data-tab="sms">👤 SMs</button>
+    <button class="tab active" data-tab="executive">📌 Visão Executiva</button>
+    <button class="tab" data-tab="demand">🎯 Demanda por SM</button>
+    <button class="tab" data-tab="quality">🧪 Qualidade dos Dados</button>
+    <button class="tab" data-tab="sms">👤 SMs</button>
     <button class="tab" data-tab="squads">🧩 Squads</button>
     <button class="tab" data-tab="boards">🗂️ Boards Azure</button>
     <button class="tab" data-tab="charts">📊 Gráficos</button>
-    <button class="tab" data-tab="capacity">📐 Capacity</button>
     <button class="tab" data-tab="recursos">👥 Recursos das Squads</button>
   </div>
 
-  <div class="tab-content" id="tab-sms">
+  <div class="tab-content" id="tab-executive">
+    <div id="quarterlyStatusBanner" class="importbanner" style="display:none; font-size:12px; line-height:1.6;"></div>
+    <div class="data-kpi-grid" id="executiveKpiRow"></div>
+    <div class="resultcount" id="executiveSummary"></div>
+    <div class="charts-grid">
+      <div class="chart-card full">
+        <h4>Squads com maior demanda combinada</h4>
+        <div class="tablewrap">
+          <table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Recursos</th><th>Projetos</th><th>Melhorias</th><th>Total</th><th>Pressão</th></tr></thead><tbody id="execSquadBody"></tbody></table>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h4>Projetos por status</h4>
+        <div class="tablewrap"><table class="squadtable"><thead><tr><th>Status</th><th>Quantidade</th></tr></thead><tbody id="execProjectStatusBody"></tbody></table></div>
+      </div>
+      <div class="chart-card">
+        <h4>Melhorias por status</h4>
+        <div class="tablewrap"><table class="squadtable"><thead><tr><th>Status</th><th>Quantidade</th></tr></thead><tbody id="execImprovementStatusBody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-demand">
+    <div class="data-kpi-grid" id="demandKpiRow"></div>
+    <div class="filterbar">
+      <div class="field" style="flex:2;min-width:240px;"><label>Buscar SM ou squad</label><input type="text" id="demandSearch" placeholder="🔎 Nome do SM ou squad..."></div>
+      <div class="field"><label>Tipo de demanda</label><select id="demandType"><option value="">Projetos e melhorias</option><option value="project">Só projetos</option><option value="improvement">Só melhorias</option></select></div>
+      <div class="field"><label>Sinal de risco</label><select id="demandRisk"><option value="">Todos</option><option value="risk">Com risco ou atraso</option><option value="missing">Sem SM confirmado</option></select></div>
+      <button class="clearbtn" id="btnClearDemand">Limpar filtros</button>
+    </div>
+    <div class="resultcount" id="demandCount"></div>
+    <div class="tablewrap"><table class="squadtable" id="demandTable"><thead><tr><th data-demand-sort="sm">SM <span class="sort-arrow">↕</span></th><th data-demand-sort="squads">Squads <span class="sort-arrow">↕</span></th><th data-demand-sort="resources">Recursos <span class="sort-arrow">↕</span></th><th data-demand-sort="projects">Projetos <span class="sort-arrow">↕</span></th><th data-demand-sort="improvements">Melhorias <span class="sort-arrow">↕</span></th><th data-demand-sort="hours">Horas <span class="sort-arrow">↕</span></th><th data-demand-sort="risk">Risco <span class="sort-arrow">↕</span></th><th data-demand-sort="pressure">Pressão <span class="sort-arrow">↕</span></th></tr></thead><tbody id="demandBody"></tbody></table></div>
+    <div class="roadmap-note" style="margin-top:14px;">A pressão é um sinal comparativo calculado por volume de projetos, melhorias e horas sobre os recursos identificados. Não representa capacidade individual contratada.</div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-quality">
+    <div class="data-kpi-grid" id="qualityKpiRow"></div>
+    <div id="qualityMessages" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
+    <div class="insight-section"><h3>Indicadores de qualidade por fonte</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Indicador</th><th>Portfólio</th><th>Melhorias</th><th>Interpretação</th></tr></thead><tbody id="qualityBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>Squads sem correspondência com a base de recursos</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Nome na fonte</th><th>Tipo</th><th>Registros</th><th>Ação</th></tr></thead><tbody id="qualityUnmappedBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>LECOMs presentes nas duas fontes</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>LECOM</th><th>Título do projeto</th><th>Título da melhoria</th><th>Situação</th></tr></thead><tbody id="qualityOverlapBody"></tbody></table></div></div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-sms">
 
     <div class="kpis" id="smKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));"></div>
 
@@ -673,33 +754,6 @@
       </div>
     </div>
 
-  </div>
-
-  <div class="tab-content hidden" id="tab-capacity">
-    <div class="panel">
-      <div class="sub" style="font-weight:700;color:var(--azul);margin-bottom:10px;">Capacity — squads ideal x real por SM</div>
-      <div class="filterbar">
-        <label style="font-size:13px;">Squads por SM (ideal): <input type="number" id="capIdeal" value="3" min="1" style="width:50px;border:1px solid var(--cinza-borda);border-radius:6px;padding:4px 6px;"></label>
-        <select id="capGroupBy">
-          <option value="diretoria">Agrupar por Diretoria</option>
-          <option value="diretor">Agrupar por Diretor</option>
-        </select>
-      </div>
-      <div class="kpis" id="capacityKpiRow"></div>
-      <div class="tablewrap">
-        <table class="datatable" id="capTable" style="width:100%;">
-          <thead><tr><th id="capColLabel" data-sort="grupo">Diretoria <span class="sort-arrow">↕</span></th><th data-sort="squads">Squads <span class="sort-arrow">↕</span></th><th data-sort="ideal">Ideal (SMs) <span class="sort-arrow">↕</span></th><th data-sort="dedicados">SMs dedicados <span class="sort-arrow">↕</span></th><th data-sort="gap">Gap <span class="sort-arrow">↕</span></th></tr></thead>
-          <tbody id="capBody"></tbody>
-        </table>
-      </div>
-      <div class="sub" style="font-weight:700;color:var(--azul);margin:22px 0 10px;">SMs acima do ideal individual</div>
-      <div class="tablewrap">
-        <table class="datatable" id="capOverloadTable" style="width:100%;">
-          <thead><tr><th data-sort="sm">SM <span class="sort-arrow">↕</span></th><th data-sort="squads">Squads <span class="sort-arrow">▼</span></th><th data-sort="diretoriasStr">Diretoria(s) <span class="sort-arrow">↕</span></th></tr></thead>
-          <tbody id="capOverloadBody"></tbody>
-        </table>
-      </div>
-    </div>
   </div>
 
   <div class="tab-content hidden" id="tab-recursos">
@@ -1122,6 +1176,298 @@ function squadHasSM(s){
   return !isBlank(currentSMName(s));
 }
 
+/* ============================================================
+   INSIGHTS TRIMESTRAIS — projetos, melhorias, squads e SMs
+   ============================================================ */
+let QUARTERLY_MODEL = null;
+const DEMAND_SORT = { key: 'pressure', dir: 'desc' };
+
+function qKey(value){ return boardKey(value || ''); }
+function qText(value){ return String(value == null ? '' : value).replace(/\s+/g, ' ').trim(); }
+function qNumber(value){
+  const text = qText(value).replace(/\./g, '').replace(',', '.');
+  const number = Number(text);
+  return Number.isFinite(number) ? number : 0;
+}
+function qFormatNumber(value){ return Number(value || 0).toLocaleString('pt-BR'); }
+function qFormatHours(value){ return Math.round(Number(value || 0)).toLocaleString('pt-BR')+' h'; }
+function qDate(value){
+  if(!value) return '';
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('pt-BR');
+}
+function qUniqueRows(rows){
+  const map = new Map();
+  (rows || []).forEach(row=>{
+    const identity = qKey(row.lecom || row.id || ((row.titulo || '')+'|'+(row.squad || '')));
+    if(!identity) return;
+    if(!map.has(identity)) map.set(identity, row);
+  });
+  return [...map.values()];
+}
+function qFindSquad(row, index){
+  const candidates = [row.squad, row.squadAzure].map(qText).filter(Boolean);
+  for(const candidate of candidates){
+    const direct = matchSquad(candidate, index);
+    if(direct) return direct;
+  }
+  return null;
+}
+function qIsProjectRisk(row){ return /(atrasado|em risco|cancelado|suspenso)/i.test(qText(row.statusResumo || row.status)); }
+function qIsImprovementRisk(row){ return /cancelado|não iniciado/i.test(qText(row.status)); }
+function qStatus(row, type){
+  return qText(type === 'project' ? (row.statusResumo || row.status) : row.status) || 'Sem status';
+}
+function qSquadPressure(aggregate){
+  const score = (aggregate.projects + aggregate.improvements) + (aggregate.risk * 2) + (aggregate.hours / 400);
+  aggregate.pressureScore = Math.round(score * 10) / 10;
+  aggregate.pressure = score >= 25 ? 'Alta' : (score >= 12 ? 'Média' : 'Baixa');
+  return aggregate;
+}
+function qNewAggregate(label, squad){
+  return {
+    label: label || '(Sem identificação)', squad: squad || null, squads: new Set(), resourceKeys: new Set(),
+    projectIds: new Set(), improvementIds: new Set(), projects: 0, improvements: 0, hours: 0, risk: 0,
+    missingSm: false, pressure: 'Baixa', pressureScore: 0
+  };
+}
+function qResolveItem(row, type, index){
+  const squad = qFindSquad(row, index);
+  const rawSquad = qText(row.squad || row.squadAzure) || '(Sem squad informada)';
+  const label = squad ? squad.squad : rawSquad;
+  const smFromSquad = squad ? currentSMName(squad) : '';
+  const smFromSource = type === 'project' ? qText(row.smPmo) : '';
+  const sm = !isBlank(smFromSquad) ? smFromSquad : (smFromSource || '(Sem SM confirmado)');
+  return { squad, label, rawSquad, sm, squadKey: squad ? 'id:'+squad.id : 'raw:'+qKey(rawSquad) };
+}
+function qAddItem(aggregate, row, type, resolution){
+  const itemId = qKey(row.lecom || row.id || row.titulo);
+  if(type === 'project'){
+    aggregate.projectIds.add(itemId);
+    aggregate.projects = aggregate.projectIds.size;
+  } else {
+    aggregate.improvementIds.add(itemId);
+    aggregate.improvements = aggregate.improvementIds.size;
+  }
+  aggregate.hours += qNumber(row.horas);
+  if(type === 'project' ? qIsProjectRisk(row) : qIsImprovementRisk(row)) aggregate.risk += 1;
+  if(resolution.squad){
+    const unifiedSquad = (typeof UNIFIED !== 'undefined' && Array.isArray(UNIFIED)) ? UNIFIED.find(item=>item.id===resolution.squad.id) : null;
+    const resources = unifiedSquad ? unifiedSquad.recursos : (resolution.squad.recursos || []);
+    resources.forEach(resource=>aggregate.resourceKeys.add(qKey(resource.colaborador)));
+  }
+  if(resolution.sm === '(Sem SM confirmado)') aggregate.missingSm = true;
+}
+function buildQuarterlyModel(){
+  if(!window.HACQuarterlyImport) return null;
+  const portfolio = qUniqueRows(HACQuarterlyImport.getRows('portfolio'));
+  const improvements = qUniqueRows(HACQuarterlyImport.getRows('improvements'));
+  const index = buildSquadIndexFrom(REGISTRY);
+  const bySquad = {};
+  const bySm = {};
+  const unmapped = {};
+  const projectStatus = {};
+  const improvementStatus = {};
+  const projectMap = new Map();
+  const improvementMap = new Map();
+  const items = [];
+
+  function addSourceRows(rows, type){
+    rows.forEach(row=>{
+      const resolution = qResolveItem(row, type, index);
+      const squadAggregate = bySquad[resolution.squadKey] || (bySquad[resolution.squadKey] = qNewAggregate(resolution.label, resolution.squad));
+      squadAggregate.squads.add(resolution.squadKey);
+      qAddItem(squadAggregate, row, type, resolution);
+      const smAggregate = bySm[resolution.sm] || (bySm[resolution.sm] = qNewAggregate(resolution.sm, null));
+      smAggregate.squads.add(resolution.squadKey);
+      qAddItem(smAggregate, row, type, resolution);
+      if(type === 'project') projectStatus[qStatus(row, type)] = (projectStatus[qStatus(row, type)] || 0) + 1;
+      else improvementStatus[qStatus(row, type)] = (improvementStatus[qStatus(row, type)] || 0) + 1;
+      if(!resolution.squad){
+        const key = qKey(resolution.rawSquad) || '(sem squad informada)';
+        if(!unmapped[key]) unmapped[key] = { label: resolution.rawSquad, projects: 0, improvements: 0 };
+        unmapped[key][type === 'project' ? 'projects' : 'improvements'] += 1;
+      }
+      const item = Object.assign({}, row, { _type:type, _resolution:resolution });
+      items.push(item);
+      const lecom = qKey(row.lecom);
+      if(lecom){
+        if(type === 'project') projectMap.set(lecom, item);
+        else improvementMap.set(lecom, item);
+      }
+    });
+  }
+  addSourceRows(portfolio, 'project');
+  addSourceRows(improvements, 'improvement');
+
+  Object.values(bySquad).forEach(qSquadPressure);
+  Object.values(bySm).forEach(qSquadPressure);
+  const commonLecom = [...projectMap.keys()].filter(key=>improvementMap.has(key)).map(key=>({
+    lecom: projectMap.get(key).lecom,
+    project: projectMap.get(key),
+    improvement: improvementMap.get(key),
+    situation: qKey(projectMap.get(key).titulo) === qKey(improvementMap.get(key).titulo) ? 'Provável correspondência' : 'Revisar relação'
+  }));
+  const metrics = {
+    projects: portfolio.length,
+    improvements: improvements.length,
+    commonLecom: commonLecom.length,
+    initiatives: new Set([...projectMap.keys(), ...improvementMap.keys()]).size,
+    hours: [...Object.values(bySquad)].reduce((total, row)=>total+row.hours, 0),
+    risk: [...Object.values(bySquad)].reduce((total, row)=>total+row.risk, 0),
+    missingRealized: improvements.filter(row=>/finalizado/i.test(row.status) && isBlank(row.realizada)).length,
+    missingSquadProjects: portfolio.filter(row=>isBlank(row.squad) && isBlank(row.squadAzure)).length,
+    missingSquadImprovements: improvements.filter(row=>isBlank(row.squad) && isBlank(row.squadAzure)).length,
+    duplicateProjects: HACQuarterlyImport.getMeta('portfolio').duplicateRows || 0,
+    duplicateImprovements: HACQuarterlyImport.getMeta('improvements').duplicateRows || 0,
+    unmappedSquads: Object.keys(unmapped).length,
+    missingSm: items.filter(item=>item._resolution.sm === '(Sem SM confirmado)').length
+  };
+  return { portfolio, improvements, items, bySquad, bySm, unmapped:Object.values(unmapped), commonLecom, projectStatus, improvementStatus, metrics };
+}
+function qKpi(id, value, label, tone){
+  return '<div class="data-kpi-card '+(tone || '')+'"><div class="value" id="'+id+'">'+esc(value)+'</div><div class="label">'+esc(label)+'</div></div>';
+}
+function qEmptyRow(columns, message){ return '<tr><td colspan="'+columns+'" class="noresults">'+esc(message)+'</td></tr>'; }
+function qLoadStatus(type){
+  const meta = HACQuarterlyImport.getMeta(type);
+  const label = type === 'portfolio' ? 'Portfólio' : 'Melhorias';
+  const el = document.getElementById(type === 'portfolio' ? 'portfolioDataBadge' : 'improvementsDataBadge');
+  if(!el) return;
+  if(meta.source === 'imported'){
+    el.innerHTML = '<b>'+label+': '+qFormatNumber(meta.uniqueRows)+'</b> itens únicos · '+esc(meta.fileName)+' · '+qDate(meta.importedAt);
+  } else {
+    el.textContent = label+': aguardando upload semanal';
+  }
+}
+function renderQuarterlySources(){
+  if(!window.HACQuarterlyImport) return;
+  qLoadStatus('portfolio');
+  qLoadStatus('improvements');
+  const dataBadge = document.getElementById('dataSummaryBadge');
+  if(dataBadge){
+    dataBadge.textContent = SM_VIEW.length+' SMs · '+UNIFIED.length+' squads · '+RESOURCES_RAW.length+' recursos · '+ALL_BOARDS.length+' boards · '+HACQuarterlyImport.getMeta('portfolio').uniqueRows+' projetos · '+HACQuarterlyImport.getMeta('improvements').uniqueRows+' melhorias';
+  }
+  const banner = document.getElementById('quarterlyStatusBanner');
+  if(!banner) return;
+  const p = HACQuarterlyImport.getMeta('portfolio');
+  const i = HACQuarterlyImport.getMeta('improvements');
+  const missing = [p.source !== 'imported' ? 'Portfólio' : '', i.source !== 'imported' ? 'Melhorias' : ''].filter(Boolean);
+  if(missing.length){
+    banner.className = 'importbanner warn';
+    banner.style.display = 'block';
+    banner.innerHTML = '<b>Importação semanal incompleta.</b> Faça upload de '+missing.join(' e ')+'. As abas de SMs e Recursos continuam disponíveis, mas os insights de demanda ficam parciais.';
+  } else {
+    banner.className = 'importbanner ok';
+    banner.style.display = 'block';
+    banner.innerHTML = '<b>Três fontes carregadas.</b> O cruzamento está usando recursos, squads, projetos e melhorias salvos neste navegador.';
+  }
+}
+function renderExecutiveTab(){
+  const kpi = document.getElementById('executiveKpiRow');
+  if(!kpi) return;
+  const model = QUARTERLY_MODEL || buildQuarterlyModel();
+  if(!model) return;
+  const m = model.metrics;
+  kpi.innerHTML = qKpi('execKpiProjects', qFormatNumber(m.projects), 'Projetos únicos') +
+    qKpi('execKpiImprovements', qFormatNumber(m.improvements), 'Melhorias únicas') +
+    qKpi('execKpiInitiatives', qFormatNumber(m.initiatives), 'Iniciativas sem duplicar LECOM') +
+    qKpi('execKpiHours', qFormatHours(m.hours), 'Horas estimadas') +
+    qKpi('execKpiRisk', qFormatNumber(m.risk), 'Itens com sinal de risco', m.risk ? 'alert' : '') +
+    qKpi('execKpiUnmapped', qFormatNumber(m.unmappedSquads), 'Squads sem mapeamento', m.unmappedSquads ? 'warn' : '');
+  document.getElementById('executiveSummary').innerHTML = '<b>'+qFormatNumber(Object.keys(model.bySquad).length)+'</b> grupos de squad na demanda consolidada · <b>'+qFormatNumber(m.commonLecom)+'</b> LECOMs presentes nas duas fontes.';
+  const top = Object.values(model.bySquad).filter(row=>row.projects || row.improvements).sort((a,b)=>b.pressureScore-a.pressureScore).slice(0,15);
+  document.getElementById('execSquadBody').innerHTML = top.length ? top.map(row=>'<tr><td><b>'+esc(row.label)+'</b></td><td>'+esc(row.squad ? (currentSMName(row.squad) || 'Sem SM') : 'Sem SM')+'</td><td>'+qFormatNumber(row.resourceKeys.size)+'</td><td>'+qFormatNumber(row.projects)+'</td><td>'+qFormatNumber(row.improvements)+'</td><td>'+qFormatNumber(row.projects+row.improvements)+'</td><td><span class="badge '+(row.pressure==='Alta'?'miss':(row.pressure==='Média'?'pend':'ok'))+'">'+row.pressure+'</span></td></tr>').join('') : qEmptyRow(7, 'Importe as bases de portfólio e melhorias para iniciar o cruzamento.');
+  const projectStatus = Object.entries(model.projectStatus).sort((a,b)=>b[1]-a[1]);
+  const improvementStatus = Object.entries(model.improvementStatus).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('execProjectStatusBody').innerHTML = projectStatus.length ? projectStatus.map(row=>'<tr><td>'+esc(row[0])+'</td><td>'+qFormatNumber(row[1])+'</td></tr>').join('') : qEmptyRow(2, 'Sem portfólio importado.');
+  document.getElementById('execImprovementStatusBody').innerHTML = improvementStatus.length ? improvementStatus.map(row=>'<tr><td>'+esc(row[0])+'</td><td>'+qFormatNumber(row[1])+'</td></tr>').join('') : qEmptyRow(2, 'Sem melhorias importadas.');
+}
+function renderDemandTab(){
+  const body = document.getElementById('demandBody');
+  if(!body) return;
+  const model = QUARTERLY_MODEL || buildQuarterlyModel();
+  const query = qKey(document.getElementById('demandSearch').value);
+  const typeFilter = document.getElementById('demandType').value;
+  const riskFilter = document.getElementById('demandRisk').value;
+  let rows = Object.values(model.bySm).filter(row=>{
+    if(query && !qKey(row.label).includes(query) && ![...row.squads].some(key=>qKey(model.bySquad[key] && model.bySquad[key].label).includes(query))) return false;
+    if(typeFilter === 'project' && !row.projects) return false;
+    if(typeFilter === 'improvement' && !row.improvements) return false;
+    if(riskFilter === 'risk' && !row.risk) return false;
+    if(riskFilter === 'missing' && row.label !== '(Sem SM confirmado)') return false;
+    return row.projects || row.improvements || row.resourceKeys.size;
+  });
+  const sortValue = (row, key) => key === 'sm' ? row.label : (key === 'squads' ? row.squads.size : (key === 'resources' ? row.resourceKeys.size : (key === 'projects' ? row.projects : (key === 'improvements' ? row.improvements : (key === 'hours' ? row.hours : (key === 'risk' ? row.risk : row.pressureScore))))));
+  rows.sort((a,b)=>{
+    const va = sortValue(a, DEMAND_SORT.key); const vb = sortValue(b, DEMAND_SORT.key);
+    if(typeof va === 'number' && typeof vb === 'number') return DEMAND_SORT.dir === 'asc' ? va-vb : vb-va;
+    const cmp = String(va).localeCompare(String(vb), 'pt-BR', {numeric:true});
+    return DEMAND_SORT.dir === 'asc' ? cmp : -cmp;
+  });
+  const totalResources = new Set(); rows.forEach(row=>row.resourceKeys.forEach(key=>totalResources.add(key)));
+  document.getElementById('demandKpiRow').innerHTML = qKpi('demandKpiSm', qFormatNumber(rows.length), 'SMs na visão') + qKpi('demandKpiSquads', qFormatNumber(rows.reduce((n,row)=>n+row.squads.size,0)), 'Squads relacionadas') + qKpi('demandKpiResources', qFormatNumber(totalResources.size), 'Recursos únicos') + qKpi('demandKpiRisk', qFormatNumber(rows.reduce((n,row)=>n+row.risk,0)), 'Itens com risco', rows.some(row=>row.risk)?'alert':'');
+  document.getElementById('demandCount').innerHTML = '<b>'+qFormatNumber(rows.length)+'</b> SMs encontrados · clique no cabeçalho para ordenar por volume ou pressão.';
+  body.innerHTML = rows.length ? rows.map(row=>'<tr><td><b>'+esc(row.label)+'</b></td><td>'+qFormatNumber(row.squads.size)+'</td><td>'+qFormatNumber(row.resourceKeys.size)+'</td><td>'+qFormatNumber(row.projects)+'</td><td>'+qFormatNumber(row.improvements)+'</td><td>'+qFormatHours(row.hours)+'</td><td>'+(row.risk ? '<span class="badge miss">'+qFormatNumber(row.risk)+'</span>' : '0')+'</td><td><span class="badge '+(row.pressure==='Alta'?'miss':(row.pressure==='Média'?'pend':'ok'))+'">'+row.pressure+'</span></td></tr>').join('') : qEmptyRow(8, 'Importe as bases de portfólio e melhorias para visualizar a demanda por SM.');
+}
+function renderQualityTab(){
+  const model = QUARTERLY_MODEL || buildQuarterlyModel();
+  if(!model || !document.getElementById('qualityBody')) return;
+  const m = model.metrics;
+  document.getElementById('qualityKpiRow').innerHTML = qKpi('qualityKpiDupProjects', qFormatNumber(m.duplicateProjects), 'Duplicidades no portfólio', m.duplicateProjects ? 'warn' : '') + qKpi('qualityKpiDupImprovements', qFormatNumber(m.duplicateImprovements), 'Duplicidades em melhorias', m.duplicateImprovements ? 'warn' : '') + qKpi('qualityKpiUnmapped', qFormatNumber(m.unmappedSquads), 'Squads sem mapeamento', m.unmappedSquads ? 'alert' : '') + qKpi('qualityKpiOverlap', qFormatNumber(m.commonLecom), 'LECOMs nas duas bases') + qKpi('qualityKpiDates', qFormatNumber(m.missingRealized), 'Finalizadas sem data realizada', m.missingRealized ? 'warn' : '') + qKpi('qualityKpiSm', qFormatNumber(m.missingSm), 'Itens sem SM confirmado', m.missingSm ? 'alert' : '');
+  const pMeta = HACQuarterlyImport.getMeta('portfolio'); const iMeta = HACQuarterlyImport.getMeta('improvements');
+  const qualityRows = [
+    ['Linhas brutas importadas', pMeta.rawRows || 0, iMeta.rawRows || 0, 'Volume de registros lidos na aba operacional.'],
+    ['Itens únicos por LECOM', model.portfolio.length, model.improvements.length, 'KPI recomendado para não duplicar itens repetidos.'],
+    ['Duplicidades removidas', m.duplicateProjects, m.duplicateImprovements, 'Registros repetidos pelo mesmo LECOM.'],
+    ['Squad não informada', m.missingSquadProjects, m.missingSquadImprovements, 'A linha não possui squad nem Squad Azure.'],
+    ['Squad sem correspondência', model.unmapped.filter(row=>row.projects).length, model.unmapped.filter(row=>row.improvements).length, 'Precisa de revisão no De-Para de squads.'],
+    ['Sem SM confirmado', model.items.filter(row=>row._type==='project' && row._resolution.sm==='(Sem SM confirmado)').length, model.items.filter(row=>row._type==='improvement' && row._resolution.sm==='(Sem SM confirmado)').length, 'Não foi possível chegar a um SM efetivo.']
+  ];
+  document.getElementById('qualityBody').innerHTML = qualityRows.map(row=>'<tr><td><b>'+esc(row[0])+'</b></td><td>'+qFormatNumber(row[1])+'</td><td>'+qFormatNumber(row[2])+'</td><td>'+esc(row[3])+'</td></tr>').join('');
+  document.getElementById('qualityUnmappedBody').innerHTML = model.unmapped.length ? model.unmapped.sort((a,b)=>(b.projects+b.improvements)-(a.projects+a.improvements)).slice(0,80).map(row=>'<tr><td>'+esc(row.label)+'</td><td>'+((row.projects && row.improvements) ? 'Projetos + melhorias' : (row.projects ? 'Projetos' : 'Melhorias'))+'</td><td>'+qFormatNumber(row.projects+row.improvements)+'</td><td><span class="badge miss">Criar De–Para</span></td></tr>').join('') : qEmptyRow(4, 'Todas as squads foram encontradas na base de recursos.');
+  document.getElementById('qualityOverlapBody').innerHTML = model.commonLecom.length ? model.commonLecom.slice(0,80).map(row=>'<tr><td>'+esc(row.lecom)+'</td><td>'+esc(row.project.titulo)+'</td><td>'+esc(row.improvement.titulo)+'</td><td><span class="badge '+(row.situation==='Provável correspondência'?'ok':'pend')+'">'+row.situation+'</span></td></tr>').join('') : qEmptyRow(4, 'Nenhum LECOM aparece nas duas bases carregadas.');
+  const messages = document.getElementById('qualityMessages');
+  if(m.missingRealized || m.unmappedSquads || m.missingSm){
+    messages.style.display='block';
+    messages.innerHTML = '<b>Revisões recomendadas:</b> '+qFormatNumber(m.unmappedSquads)+' grupos de squad sem correspondência, '+qFormatNumber(m.missingSm)+' itens sem SM confirmado e '+qFormatNumber(m.missingRealized)+' melhorias finalizadas sem data realizada.';
+  } else messages.style.display='none';
+}
+function refreshQuarterlyViews(){
+  QUARTERLY_MODEL = buildQuarterlyModel();
+  renderQuarterlySources();
+  renderExecutiveTab();
+  renderDemandTab();
+  renderQualityTab();
+}
+function bindQuarterlyViews(){
+  const search = document.getElementById('demandSearch');
+  const type = document.getElementById('demandType');
+  const risk = document.getElementById('demandRisk');
+  if(search && !search.dataset.wired){ search.dataset.wired='1'; search.addEventListener('input', renderDemandTab); }
+  if(type && !type.dataset.wired){ type.dataset.wired='1'; type.addEventListener('change', renderDemandTab); }
+  if(risk && !risk.dataset.wired){ risk.dataset.wired='1'; risk.addEventListener('change', renderDemandTab); }
+  const clear = document.getElementById('btnClearDemand');
+  if(clear && !clear.dataset.wired){ clear.dataset.wired='1'; clear.addEventListener('click', ()=>{ search.value=''; type.value=''; risk.value=''; renderDemandTab(); }); }
+  document.querySelectorAll('#demandTable thead th[data-demand-sort]').forEach(th=>{
+    if(th.dataset.wired) return;
+    th.dataset.wired='1';
+    th.addEventListener('click', ()=>{
+      const key = th.getAttribute('data-demand-sort');
+      if(DEMAND_SORT.key === key) DEMAND_SORT.dir = DEMAND_SORT.dir === 'asc' ? 'desc' : 'asc';
+      else { DEMAND_SORT.key = key; DEMAND_SORT.dir = 'desc'; }
+      renderDemandTab();
+    });
+  });
+}
+window.addEventListener('hac-quarterly-change', refreshQuarterlyViews);
+window.addEventListener('hac-quarterly-error', event=>{
+  const detail = event.detail || {};
+  const banner = document.getElementById('quarterlyStatusBanner');
+  if(banner){ banner.className='importbanner error'; banner.style.display='block'; banner.innerHTML='<b>Não consegui importar '+esc(detail.type || 'a base')+'.</b> '+esc(detail.message || 'Arquivo inválido')+' Nenhuma alteração foi aplicada.'; }
+});
+bindQuarterlyViews();
+
 function buildUnified(){
   REGISTRY = buildRegistry();
   const idx = buildSquadIndexFrom(REGISTRY);
@@ -1487,7 +1833,7 @@ document.getElementById('btnExportSmXlsx').addEventListener('click', ()=>{
    TROCA DE ABAS
    ============================================================ */
 function showTab(name){
-  ['sms','squads','boards','charts','capacity','recursos'].forEach(k=>{
+  ['executive','demand','quality','sms','squads','boards','charts','recursos'].forEach(k=>{
     const el = document.getElementById('tab-'+k);
     if(el) el.classList.toggle('hidden', k!==name);
   });
@@ -1505,8 +1851,10 @@ document.querySelectorAll('#tabBar .tab').forEach(btn=>{
       if(t==='squads') renderSquadsTab();
       if(t==='boards') renderBoardsTab();
       if(t==='charts') renderChartsTab();
-      if(t==='capacity') renderCapacityTab();
       if(t==='recursos') renderRecursosTab();
+      if(t==='executive') renderExecutiveTab();
+      if(t==='demand') renderDemandTab();
+      if(t==='quality') renderQualityTab();
     }catch(err){
       console.error('Erro ao trocar de aba:', err);
       alert('Erro ao abrir a aba: ' + err.message);
@@ -2178,105 +2526,6 @@ function renderChartsTab(){
 }
 
 /* ============================================================
-   ABA CAPACITY — squads ideal x real por SM
-   ============================================================ */
-const CAP_SORT = { key: null, dir: 'asc' };
-const CAP_OVERLOAD_SORT = { key: null, dir: 'asc' };
-function genericSort(list, sortState, keyFn){
-  if(!sortState.key) return list;
-  const dir = sortState.dir;
-  list.sort((a,b)=>{
-    let va = keyFn ? keyFn(a, sortState.key) : a[sortState.key];
-    let vb = keyFn ? keyFn(b, sortState.key) : b[sortState.key];
-    if(typeof va === 'number' && typeof vb === 'number') return dir==='asc' ? va-vb : vb-va;
-    va = String(va==null?'':va).toLowerCase(); vb = String(vb==null?'':vb).toLowerCase();
-    const cmp = va.localeCompare(vb, 'pt-BR', {numeric:true});
-    return dir==='asc' ? cmp : -cmp;
-  });
-  return list;
-}
-function wireSortableTable(tableId, sortState, onSort){
-  const table = document.getElementById(tableId);
-  if(!table) return;
-  table.querySelectorAll('thead th[data-sort]').forEach(th=>{
-    if(th.dataset.wired) return;
-    th.dataset.wired = '1';
-    th.addEventListener('click', ()=>{
-      const key = th.getAttribute('data-sort');
-      if(sortState.key === key){ sortState.dir = sortState.dir==='asc'?'desc':'asc'; }
-      else { sortState.key = key; sortState.dir = 'asc'; }
-      table.querySelectorAll('thead th[data-sort]').forEach(h=>{
-        h.classList.remove('sort-active');
-        const a = h.querySelector('.sort-arrow'); if(a) a.textContent = '↕';
-      });
-      th.classList.add('sort-active');
-      const arrow = th.querySelector('.sort-arrow'); if(arrow) arrow.textContent = sortState.dir==='asc' ? '▲' : '▼';
-      onSort();
-    });
-  });
-}
-function computeCapacityByGroup(groupField, idealPerSm){
-  const groups = {};
-  UNIFIED.forEach(s=>{
-    const g = s[groupField] || '(Sem '+groupField+')';
-    groups[g] = groups[g] || { grupo:g, squads:0, dedicados:new Set() };
-    groups[g].squads++;
-    if(squadHasSM(s)) groups[g].dedicados.add(currentSMName(s));
-  });
-  return Object.values(groups).map(g=>{
-    const dedicados = g.dedicados.size;
-    const ideal = Math.ceil(g.squads / idealPerSm);
-    return { grupo:g.grupo, squads:g.squads, ideal, dedicados, gap: dedicados - ideal };
-  });
-}
-function computeOverloadedSMs(idealPerSm){
-  const bySm = {};
-  UNIFIED.forEach(s=>{
-    if(!squadHasSM(s)) return;
-    const key = currentSMName(s);
-    bySm[key] = bySm[key] || { sm:key, squads:0, diretorias:new Set() };
-    bySm[key].squads++;
-    if(s.diretoria) bySm[key].diretorias.add(s.diretoria);
-  });
-  return Object.values(bySm).filter(x=>x.squads > idealPerSm).map(x=>({
-    sm:x.sm, squads:x.squads, diretoriasStr:[...x.diretorias].join(', ')
-  }));
-}
-function renderCapacityTab(){
-  if(!document.getElementById('capBody')) return;
-  const idealPerSm = parseInt(document.getElementById('capIdeal').value,10) || 3;
-  const groupField = document.getElementById('capGroupBy').value;
-  document.getElementById('capColLabel').textContent = groupField==='diretor' ? 'Diretor' : 'Diretoria';
-
-  let rows = genericSort(computeCapacityByGroup(groupField, idealPerSm), CAP_SORT);
-  document.getElementById('capBody').innerHTML = rows.map(r=>
-    '<tr><td>'+esc(r.grupo)+'</td><td>'+r.squads+'</td><td>'+r.ideal+'</td><td>'+r.dedicados+'</td>'+
-    '<td>'+(r.gap<0 ? '<span class="badge miss">'+r.gap+'</span>' : (r.gap>0 ? '<span class="badge pend">+'+r.gap+'</span>' : '0'))+'</td></tr>'
-  ).join('') || '<tr><td colspan="5" class="noresults">Sem dados.</td></tr>';
-
-  let overloaded = computeOverloadedSMs(idealPerSm);
-  genericSort(overloaded, CAP_OVERLOAD_SORT);
-  document.getElementById('capOverloadBody').innerHTML = overloaded.map(r=>
-    '<tr><td>'+esc(r.sm)+'</td><td><span class="badge pend">'+r.squads+'</span></td><td>'+esc(r.diretoriasStr)+'</td></tr>'
-  ).join('') || '<tr><td colspan="3" class="noresults">Nenhum SM acima do ideal — tudo dentro do esperado.</td></tr>';
-
-  const totalSquads = UNIFIED.length;
-  const totalSmsDistintos = new Set(UNIFIED.filter(s=>squadHasSM(s)).map(s=>currentSMName(s))).size;
-  const idealTotal = Math.ceil(totalSquads / idealPerSm);
-  const kpiRow = document.getElementById('capacityKpiRow');
-  kpiRow.innerHTML = '';
-  kpiRow.appendChild(kpiCard('kpiCapTotal', totalSquads, 'Squads mapeadas'));
-  kpiRow.appendChild(kpiCard('kpiCapIdeal', idealTotal, 'SMs ideais (total)'));
-  kpiRow.appendChild(kpiCard('kpiCapReal', totalSmsDistintos, 'SMs dedicados hoje'));
-  kpiRow.appendChild(kpiCard('kpiCapOverload', overloaded.length, 'SMs acima do ideal', overloaded.length>0?'warn':undefined));
-
-  wireSortableTable('capTable', CAP_SORT, renderCapacityTab);
-  wireSortableTable('capOverloadTable', CAP_OVERLOAD_SORT, renderCapacityTab);
-}
-document.getElementById('capIdeal').addEventListener('input', renderCapacityTab);
-document.getElementById('capGroupBy').addEventListener('change', renderCapacityTab);
-
-/* ============================================================
    ABA RECURSOS — colaboradores por squad (base bruta RESOURCES_RAW)
    ============================================================ */
 const RESOURCES_SORT = { key: null, dir: 'asc' };
@@ -2632,12 +2881,15 @@ document.getElementById('btnRestaurarOverrides').addEventListener('click', ()=>{
 function rebuildAndRender(){
   buildUnified();
   buildSMView();
+  refreshQuarterlyViews();
   const activeTab = document.querySelector('#tabBar .tab.active');
-  const t = activeTab ? activeTab.getAttribute('data-tab') : 'sms';
-  if(t==='sms') renderSMsTab();
+  const t = activeTab ? activeTab.getAttribute('data-tab') : 'executive';
+  if(t==='executive') renderExecutiveTab();
+  else if(t==='demand') renderDemandTab();
+  else if(t==='quality') renderQualityTab();
+  else if(t==='sms') renderSMsTab();
   else if(t==='boards') renderBoardsTab();
   else if(t==='charts') renderChartsTab();
-  else if(t==='capacity') renderCapacityTab();
   else if(t==='recursos') renderRecursosTab();
   else renderSquadsTab();
 }
@@ -2647,16 +2899,19 @@ function rebuildAndRender(){
    ============================================================ */
 loadOverrides();
 if(window.HACResourcesImport) HACResourcesImport.loadPersisted();
+if(window.HACQuarterlyImport){ HACQuarterlyImport.loadPersisted(); HACQuarterlyImport.bindUI(); }
 buildUnified();
 buildSMView();
-showTab('sms');
-renderSMsTab();
+refreshQuarterlyViews();
+showTab('executive');
+renderExecutiveTab();
 
 /* selo de dados ao vivo — calculado a partir do que está de fato carregado,
    nunca um texto fixo, pra você sempre conseguir conferir se é a versão certa */
 (function(){
   const el = document.getElementById('dataSummaryBadge');
   if(!el) return;
-  el.textContent = SM_VIEW.length+' SMs · '+UNIFIED.length+' squads · '+RESOURCES_RAW.length+' recursos · '+ALL_BOARDS.length+' boards';
+  const quarterly = window.HACQuarterlyImport ? HACQuarterlyImport.getMeta('portfolio').uniqueRows + ' projetos · ' + HACQuarterlyImport.getMeta('improvements').uniqueRows + ' melhorias' : 'sem fontes trimestrais';
+  el.textContent = SM_VIEW.length+' SMs · '+UNIFIED.length+' squads · '+RESOURCES_RAW.length+' recursos · '+quarterly;
 })();
 </script></body></html>

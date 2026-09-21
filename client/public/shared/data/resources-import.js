@@ -368,9 +368,12 @@
   function updateBadges() {
     const dataBadge = document.getElementById('dataSummaryBadge');
     if (dataBadge && typeof RESOURCES_RAW !== 'undefined') {
+      const quarterly = global.HACQuarterlyImport
+        ? ' · ' + global.HACQuarterlyImport.getMeta('portfolio').uniqueRows + ' projetos · ' + global.HACQuarterlyImport.getMeta('improvements').uniqueRows + ' melhorias'
+        : '';
       dataBadge.textContent = (typeof SM_VIEW !== 'undefined' ? SM_VIEW.length : 0) + ' SMs · ' +
         (typeof UNIFIED !== 'undefined' ? UNIFIED.length : 0) + ' squads · ' +
-        RESOURCES_RAW.length + ' recursos · ' + (typeof ALL_BOARDS !== 'undefined' ? ALL_BOARDS.length : 0) + ' boards';
+        RESOURCES_RAW.length + ' recursos · ' + (typeof ALL_BOARDS !== 'undefined' ? ALL_BOARDS.length : 0) + ' boards' + quarterly;
     }
     const resourceBadge = document.getElementById('resourcesDataBadge');
     if (resourceBadge && typeof RESOURCES_RAW !== 'undefined') {
