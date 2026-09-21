@@ -279,11 +279,23 @@
 
     <div class="kpi-row" id="kpiRow"></div>
 
-    <div class="toolbar" style="margin-bottom:16px;">
+    <div class="toolbar" style="margin-bottom:10px; flex-wrap:wrap;">
       <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Diretoria:</span>
       <select id="diretoriaSelect"><option value="ALL">Todas as Diretorias</option></select>
+      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">State:</span>
+      <select id="stateSelect"><option value="ALL">Todos os States</option></select>
+      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Squad:</span>
+      <select id="squadSelect"><option value="ALL">Todas as Squads</option></select>
+    </div>
+    <div class="toolbar" style="margin-bottom:16px;">
+      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Situação:</span>
+      <button class="filter-chip active" data-filter="ALL">Todas</button>
+      <button class="filter-chip tone-red" data-filter="OPERATIONAL">Corrigir agora</button>
+      <button class="filter-chip tone-amber" data-filter="REVIEW">Revisar cadastro</button>
+      <button class="filter-chip tone-slate" data-filter="HISTORICAL">Confirmar histórico</button>
       <div class="spacer"></div>
-      <span style="font-size:11px; color:var(--cinza-texto);">Filtra a tabela e as mensagens por Squad</span>
+      <button class="btn secondary small" id="btnLimparFiltros">Limpar filtros</button>
+      <span style="font-size:11px; color:var(--cinza-texto);">Afeta tabela e mensagens juntas</span>
     </div>
 
     <div class="tabs-bar">
@@ -294,20 +306,15 @@
     <div class="tab-panel active" id="tabMensagens">
       <div class="rule-note">
         <span>ℹ️</span>
-        <div><strong>Como ler:</strong> cada Feature cai em uma de três filas — <strong>Corrigir agora</strong> (Project sem Epic), <strong>Revisar cadastro</strong> (Demand Type ou Parent precisam de revisão) ou <strong>Confirmar histórico</strong> (item encerrado que só precisa de confirmação). Com uma lista de IDs anexada, a análise fica restrita exatamente àquela lista.</div>
+        <div><strong>Como ler:</strong> cada Feature cai em uma de três filas — <strong>Corrigir agora</strong> (Project sem Epic), <strong>Revisar cadastro</strong> (Demand Type ou Parent precisam de revisão) ou <strong>Confirmar histórico</strong> (item encerrado que só precisa de confirmação). As mensagens abaixo refletem exatamente os filtros acima — um item filtrado fora não aparece no texto.</div>
       </div>
       <div class="squad-grid" id="squadGrid"></div>
     </div>
 
     <div class="tab-panel" id="tabItens">
       <div class="toolbar">
-        <button class="filter-chip active" data-filter="ALL">Todos</button>
-        <button class="filter-chip tone-red" data-filter="OPERATIONAL">Corrigir agora</button>
-        <button class="filter-chip tone-amber" data-filter="REVIEW">Revisar cadastro</button>
-        <button class="filter-chip tone-slate" data-filter="HISTORICAL">Confirmar histórico</button>
-        <div class="spacer"></div>
-        <select id="squadSelect"><option value="ALL">Todas as Squads</option></select>
         <input type="text" id="searchInput" placeholder="Buscar ID, LECOM ou projeto...">
+        <div class="spacer"></div>
       </div>
       <div style="overflow-x:auto;">
         <table id="itemsTable">
@@ -541,6 +548,39 @@
     return { cat: 'REVISAR_CADASTRO', action: 'Revisar cadastro: confirmar se o Parent ' + parentId + ' é o Epic correto.' };
   }
 
+  function montarMensagemSquad(squadNome, target, itens){
+    var op = itens.filter(function(x){ return x.statusCategory === 'CORRIGIR_AGORA'; });
+    var rev = itens.filter(function(x){ return x.statusCategory === 'REVISAR_CADASTRO'; });
+    var hi = itens.filter(function(x){ return x.statusCategory === 'CONFIRMAR_HISTORICO'; });
+
+    var msg = 'Olá, time da Squad *' + squadNome + '*!\n\n';
+    msg += 'Na conferência ampla do Portfólio *' + target + '*, identificamos ' + itens.length + ' situação(ões) para revisão no Azure DevOps.\n\n';
+    if(op.length){
+      msg += '*Corrigir agora (' + op.length + ')*:\n';
+      op.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | ' + x.title + ' | State: ' + x.state + '\n'; });
+      msg += 'Ação: vincular ao Epic correto ou corrigir o Demand Type.\n\n';
+    }
+    if(rev.length){
+      msg += '*Revisar cadastro (' + rev.length + ')*:\n';
+      rev.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | ' + x.title + ' | Demand Type: ' + (x.demandType || 'em branco') + ' | Parent: ' + (x.parentId || 'vazio') + '\n'; });
+      msg += 'Ação: preencher o Demand Type e confirmar o Parent. Se for Project, garantir o vínculo com o Epic.\n\n';
+    }
+    if(hi.length){
+      msg += '*Confirmar histórico (' + hi.length + ')*:\n';
+      hi.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | State: ' + x.state + '\n'; });
+      msg += 'Ação: confirmar se ainda pertence ao compromisso do Portfólio Q3.\n\n';
+    }
+    msg += 'Por favor, revisem os itens e regularizem a origem conforme a situação de cada registro. Obrigado!';
+
+    return {
+      teamProject: squadNome, diretoria: matchDiretoria(squadNome),
+      totalOperational: op.length, totalReviewCadastro: rev.length, totalHistorical: hi.length,
+      totalMismatch: itens.filter(function(x){ return x.hasQuarterMismatch; }).length,
+      featureIds: itens.map(function(x){ return x.workItemId; }),
+      lecoms: itens.map(function(x){ return x.lecom; }), message: msg
+    };
+  }
+
   function makeAudit(pbuf, featureText, epicText, target, excludedStates, referenceSet){
     var p = portfolioRows(pbuf, target);
     var features = adoRows(featureText).filter(function(r){ return norm(r.workItemType) === 'feature'; });
@@ -595,36 +635,7 @@
     out.forEach(function(x){ if(!smap[x.teamProject]) smap[x.teamProject] = []; smap[x.teamProject].push(x); });
 
     var squads = Object.keys(smap).sort().map(function(s){
-      var arr = smap[s];
-      var op = arr.filter(function(x){ return x.statusCategory === 'CORRIGIR_AGORA'; });
-      var rev = arr.filter(function(x){ return x.statusCategory === 'REVISAR_CADASTRO'; });
-      var hi = arr.filter(function(x){ return x.statusCategory === 'CONFIRMAR_HISTORICO'; });
-
-      var msg = 'Olá, time da Squad *' + s + '*!\n\n';
-      msg += 'Na conferência ampla do Portfólio *' + target + '*, identificamos ' + arr.length + ' situação(ões) para revisão no Azure DevOps.\n\n';
-      if(op.length){
-        msg += '*Corrigir agora (' + op.length + ')*:\n';
-        op.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | ' + x.title + ' | State: ' + x.state + '\n'; });
-        msg += 'Ação: vincular ao Epic correto ou corrigir o Demand Type.\n\n';
-      }
-      if(rev.length){
-        msg += '*Revisar cadastro (' + rev.length + ')*:\n';
-        rev.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | ' + x.title + ' | Demand Type: ' + (x.demandType || 'em branco') + ' | Parent: ' + (x.parentId || 'vazio') + '\n'; });
-        msg += 'Ação: preencher o Demand Type e confirmar o Parent. Se for Project, garantir o vínculo com o Epic.\n\n';
-      }
-      if(hi.length){
-        msg += '*Confirmar histórico (' + hi.length + ')*:\n';
-        hi.forEach(function(x){ msg += '- Feature ' + x.workItemId + ' | LECOM ' + (x.lecom || 'N/A') + ' | State: ' + x.state + '\n'; });
-        msg += 'Ação: confirmar se ainda pertence ao compromisso do Portfólio Q3.\n\n';
-      }
-      msg += 'Por favor, revisem os itens e regularizem a origem conforme a situação de cada registro. Obrigado!';
-
-      return {
-        teamProject: s, diretoria: matchDiretoria(s), totalOperational: op.length, totalReviewCadastro: rev.length, totalHistorical: hi.length,
-        totalMismatch: arr.filter(function(x){ return x.hasQuarterMismatch; }).length,
-        featureIds: arr.map(function(x){ return x.workItemId; }),
-        lecoms: arr.map(function(x){ return x.lecom; }), message: msg
-      };
+      return montarMensagemSquad(s, target, smap[s]);
     });
 
     return {
@@ -656,7 +667,7 @@
      ============================================================ */
   var files = { portfolio: null, features: null, epics: null, reference: null };
   var result = null;
-  var uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+  var uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
 
   function el(id){ return document.getElementById(id); }
 
@@ -746,7 +757,7 @@
         };
         persistResult();
         statusMsg('Conferência concluída: ' + audit.summary.totalReviewSituations + ' situação(ões) para revisão.', 'ok');
-        uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+        uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
         el('searchInput').value = '';
         renderResultado();
       }catch(err){
@@ -770,7 +781,7 @@
     el('btnExecutar').disabled = true;
     statusMsg('', '');
     result = null;
-    uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+    uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
     try{ localStorage.removeItem(LS_KEY); }catch(e){}
     el('resultado').style.display = 'none';
   });
@@ -809,8 +820,12 @@
 
   function renderSquadGrid(){
     var grid = el('squadGrid');
-    var summaries = (result.squads || []).filter(function(s){
-      return uiState.selectedDiretoria === 'ALL' || (s.diretoria || '(sem diretoria)') === uiState.selectedDiretoria;
+    var porSquad = {};
+    filteredItems().forEach(function(item){
+      (porSquad[item.teamProject] = porSquad[item.teamProject] || []).push(item);
+    });
+    var summaries = Object.keys(porSquad).sort().map(function(s){
+      return montarMensagemSquad(s, result.quarter, porSquad[s]);
     });
     grid.innerHTML = summaries.map(function(squad){
       var badges = '';
@@ -835,7 +850,7 @@
           '</div>' +
         '</div>' +
       '</div>';
-    }).join('') || '<div style="color:#9AA3B5; padding:20px;">Nenhuma squad com situação de revisão.</div>';
+    }).join('') || '<div style="color:#9AA3B5; padding:20px;">Nenhuma situação para os filtros selecionados.</div>';
 
     grid.querySelectorAll('.btn-copy').forEach(function(btn){
       btn.addEventListener('click', function(){
@@ -877,9 +892,21 @@
       diretorias.map(function(d){ return '<option value="' + escapeHtml(d) + '"' + (d === current ? ' selected' : '') + '>' + escapeHtml(d) + '</option>'; }).join('');
   }
 
+  function populateStateSelect(){
+    var select = el('stateSelect');
+    var states = Array.from(new Set(result.items.map(function(i){ return i.state || '(sem state)'; }))).sort();
+    var current = uiState.selectedState;
+    select.innerHTML = '<option value="ALL">Todos os States</option>' +
+      states.map(function(s){ return '<option value="' + escapeHtml(s) + '"' + (s === current ? ' selected' : '') + '>' + escapeHtml(s) + '</option>'; }).join('');
+  }
+
   function populateSquadSelect(){
     var select = el('squadSelect');
-    var pool = result.items.filter(function(i){ return uiState.selectedDiretoria === 'ALL' || (i.diretoria || '(sem diretoria)') === uiState.selectedDiretoria; });
+    var pool = result.items.filter(function(i){
+      if(uiState.selectedDiretoria !== 'ALL' && (i.diretoria || '(sem diretoria)') !== uiState.selectedDiretoria) return false;
+      if(uiState.selectedState !== 'ALL' && (i.state || '(sem state)') !== uiState.selectedState) return false;
+      return true;
+    });
     var squads = Array.from(new Set(pool.map(function(i){ return i.teamProject; }).filter(Boolean))).sort();
     var current = uiState.selectedSquad;
     select.innerHTML = '<option value="ALL">Todas as Squads</option>' +
@@ -897,6 +924,7 @@
         (uiState.filterCategory === 'HISTORICAL' && category === 'CONFIRMAR_HISTORICO');
       if(!categoryMatches) return false;
       if(uiState.selectedDiretoria !== 'ALL' && (item.diretoria || '(sem diretoria)') !== uiState.selectedDiretoria) return false;
+      if(uiState.selectedState !== 'ALL' && (item.state || '(sem state)') !== uiState.selectedState) return false;
       if(uiState.selectedSquad !== 'ALL' && item.teamProject !== uiState.selectedSquad) return false;
       if(!query) return true;
       return [item.workItemId, item.title, item.teamProject, item.lecom, item.parentId, item.portfolioTitle]
@@ -944,6 +972,7 @@
       uiState.filterCategory = chip.getAttribute('data-filter');
       document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
       chip.classList.add('active');
+      renderSquadGrid();
       renderItemsTable();
     });
   });
@@ -954,12 +983,36 @@
     renderSquadGrid();
     renderItemsTable();
   });
+  el('stateSelect').addEventListener('change', function(e){
+    uiState.selectedState = e.target.value;
+    uiState.selectedSquad = 'ALL';
+    populateSquadSelect();
+    renderSquadGrid();
+    renderItemsTable();
+  });
   el('squadSelect').addEventListener('change', function(e){
     uiState.selectedSquad = e.target.value;
+    renderSquadGrid();
+    renderItemsTable();
+  });
+  el('btnLimparFiltros').addEventListener('click', function(){
+    uiState.filterCategory = 'ALL';
+    uiState.selectedDiretoria = 'ALL';
+    uiState.selectedState = 'ALL';
+    uiState.selectedSquad = 'ALL';
+    uiState.searchQuery = '';
+    document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
+    document.querySelector('.filter-chip[data-filter="ALL"]').classList.add('active');
+    el('diretoriaSelect').value = 'ALL';
+    el('stateSelect').value = 'ALL';
+    el('searchInput').value = '';
+    populateSquadSelect();
+    renderSquadGrid();
     renderItemsTable();
   });
   el('searchInput').addEventListener('input', function(e){
     uiState.searchQuery = e.target.value;
+    renderSquadGrid();
     renderItemsTable();
   });
   document.querySelectorAll('#itemsTable th[data-key]').forEach(function(th){
@@ -1011,6 +1064,7 @@
     el('runSubtitle').textContent = result.portfolioFileName + ' + ' + result.featuresFileName + ' + ' + result.epicsFileName + ' · Trimestre ' + result.quarter + refTxt;
     renderKpis();
     populateDiretoriaSelect();
+    populateStateSelect();
     renderSquadGrid();
     populateSquadSelect();
     renderItemsTable();
