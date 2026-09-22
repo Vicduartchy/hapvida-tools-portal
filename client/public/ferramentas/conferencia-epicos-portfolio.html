@@ -377,6 +377,7 @@
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/data/squad-canon.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
+<script src="/shared/vendor/chartjs-plugin-datalabels-2.2.0.min.js"></script>
 <script>
 (function(){
   'use strict';
@@ -887,6 +888,7 @@
       }
       canvas.style.display = 'block';
       wrap.style.height = Math.max(100, entries.length * 30 + 28) + 'px';
+      var maxTotal = entries.reduce(function(max, entry){ return Math.max(max, entry.total); }, 0);
       if(typeof window.Chart !== 'function'){
         canvas.style.display = 'none';
         var unavailable = document.createElement('div');
@@ -914,13 +916,24 @@
           animation: false,
           plugins: {
             legend: { display:false },
+            datalabels: {
+              display: true,
+              anchor: 'end',
+              align: 'right',
+              offset: 4,
+              clip: false,
+              color: '#24324A',
+              font: { size:11, weight:'700' },
+              formatter: function(value){ return value; }
+            },
             tooltip: { callbacks: { label:function(context){ return ' ' + context.parsed.x + ' situação(ões)'; } } }
           },
           scales: {
-            x: { beginAtZero:true, ticks:{ precision:0, stepSize:1 }, grid:{ color:'#E6EAF2' } },
+            x: { beginAtZero:true, suggestedMax:Math.max(1, maxTotal + 1), ticks:{ precision:0, stepSize:1 }, grid:{ color:'#E6EAF2' } },
             y: { grid:{ display:false }, ticks:{ autoSkip:false, font:{ size:11 } } }
           }
-        }
+        },
+        plugins: window.ChartDataLabels ? [window.ChartDataLabels] : []
       });
     });
   }

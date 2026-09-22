@@ -9,6 +9,7 @@ const html = readFileSync(
 describe("conferencia de epicos: filtros e graficos por classificacao", () => {
   it("carrega Chart.js e possui um canvas para cada classificacao", () => {
     expect(html).toContain('<script src="/shared/vendor/chartjs-4.5.1.min.js"></script>');
+    expect(html).toContain('<script src="/shared/vendor/chartjs-plugin-datalabels-2.2.0.min.js"></script>');
     expect(html).toContain('id="chartOperational"');
     expect(html).toContain('id="chartReview"');
     expect(html).toContain('id="chartHistorical"');
@@ -20,5 +21,7 @@ describe("conferencia de epicos: filtros e graficos por classificacao", () => {
     expect(html).toContain("var source = filteredItems();");
     expect((html.match(/renderFilteredViews\(\);/g) || []).length).toBeGreaterThanOrEqual(6);
     expect(html).toContain("entries.sort(function(a,b){ return b.total - a.total");
+    expect(html).toContain("datalabels: {");
+    expect(html).toContain("formatter: function(value){ return value; }");
   });
 });
