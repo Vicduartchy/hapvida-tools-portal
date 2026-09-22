@@ -7,6 +7,15 @@ const html = readFileSync(
 );
 
 describe("conferencia de epicos: filtros e graficos por classificacao", () => {
+  it("mantem os filtros acima dos KPIs e oferece selecao multipla de diretorias", () => {
+    expect(html).toContain('class="filters-panel" aria-label="Filtros da conferência"');
+    expect(html).toContain('id="diretoriaMenu" role="listbox"');
+    expect(html).toContain('id="diretoriaTrigger"');
+    expect(html).toContain("position:sticky");
+    expect(html).toContain("selectedDiretorias.indexOf(item.diretoria || '(sem diretoria)') === -1");
+    expect(html).toContain("selected.length + ' diretorias selecionadas'");
+  });
+
   it("carrega Chart.js e possui um canvas para cada classificacao", () => {
     expect(html).toContain('<script src="/shared/vendor/chartjs-4.5.1.min.js"></script>');
     expect(html).toContain('<script src="/shared/vendor/chartjs-plugin-datalabels-2.2.0.min.js"></script>');

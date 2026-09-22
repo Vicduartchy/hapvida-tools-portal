@@ -157,6 +157,33 @@
   .toolbar select{
     padding:8px 12px; border:1px solid var(--cinza-borda); border-radius:6px; font-size:13px; background:var(--branco); color:var(--cinza-texto);
   }
+  .filters-panel{
+    position:sticky; top:10px; z-index:30; background:rgba(255,255,255,.97); border:1px solid var(--cinza-borda);
+    border-radius:12px; padding:14px 16px 12px; margin-bottom:18px; box-shadow:0 8px 22px rgba(15,35,112,.08);
+    backdrop-filter:blur(8px);
+  }
+  .filters-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:12px;}
+  .filters-title{font-size:13px; font-weight:800; color:var(--azul-escuro);}
+  .filters-subtitle{font-size:11px; color:var(--cinza-texto); margin-left:8px;}
+  .filters-grid{display:grid; grid-template-columns:minmax(240px,1.35fr) minmax(150px,.8fr) minmax(180px,1fr) minmax(220px,1.2fr); gap:10px; align-items:end;}
+  .filter-field{min-width:0;}
+  .filter-field label{display:block; font-size:10.5px; font-weight:800; color:var(--cinza-texto); text-transform:uppercase; letter-spacing:.04em; margin:0 0 5px 2px;}
+  .filter-field input[type=text], .filter-field select{width:100%; min-width:0; height:36px; padding:8px 11px; border:1px solid var(--cinza-borda); border-radius:7px; font-size:13px; background:var(--branco); color:var(--cinza-texto);}
+  .multi-select{position:relative;}
+  .multi-select-trigger{width:100%; height:36px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 11px; border:1px solid var(--cinza-borda); border-radius:7px; background:var(--branco); color:var(--cinza-texto); font-size:13px; cursor:pointer; text-align:left;}
+  .multi-select-trigger:hover, .multi-select-trigger.open{border-color:var(--azul); box-shadow:0 0 0 2px rgba(26,61,170,.1);}
+  .multi-select-trigger .trigger-text{overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .multi-select-trigger .trigger-chevron{font-size:12px; color:var(--azul); transition:transform .15s ease;}
+  .multi-select-trigger.open .trigger-chevron{transform:rotate(180deg);}
+  .multi-select-menu{position:absolute; left:0; right:0; top:42px; max-height:250px; overflow-y:auto; padding:6px; background:var(--branco); border:1px solid var(--cinza-borda); border-radius:8px; box-shadow:0 12px 26px rgba(15,35,112,.16);}
+  .multi-option{display:flex; align-items:center; gap:8px; padding:8px 7px; border-radius:6px; color:var(--cinza-texto); font-size:12px; cursor:pointer;}
+  .multi-option:hover{background:#EEF3FF; color:var(--azul-escuro);}
+  .multi-option input{accent-color:var(--azul); width:14px; height:14px; margin:0;}
+  .filters-classification{display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:12px; padding-top:11px; border-top:1px solid var(--cinza-borda);}
+  .filters-classification-label{font-size:10.5px; font-weight:800; color:var(--cinza-texto); text-transform:uppercase; letter-spacing:.04em; margin-right:2px;}
+  .filter-count{font-size:11px; color:var(--cinza-texto); margin-left:auto;}
+  @media (max-width:900px){ .filters-grid{grid-template-columns:1fr 1fr;} .filter-count{width:100%; margin-left:0;} }
+  @media (max-width:560px){ .filters-panel{top:4px; padding:12px;} .filters-grid{grid-template-columns:1fr;} .filters-subtitle{display:block; margin:3px 0 0;} .filters-classification{align-items:flex-start;} }
   .spacer{flex:1;}
   .filter-chip{
     border:1px solid var(--cinza-borda); background:var(--branco); border-radius:999px;
@@ -287,6 +314,47 @@
       </div>
     </div>
 
+    <section class="filters-panel" aria-label="Filtros da conferência">
+      <div class="filters-head">
+        <div>
+          <span class="filters-title">Filtros da conferência</span>
+          <span class="filters-subtitle">Os indicadores, gráficos, mensagens e detalhes são atualizados automaticamente.</span>
+        </div>
+        <button class="btn secondary small" id="btnLimparFiltros">Limpar filtros</button>
+      </div>
+      <div class="filters-grid">
+        <div class="filter-field">
+          <label for="searchInput">Busca rápida</label>
+          <input type="text" id="searchInput" placeholder="ID, LECOM, projeto ou squad...">
+        </div>
+        <div class="filter-field">
+          <label for="stateSelect">State</label>
+          <select id="stateSelect"><option value="ALL">Todos os States</option></select>
+        </div>
+        <div class="filter-field">
+          <label for="squadSelect">Squad</label>
+          <select id="squadSelect"><option value="ALL">Todas as Squads</option></select>
+        </div>
+        <div class="filter-field">
+          <label>Diretoria · seleção múltipla</label>
+          <div class="multi-select" id="diretoriaMultiSelect">
+            <button type="button" class="multi-select-trigger" id="diretoriaTrigger" aria-haspopup="listbox" aria-expanded="false">
+              <span class="trigger-text" id="diretoriaTriggerText">Todas as Diretorias</span><span class="trigger-chevron">▾</span>
+            </button>
+            <div class="multi-select-menu" id="diretoriaMenu" role="listbox" aria-label="Selecionar diretorias" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="filters-classification">
+        <span class="filters-classification-label">Classificação</span>
+        <button class="filter-chip active" data-filter="ALL">Todas</button>
+        <button class="filter-chip tone-red" data-filter="OPERATIONAL">Corrigir agora</button>
+        <button class="filter-chip tone-amber" data-filter="REVIEW">Revisar cadastro</button>
+        <button class="filter-chip tone-slate" data-filter="HISTORICAL">Confirmar histórico</button>
+        <span class="filter-count" id="filterCount">Todos os itens da conferência</span>
+      </div>
+    </section>
+
     <div class="kpi-row" id="kpiRow"></div>
 
     <div class="classification-charts" id="classificationCharts" aria-label="Situações por classificação e squad">
@@ -307,25 +375,6 @@
       </section>
     </div>
 
-    <div class="toolbar" style="margin-bottom:10px; flex-wrap:wrap;">
-      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Diretoria:</span>
-      <select id="diretoriaSelect"><option value="ALL">Todas as Diretorias</option></select>
-      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">State:</span>
-      <select id="stateSelect"><option value="ALL">Todos os States</option></select>
-      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Squad:</span>
-      <select id="squadSelect"><option value="ALL">Todas as Squads</option></select>
-    </div>
-    <div class="toolbar" style="margin-bottom:16px;">
-      <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Situação:</span>
-      <button class="filter-chip active" data-filter="ALL">Todas</button>
-      <button class="filter-chip tone-red" data-filter="OPERATIONAL">Corrigir agora</button>
-      <button class="filter-chip tone-amber" data-filter="REVIEW">Revisar cadastro</button>
-      <button class="filter-chip tone-slate" data-filter="HISTORICAL">Confirmar histórico</button>
-      <div class="spacer"></div>
-      <button class="btn secondary small" id="btnLimparFiltros">Limpar filtros</button>
-      <span style="font-size:11px; color:var(--cinza-texto);">Afeta tabela e mensagens juntas</span>
-    </div>
-
     <div class="tabs-bar">
       <button class="tab-btn active" id="tabBtnMensagens" data-tab="mensagens">Mensagens por Squad</button>
       <button class="tab-btn" id="tabBtnItens" data-tab="itens">Detalhamento</button>
@@ -334,16 +383,12 @@
     <div class="tab-panel active" id="tabMensagens">
       <div class="rule-note">
         <span>ℹ️</span>
-        <div><strong>Como ler:</strong> cada Feature cai em uma de três filas — <strong>Corrigir agora</strong> (Project sem Epic), <strong>Revisar cadastro</strong> (Demand Type ou Parent precisam de revisão) ou <strong>Confirmar histórico</strong> (item encerrado que só precisa de confirmação). As mensagens abaixo refletem exatamente os filtros acima — um item filtrado fora não aparece no texto.</div>
+        <div><strong>Como ler:</strong> cada Feature cai em uma de três filas — <strong>Corrigir agora</strong> (Project sem Epic), <strong>Revisar cadastro</strong> (Demand Type ou Parent precisam de revisão) ou <strong>Confirmar histórico</strong> (item encerrado que só precisa de confirmação). As mensagens abaixo refletem exatamente os filtros do painel superior.</div>
       </div>
       <div class="squad-grid" id="squadGrid"></div>
     </div>
 
     <div class="tab-panel" id="tabItens">
-      <div class="toolbar">
-        <input type="text" id="searchInput" placeholder="Buscar ID, LECOM ou projeto...">
-        <div class="spacer"></div>
-      </div>
       <div style="overflow-x:auto;">
         <table id="itemsTable">
           <thead>
@@ -698,7 +743,7 @@
   var files = { portfolio: null, features: null, epics: null, reference: null };
   var result = null;
   var chartInstances = {};
-  var uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+  var uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
 
   function el(id){ return document.getElementById(id); }
 
@@ -788,7 +833,7 @@
         };
         persistResult();
         statusMsg('Conferência concluída: ' + audit.summary.totalReviewSituations + ' situação(ões) para revisão.', 'ok');
-        uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+        uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
         el('searchInput').value = '';
         renderResultado();
       }catch(err){
@@ -812,7 +857,7 @@
     el('btnExecutar').disabled = true;
     statusMsg('', '');
     result = null;
-    uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+    uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
     try{ localStorage.removeItem(LS_KEY); }catch(e){}
     el('resultado').style.display = 'none';
   });
@@ -1005,11 +1050,48 @@
   }
 
   function populateDiretoriaSelect(){
-    var select = el('diretoriaSelect');
     var diretorias = Array.from(new Set(result.items.map(function(i){ return i.diretoria || '(sem diretoria)'; }))).sort();
-    var current = uiState.selectedDiretoria;
-    select.innerHTML = '<option value="ALL">Todas as Diretorias</option>' +
-      diretorias.map(function(d){ return '<option value="' + escapeHtml(d) + '"' + (d === current ? ' selected' : '') + '>' + escapeHtml(d) + '</option>'; }).join('');
+    var selected = Array.isArray(uiState.selectedDiretoria) ? uiState.selectedDiretoria : (uiState.selectedDiretoria === 'ALL' ? [] : [uiState.selectedDiretoria]);
+    uiState.selectedDiretoria = selected.filter(function(d){ return diretorias.indexOf(d) > -1; });
+    var menu = el('diretoriaMenu');
+    menu.innerHTML = diretorias.map(function(d){
+      var checked = uiState.selectedDiretoria.indexOf(d) > -1 ? ' checked' : '';
+      return '<label class="multi-option"><input type="checkbox" value="' + escapeHtml(d) + '"' + checked + '> <span>' + escapeHtml(d) + '</span></label>';
+    }).join('');
+    menu.querySelectorAll('input[type="checkbox"]').forEach(function(input){
+      input.addEventListener('change', function(){
+        uiState.selectedDiretoria = Array.from(menu.querySelectorAll('input[type="checkbox"]:checked')).map(function(node){ return node.value; });
+        uiState.selectedSquad = 'ALL';
+        updateDiretoriaTrigger();
+        populateSquadSelect();
+        renderFilteredViews();
+      });
+    });
+    updateDiretoriaTrigger();
+  }
+
+  function updateDiretoriaTrigger(){
+    var selected = Array.isArray(uiState.selectedDiretoria) ? uiState.selectedDiretoria : [];
+    var trigger = el('diretoriaTrigger');
+    var text = el('diretoriaTriggerText');
+    if(!trigger || !text) return;
+    if(!selected.length) text.textContent = 'Todas as Diretorias';
+    else if(selected.length === 1) text.textContent = selected[0];
+    else text.textContent = selected.length + ' diretorias selecionadas';
+    trigger.setAttribute('aria-expanded', trigger.classList.contains('open') ? 'true' : 'false');
+  }
+
+  function renderFilterSummary(){
+    var count = el('filterCount');
+    if(!count) return;
+    var selected = Array.isArray(uiState.selectedDiretoria) ? uiState.selectedDiretoria : [];
+    var active = [];
+    if(selected.length) active.push(selected.length + (selected.length === 1 ? ' diretoria' : ' diretorias'));
+    if(uiState.selectedState !== 'ALL') active.push('State: ' + uiState.selectedState);
+    if(uiState.selectedSquad !== 'ALL') active.push('Squad selecionada');
+    if(uiState.filterCategory !== 'ALL') active.push(statusLabel(uiState.filterCategory === 'OPERATIONAL' ? 'CORRIGIR_AGORA' : uiState.filterCategory === 'REVIEW' ? 'REVISAR_CADASTRO' : 'CONFIRMAR_HISTORICO'));
+    if(uiState.searchQuery.trim()) active.push('busca ativa');
+    count.textContent = active.length ? filteredItems().length + ' item(ns) · ' + active.join(' · ') : 'Todos os ' + result.items.length + ' itens da conferência';
   }
 
   function populateStateSelect(){
@@ -1022,8 +1104,9 @@
 
   function populateSquadSelect(){
     var select = el('squadSelect');
+    var selectedDiretorias = Array.isArray(uiState.selectedDiretoria) ? uiState.selectedDiretoria : (uiState.selectedDiretoria === 'ALL' ? [] : [uiState.selectedDiretoria]);
     var pool = result.items.filter(function(i){
-      if(uiState.selectedDiretoria !== 'ALL' && (i.diretoria || '(sem diretoria)') !== uiState.selectedDiretoria) return false;
+      if(selectedDiretorias.length && selectedDiretorias.indexOf(i.diretoria || '(sem diretoria)') === -1) return false;
       if(uiState.selectedState !== 'ALL' && (i.state || '(sem state)') !== uiState.selectedState) return false;
       return true;
     });
@@ -1035,6 +1118,7 @@
 
   function filteredItems(){
     var query = uiState.searchQuery.trim().toLowerCase();
+    var selectedDiretorias = Array.isArray(uiState.selectedDiretoria) ? uiState.selectedDiretoria : (uiState.selectedDiretoria === 'ALL' ? [] : [uiState.selectedDiretoria]);
     return result.items.filter(function(item){
       var category = item.statusCategory || '';
       var categoryMatches =
@@ -1043,7 +1127,7 @@
         (uiState.filterCategory === 'REVIEW' && category === 'REVISAR_CADASTRO') ||
         (uiState.filterCategory === 'HISTORICAL' && category === 'CONFIRMAR_HISTORICO');
       if(!categoryMatches) return false;
-      if(uiState.selectedDiretoria !== 'ALL' && (item.diretoria || '(sem diretoria)') !== uiState.selectedDiretoria) return false;
+      if(selectedDiretorias.length && selectedDiretorias.indexOf(item.diretoria || '(sem diretoria)') === -1) return false;
       if(uiState.selectedState !== 'ALL' && (item.state || '(sem state)') !== uiState.selectedState) return false;
       if(uiState.selectedSquad !== 'ALL' && item.teamProject !== uiState.selectedSquad) return false;
       if(!query) return true;
@@ -1092,7 +1176,25 @@
     renderClassificationCharts();
     renderSquadGrid();
     renderItemsTable();
+    renderFilterSummary();
   }
+
+  el('diretoriaTrigger').addEventListener('click', function(){
+    var trigger = el('diretoriaTrigger');
+    var menu = el('diretoriaMenu');
+    var willOpen = menu.hidden;
+    menu.hidden = !willOpen;
+    trigger.classList.toggle('open', willOpen);
+    trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+  });
+  document.addEventListener('click', function(event){
+    var control = el('diretoriaMultiSelect');
+    if(control && !control.contains(event.target)){
+      el('diretoriaMenu').hidden = true;
+      el('diretoriaTrigger').classList.remove('open');
+      el('diretoriaTrigger').setAttribute('aria-expanded', 'false');
+    }
+  });
 
   document.querySelectorAll('.filter-chip').forEach(function(chip){
     chip.addEventListener('click', function(){
@@ -1101,12 +1203,6 @@
       chip.classList.add('active');
       renderFilteredViews();
     });
-  });
-  el('diretoriaSelect').addEventListener('change', function(e){
-    uiState.selectedDiretoria = e.target.value;
-    uiState.selectedSquad = 'ALL';
-    populateSquadSelect();
-    renderFilteredViews();
   });
   el('stateSelect').addEventListener('change', function(e){
     uiState.selectedState = e.target.value;
@@ -1120,15 +1216,15 @@
   });
   el('btnLimparFiltros').addEventListener('click', function(){
     uiState.filterCategory = 'ALL';
-    uiState.selectedDiretoria = 'ALL';
+    uiState.selectedDiretoria = [];
     uiState.selectedState = 'ALL';
     uiState.selectedSquad = 'ALL';
     uiState.searchQuery = '';
     document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
     document.querySelector('.filter-chip[data-filter="ALL"]').classList.add('active');
-    el('diretoriaSelect').value = 'ALL';
     el('stateSelect').value = 'ALL';
     el('searchInput').value = '';
+    populateDiretoriaSelect();
     populateSquadSelect();
     renderFilteredViews();
   });
