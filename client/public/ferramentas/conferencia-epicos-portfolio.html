@@ -177,6 +177,16 @@
   td.mono{font-family:'Consolas',monospace;}
   td.id-cell{font-weight:700; color:var(--azul);}
   td.truncate{max-width:260px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .classification-charts{display:grid; grid-template-columns:1fr; gap:16px; margin:0 0 20px;}
+  .classification-chart-card{background:var(--branco); border:1px solid var(--cinza-borda); border-radius:10px; padding:14px 16px; overflow:hidden;}
+  .classification-chart-card.red{border-top:3px solid var(--vermelho);}
+  .classification-chart-card.amber{border-top:3px solid var(--amarelo);}
+  .classification-chart-card.slate{border-top:3px solid var(--cinza-texto);}
+  .classification-chart-card h3{margin:0; color:var(--azul-escuro); font-size:14px;}
+  .classification-chart-card .chart-subtitle{margin:3px 0 10px; color:var(--cinza-texto); font-size:11.5px;}
+  .classification-chart-wrap{position:relative; width:100%; min-height:80px;}
+  .classification-chart-wrap canvas{display:block; width:100% !important;}
+  .classification-chart-empty{padding:24px 10px; text-align:center; color:#9AA3B5; font-size:12px;}
   .status-tag{
     display:inline-block; font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:5px;
     white-space:nowrap; border:1px solid transparent;
@@ -279,6 +289,24 @@
 
     <div class="kpi-row" id="kpiRow"></div>
 
+    <div class="classification-charts" id="classificationCharts" aria-label="Situações por classificação e squad">
+      <section class="classification-chart-card red">
+        <h3>Corrigir agora · situações por squad</h3>
+        <div class="chart-subtitle">Squads com itens classificados como Project sem Epic, do maior para o menor.</div>
+        <div class="classification-chart-wrap" id="chartWrapOperational"><canvas id="chartOperational" aria-label="Gráfico de corrigir agora por squad"></canvas></div>
+      </section>
+      <section class="classification-chart-card amber">
+        <h3>Revisar cadastro · situações por squad</h3>
+        <div class="chart-subtitle">Squads com Demand Type ou Parent para revisão, do maior para o menor.</div>
+        <div class="classification-chart-wrap" id="chartWrapReview"><canvas id="chartReview" aria-label="Gráfico de revisar cadastro por squad"></canvas></div>
+      </section>
+      <section class="classification-chart-card slate">
+        <h3>Confirmar histórico · situações por squad</h3>
+        <div class="chart-subtitle">Squads com itens encerrados que precisam de confirmação histórica, do maior para o menor.</div>
+        <div class="classification-chart-wrap" id="chartWrapHistorical"><canvas id="chartHistorical" aria-label="Gráfico de confirmar histórico por squad"></canvas></div>
+      </section>
+    </div>
+
     <div class="toolbar" style="margin-bottom:10px; flex-wrap:wrap;">
       <span style="font-size:12.5px; font-weight:700; color:var(--cinza-texto);">Diretoria:</span>
       <select id="diretoriaSelect"><option value="ALL">Todas as Diretorias</option></select>
@@ -348,6 +376,7 @@
 
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/data/squad-canon.js"></script>
+<script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script>
 (function(){
   'use strict';
@@ -667,6 +696,7 @@
      ============================================================ */
   var files = { portfolio: null, features: null, epics: null, reference: null };
   var result = null;
+  var chartInstances = {};
   var uiState = { filterCategory: 'ALL', selectedDiretoria: 'ALL', selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
 
   function el(id){ return document.getElementById(id); }
@@ -807,15 +837,92 @@
   }
 
   function renderKpis(){
-    var s = result.summary;
+    var list = filteredItems();
+    var totalFeaturesProject = list.filter(function(item){ return norm(item.demandType) === 'project'; }).length;
+    var totalParentEpic = list.filter(function(item){ return item.parentWorkItemType === 'Epic'; }).length;
+    var totalOperational = list.filter(function(item){ return item.statusCategory === 'CORRIGIR_AGORA'; }).length;
+    var totalReview = list.filter(function(item){ return item.statusCategory === 'REVISAR_CADASTRO'; }).length;
+    var totalHistorical = list.filter(function(item){ return item.statusCategory === 'CONFIRMAR_HISTORICO'; }).length;
     var html = '';
-    html += kpiCardHtml('Situações na fila', s.totalReviewSituations, 'revisão ampla', 'blue');
-    html += kpiCardHtml('Projects no trimestre', s.totalFeaturesProject, 'Demand Type Project', 'slate');
-    html += kpiCardHtml('Epic confirmado', s.totalParentEpic, 'Projects regularizados', 'green');
-    html += kpiCardHtml('Corrigir agora', s.totalOperationalQueue, 'Project sem Epic', 'red');
-    html += kpiCardHtml('Revisar cadastro', s.totalReviewCadastro, 'Demand Type ou Parent', 'amber');
-    html += kpiCardHtml('Confirmar histórico', s.totalConfirmHistory, 'sem cobrança imediata', 'slate');
+    html += kpiCardHtml('Situações na fila', list.length, 'itens após os filtros', 'blue');
+    html += kpiCardHtml('Projects no trimestre', totalFeaturesProject, 'Demand Type Project · filtrados', 'slate');
+    html += kpiCardHtml('Epic confirmado', totalParentEpic, 'Projects regularizados · filtrados', 'green');
+    html += kpiCardHtml('Corrigir agora', totalOperational, 'Project sem Epic · filtrados', 'red');
+    html += kpiCardHtml('Revisar cadastro', totalReview, 'Demand Type ou Parent · filtrados', 'amber');
+    html += kpiCardHtml('Confirmar histórico', totalHistorical, 'sem cobrança imediata · filtrados', 'slate');
     el('kpiRow').innerHTML = html;
+  }
+
+  function renderClassificationCharts(){
+    var definitions = [
+      { key:'CORRIGIR_AGORA', chartKey:'operational', canvasId:'chartOperational', wrapId:'chartWrapOperational', color:'#E8272A' },
+      { key:'REVISAR_CADASTRO', chartKey:'review', canvasId:'chartReview', wrapId:'chartWrapReview', color:'#F4B400' },
+      { key:'CONFIRMAR_HISTORICO', chartKey:'historical', canvasId:'chartHistorical', wrapId:'chartWrapHistorical', color:'#5B6478' }
+    ];
+    var source = filteredItems();
+    definitions.forEach(function(def){
+      var wrap = el(def.wrapId), canvas = el(def.canvasId);
+      if(!wrap || !canvas) return;
+      if(chartInstances[def.chartKey]){
+        chartInstances[def.chartKey].destroy();
+        chartInstances[def.chartKey] = null;
+      }
+      var empty = wrap.querySelector('.classification-chart-empty');
+      if(empty) empty.remove();
+      var counts = {};
+      source.filter(function(item){ return item.statusCategory === def.key; }).forEach(function(item){
+        var squad = item.teamProject || '(sem squad)';
+        counts[squad] = (counts[squad] || 0) + 1;
+      });
+      var entries = Object.keys(counts).map(function(squad){ return { squad:squad, total:counts[squad] }; });
+      entries.sort(function(a,b){ return b.total - a.total || a.squad.localeCompare(b.squad, 'pt-BR'); });
+      if(!entries.length){
+        canvas.style.display = 'none';
+        wrap.style.height = 'auto';
+        var emptyNode = document.createElement('div');
+        emptyNode.className = 'classification-chart-empty';
+        emptyNode.textContent = 'Nenhuma squad nesta classificação para os filtros selecionados.';
+        wrap.appendChild(emptyNode);
+        return;
+      }
+      canvas.style.display = 'block';
+      wrap.style.height = Math.max(100, entries.length * 30 + 28) + 'px';
+      if(typeof window.Chart !== 'function'){
+        canvas.style.display = 'none';
+        var unavailable = document.createElement('div');
+        unavailable.className = 'classification-chart-empty';
+        unavailable.textContent = 'Gráfico indisponível: Chart.js não foi carregado.';
+        wrap.appendChild(unavailable);
+        return;
+      }
+      chartInstances[def.chartKey] = new window.Chart(canvas.getContext('2d'), {
+        type: 'bar',
+        data: {
+          labels: entries.map(function(entry){ return entry.squad; }),
+          datasets: [{
+            data: entries.map(function(entry){ return entry.total; }),
+            backgroundColor: def.color,
+            borderRadius: 4,
+            barPercentage: .78,
+            categoryPercentage: .86
+          }]
+        },
+        options: {
+          indexAxis: 'y',
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: false,
+          plugins: {
+            legend: { display:false },
+            tooltip: { callbacks: { label:function(context){ return ' ' + context.parsed.x + ' situação(ões)'; } } }
+          },
+          scales: {
+            x: { beginAtZero:true, ticks:{ precision:0, stepSize:1 }, grid:{ color:'#E6EAF2' } },
+            y: { grid:{ display:false }, ticks:{ autoSkip:false, font:{ size:11 } } }
+          }
+        }
+      });
+    });
   }
 
   function renderSquadGrid(){
@@ -967,33 +1074,36 @@
     }).join('');
   }
 
+  function renderFilteredViews(){
+    renderKpis();
+    renderClassificationCharts();
+    renderSquadGrid();
+    renderItemsTable();
+  }
+
   document.querySelectorAll('.filter-chip').forEach(function(chip){
     chip.addEventListener('click', function(){
       uiState.filterCategory = chip.getAttribute('data-filter');
       document.querySelectorAll('.filter-chip').forEach(function(c){ c.classList.remove('active'); });
       chip.classList.add('active');
-      renderSquadGrid();
-      renderItemsTable();
+      renderFilteredViews();
     });
   });
   el('diretoriaSelect').addEventListener('change', function(e){
     uiState.selectedDiretoria = e.target.value;
     uiState.selectedSquad = 'ALL';
     populateSquadSelect();
-    renderSquadGrid();
-    renderItemsTable();
+    renderFilteredViews();
   });
   el('stateSelect').addEventListener('change', function(e){
     uiState.selectedState = e.target.value;
     uiState.selectedSquad = 'ALL';
     populateSquadSelect();
-    renderSquadGrid();
-    renderItemsTable();
+    renderFilteredViews();
   });
   el('squadSelect').addEventListener('change', function(e){
     uiState.selectedSquad = e.target.value;
-    renderSquadGrid();
-    renderItemsTable();
+    renderFilteredViews();
   });
   el('btnLimparFiltros').addEventListener('click', function(){
     uiState.filterCategory = 'ALL';
@@ -1007,13 +1117,11 @@
     el('stateSelect').value = 'ALL';
     el('searchInput').value = '';
     populateSquadSelect();
-    renderSquadGrid();
-    renderItemsTable();
+    renderFilteredViews();
   });
   el('searchInput').addEventListener('input', function(e){
     uiState.searchQuery = e.target.value;
-    renderSquadGrid();
-    renderItemsTable();
+    renderFilteredViews();
   });
   document.querySelectorAll('#itemsTable th[data-key]').forEach(function(th){
     th.addEventListener('click', function(){
@@ -1062,12 +1170,10 @@
     el('runTitle').textContent = 'Conferência ' + result.quarter + ' — ' + new Date(result.executadoEm).toLocaleDateString('pt-BR');
     var refTxt = result.summary.referenceCount ? ' · Lista restrita: ' + result.summary.referenceCount + ' IDs' : '';
     el('runSubtitle').textContent = result.portfolioFileName + ' + ' + result.featuresFileName + ' + ' + result.epicsFileName + ' · Trimestre ' + result.quarter + refTxt;
-    renderKpis();
     populateDiretoriaSelect();
     populateStateSelect();
-    renderSquadGrid();
     populateSquadSelect();
-    renderItemsTable();
+    renderFilteredViews();
   }
 
   /* ---------- Init ---------- */
