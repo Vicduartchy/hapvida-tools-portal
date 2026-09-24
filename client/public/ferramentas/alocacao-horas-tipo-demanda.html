@@ -236,7 +236,7 @@
       <div class="dropzone" id="dz-base4" data-slot="base4">
         <div class="ic">🧑‍💼</div>
         <div class="t">Base 4 · Organograma</div>
-        <div class="d">1 arquivo com 2 abas: Ajuste + Consulta</div>
+        <div class="d">1 arquivo com BASE_SET.26 + Ajuste + Consulta</div>
         <button type="button" class="choose-btn" id="choose-base4">📎 Selecionar arquivo</button>
         <div class="status-badge" id="status-base4" hidden></div>
         <div class="fn" id="fn-base4">Nenhum arquivo selecionado</div>
@@ -244,7 +244,7 @@
         <input type="file" accept=".xlsx,.xls" id="file-base4">
       </div>
     </div>
-    <p class="note" style="margin-top:12px">Clique em qualquer ponto do quadro de cada base (ou arraste o arquivo até ele) para selecionar. Nas Bases 1-3, apenas a <b>aba visível</b> de cada planilha é lida (abas ocultas são ignoradas); se houver mais de uma aba visível, escolha a correta na lista que aparece sob o arquivo. A <b>Base 4 é diferente</b>: o mesmo arquivo precisa ter duas abas chamadas <b>"Ajuste"</b> (o organograma) e <b>"Consulta"</b> (LECOM/ID → Ordem de Investimento) — as duas são lidas automaticamente, sem precisar escolher. Tudo roda no seu navegador — nenhum arquivo sai da sua máquina.</p>
+    <p class="note" style="margin-top:12px">Clique em qualquer ponto do quadro de cada base (ou arraste o arquivo até ele) para selecionar. Nas Bases 1-3, a ferramenta identifica automaticamente a aba compatível com o contrato de colunas (abas ocultas são ignoradas). A <b>Base 4</b> usa <b>"BASE_SET.26"</b> como fonte principal de colaborador, cargo e organograma, aplica a aba <b>"AJUSTE"</b> como sobreposição manual quando existir e cruza a aba <b>"CONSULTA"</b> para obter a Ordem de Investimento por LECOM/ID. A linha de cabeçalho é detectada automaticamente, inclusive quando começa na linha 2. Tudo roda no seu navegador — nenhum arquivo sai da sua máquina.</p>
 
     <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap">
       <button class="btn primary" id="processBtn" disabled style="flex:1 1 220px">Processar bases</button>
@@ -259,7 +259,7 @@
     <div style="margin-top:16px">
       <button class="btn primary big" id="downloadBtn">Baixar planilha cruzada (.xlsx)</button>
     </div>
-    <p class="note" style="margin-top:10px">O arquivo sai com 7 abas, nesta ordem: <b>Apuração de Horas</b> (% Melhoria × % Projeto por colaborador, com Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo vindos da aba Ajuste da Base 4, e Ordem de Investimento vinda da aba Consulta da Base 4, cruzada pelo LECOM/ID de cada projeto), <b>Base Cruzada</b> (cada hora apontada, já classificada e casada com o item de compromisso, com uma linha indicando a origem de cada coluna), <b>Horas por Squad</b> (aberto por recurso, com % de participação no squad e % por tipo de demanda), <b>Compromisso · Projetos</b> e <b>Compromisso · Melhorias</b> (planejado × realizado, aberto por squad de execução), <b>Organograma</b> (cópia de referência da aba Ajuste da Base 4 enviada) e <b>Lecom Dobrados</b> (LECOMs cadastrados ao mesmo tempo como melhoria e como projeto). Cabeçalhos coloridos, datas no formato DD/MM/AAAA e nomes de colaborador normalizados (Primeira Letra Maiúscula).</p>
+    <p class="note" style="margin-top:10px">O arquivo sai com 7 abas, nesta ordem: <b>Apuração de Horas</b> (% Melhoria × % Projeto por colaborador, com Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo vindos da BASE_SET.26 e dos overrides da aba Ajuste, e Ordem de Investimento vinda da aba Consulta, cruzada pelo LECOM/ID de cada projeto), <b>Base Cruzada</b> (cada hora apontada, já classificada e casada com o item de compromisso, com uma linha indicando a origem de cada coluna), <b>Horas por Squad</b> (aberto por recurso, com % de participação no squad e % por tipo de demanda), <b>Compromisso · Projetos</b> e <b>Compromisso · Melhorias</b> (planejado × realizado, aberto por squad de execução), <b>Organograma</b> (BASE_SET.26 consolidada por colaborador, com AJUSTE aplicado) e <b>Lecom Dobrados</b> (LECOMs cadastrados ao mesmo tempo como melhoria e como projeto). Cabeçalhos coloridos, datas no formato DD/MM/AAAA e nomes de colaborador normalizados (Primeira Letra Maiúscula).</p>
   </div>
 
   <p class="note footline"></p>
@@ -292,10 +292,10 @@ var REQUIRED_COLS = {
   base1: ["COMPLETEDWORK", "TIPO DE DEMANDA", "DIRETORIA"],
   base2: ["LECOM", "SQUAD", "HORAS"],
   base3: ["LECOM", "Squad Azure", "HORAS"],
-  /* Base 4 é um único arquivo com DUAS abas obrigatórias — "Ajuste" (o
-     organograma propriamente dito, aqui) e "Consulta" (LECOM/ID → Ordem de
-     Investimento, validada à parte por validateConsultaRows já que aceita
-     "LECOM" ou "ID" como nome da coluna). Ver applyBase4Sheets. */
+  /* A Base 4 atual tem BASE_SET.26 (fonte ampla de pessoas/cargos) e
+     CONSULTA (LECOM/ID → Ordem de Investimento). AJUSTE é opcional e
+     sobrescreve os campos alterados manualmente. */
+  base4Organograma: ["COLABORADOR", "GESTOR DIRETO", "GERENTE", "GERENTE EXECUTIVO", "DIRETORIA", "CARGO"],
   base4Ajuste: ["COLABORADOR", "GESTOR DIRETO", "GERENTE", "GERENTE EXECUTIVO", "DIRETORIA", "CARGO", "SQUAD", "SM RESPONSAVEL"]
 };
 
@@ -433,6 +433,23 @@ function parseSheetRows(arrayBuffer, sheetName){
   var rows = XLSX.utils.sheet_to_json(ws, { defval: null, raw: true });
   return normalizeRows(rows.map(dateFieldsToISO));
 }
+function parseSheetRowsWithHeader(arrayBuffer, sheetName, requiredHeaders){
+  var wb;
+  try{ wb = XLSX.read(arrayBuffer, { type: "array", cellDates: true, sheets: [sheetName] }); }
+  catch(e){ wb = XLSX.read(arrayBuffer, { type: "array", cellDates: true }); }
+  var ws = wb.Sheets[sheetName];
+  if (!ws) return [];
+  var matrix = XLSX.utils.sheet_to_json(ws, { header: 1, defval: null, raw: true });
+  var required = (requiredHeaders || []).map(normalizeHeaderKey);
+  var bestIndex = 0, bestScore = -1;
+  matrix.slice(0, 20).forEach(function(row, i){
+    var headers = row.map(normalizeHeaderKey);
+    var score = required.reduce(function(total, wanted){ return total + (headers.indexOf(wanted) !== -1 ? 1 : 0); }, 0);
+    if (score > bestScore){ bestScore = score; bestIndex = i; }
+  });
+  var rows = XLSX.utils.sheet_to_json(ws, { defval: null, raw: true, range: bestIndex });
+  return normalizeRows(rows.map(dateFieldsToISO));
+}
 function normalizeHeaderKey(k){
   return stripAccents(String(k || "")).trim().toUpperCase().replace(/\s+/g, " ");
 }
@@ -564,9 +581,26 @@ function indexByName(rows, field){
   rows.forEach(function(r){
     var key = foldNameKey(r[field]);
     if (!key) return;
-    if (!m.has(key)) m.set(key, r);
+    var current = m.get(key);
+    if (!current || orgCompletenessScore(r) > orgCompletenessScore(current)) m.set(key, r);
   });
   return m;
+}
+function orgCompletenessScore(row){
+  if (!row) return 0;
+  var fields = ["CARGO", "DIRETORIA", "GESTOR DIRETO", "GERENTE", "GERENTE EXECUTIVO", "SQUAD", "SQUAD 1", "SM RESPONSAVEL"];
+  return fields.reduce(function(score, field){ return score + (isBlank(row[field]) ? 0 : 1); }, 0);
+}
+function mergeOrgRows(baseRow, ajusteRow){
+  if (!baseRow && !ajusteRow) return null;
+  var out = {};
+  [baseRow, ajusteRow].forEach(function(row){
+    if (!row) return;
+    Object.keys(row).forEach(function(key){
+      if (!isBlank(row[key])) out[key] = row[key];
+    });
+  });
+  return out;
 }
 
 function addToSquadMap(map, lecomId, squad, horas){
@@ -575,14 +609,14 @@ function addToSquadMap(map, lecomId, squad, horas){
   sq.set(squad, (sq.get(squad) || 0) + horas);
 }
 
-function buildModel(rows1, rows2, rows3, rows4Ajuste, rows4Consulta){
+function buildModel(rows1, rows2, rows3, rows4Organograma, rows4Ajuste, rows4Consulta){
   var idx2 = indexByLecom(rows2, "LECOM");
   var idx3 = indexByLecom(rows3, "LECOM");
-  /* Base 4 · Ajuste (organograma, por colaborador) e Base 4 · Consulta
-     (LECOM/ID → Ordem de Investimento, por projeto) são indexadas
-     separadamente — a primeira por nome normalizado, a segunda por LECOM,
-     como Base 2/3. */
-  var idx4 = indexByName(rows4Ajuste || [], "COLABORADOR");
+  /* Base 4 · BASE_SET.26 (fonte ampla de pessoas/cargos), AJUSTE (override
+     manual opcional) e CONSULTA (LECOM/ID → Ordem de Investimento) são
+     indexadas separadamente. */
+  var idx4 = indexByName(rows4Organograma || [], "COLABORADOR");
+  var idx4Ajuste = indexByName(rows4Ajuste || [], "COLABORADOR");
   var idx4Consulta = indexByLecom(rows4Consulta || [], "LECOM");
   var items = [];
   var realized2 = new Map(), realized3 = new Map();
@@ -647,7 +681,8 @@ function buildModel(rows1, rows2, rows3, rows4Ajuste, rows4Consulta){
        NOME exibido também passa a vir da Base 4 (fonte de verdade pra
        grafia oficial); só cai pro nome como veio na Base 1 quando ele não
        é encontrado lá. */
-    var orgRow = idx4.get(foldNameKey(r["USUARIOS"])) || null;
+    var personKey = foldNameKey(r["USUARIOS"]);
+    var orgRow = mergeOrgRows(idx4.get(personKey) || null, idx4Ajuste.get(personKey) || null);
     var recursoNome = (orgRow && normalizeName(orgRow["COLABORADOR"])) || normalizeName(r["USUARIOS"]) || "(Não informado)";
 
     items.push({
@@ -688,8 +723,8 @@ function buildModel(rows1, rows2, rows3, rows4Ajuste, rows4Consulta){
   });
 
   return {
-    items: items, base2: rows2, base3: rows3, base4: rows4Ajuste || [], base4Consulta: rows4Consulta || [],
-    idx2: idx2, idx3: idx3, idx4: idx4, idx4Consulta: idx4Consulta,
+    items: items, base2: rows2, base3: rows3, base4: rows4Organograma || [], base4Ajuste: rows4Ajuste || [], base4Consulta: rows4Consulta || [],
+    idx2: idx2, idx3: idx3, idx4: idx4, idx4Ajuste: idx4Ajuste, idx4Consulta: idx4Consulta,
     realized2: realized2, realized3: realized3,
     realized2BySquad: realized2BySquad, realized3BySquad: realized3BySquad
   };
@@ -887,11 +922,28 @@ var ORGANOGRAMA_HEADERS = ["Colaborador", "Gestor Direto", "Gerente", "Gerente E
 var ORGANOGRAMA_COLTYPES = ["text", "text", "text", "text", "text", "text", "text", "text"];
 var ORGANOGRAMA_WIDTHS = [26, 18, 18, 18, 16, 26, 26, 18];
 
-function buildOrganogramaBundle(rows4){
-  var rows = (rows4 || []).map(function(r){
+function buildOrganogramaBundle(rows4, rows4Ajuste){
+  var people = new Map();
+  function addRow(raw, override){
+    var key = foldNameKey(raw["COLABORADOR"]);
+    if (!key) return;
+    var entry = people.get(key);
+    if (!entry){ entry = { row: {}, squads: new Set() }; people.set(key, entry); }
+    Object.keys(raw).forEach(function(field){
+      if (!isBlank(raw[field]) && (override || isBlank(entry.row[field]))) entry.row[field] = raw[field];
+    });
+    ["SQUAD", "SQUAD 1", "SQUAD 2", "SQUAD 3", "SQUAD 4", "SQUAD 5", "SQUAD 6"].forEach(function(field){
+      if (!isBlank(raw[field])) entry.squads.add(String(raw[field]));
+    });
+  }
+  (rows4 || []).forEach(function(row){ addRow(row, false); });
+  (rows4Ajuste || []).forEach(function(row){ addRow(row, true); });
+  var rows = Array.from(people.values()).map(function(entry){
+    var r = entry.row;
+    var squad = Array.from(entry.squads).join(" | ");
     return [
       normalizeName(r["COLABORADOR"]), normalizeName(r["GESTOR DIRETO"]), normalizeName(r["GERENTE"]),
-      normalizeName(r["GERENTE EXECUTIVO"]), r["DIRETORIA"], r["CARGO"], r["SQUAD"],
+      normalizeName(r["GERENTE EXECUTIVO"]), r["DIRETORIA"], r["CARGO"], squad,
       normalizeName(r["SM RESPONSAVEL"])
     ];
   });
@@ -932,7 +984,7 @@ function buildExportSheets(model){
     projetos: buildProjetosBundle(model),
     melhorias: buildMelhoriasBundle(model),
     apuracaoRows: buildApuracaoHoras(model),
-    organograma: buildOrganogramaBundle(model.base4),
+    organograma: buildOrganogramaBundle(model.base4, model.base4Ajuste),
     lecomDobrados: buildLecomDobradosBundle(model)
   };
 }
@@ -1186,11 +1238,9 @@ var STATE = {
     base1: { file: null, buf: null, visible: [], chosen: null, rows: null, ok: false },
     base2: { file: null, buf: null, visible: [], chosen: null, rows: null, ok: false },
     base3: { file: null, buf: null, visible: [], chosen: null, rows: null, ok: false },
-    /* Base 4 não usa "chosen" (uma aba escolhida) como as outras 3 — ela
-       lê SEMPRE duas abas fixas do mesmo arquivo, "Ajuste" e "Consulta"
-       (ver applyBase4Sheets), guardadas separadamente em ajusteRows e
-       consultaRows. */
-    base4: { file: null, buf: null, visible: [], chosen: null, rows: null, ajusteRows: null, consultaRows: null, ok: false }
+    /* Base 4 lê BASE_SET.26 (organograma amplo), CONSULTA (ordem por LECOM)
+       e, quando existir, AJUSTE (sobreposições manuais). */
+    base4: { file: null, buf: null, visible: [], chosen: null, rows: null, organogramaRows: null, ajusteRows: null, consultaRows: null, ok: false }
   }
 };
 
@@ -1251,19 +1301,21 @@ function processFileIntoSlot(slot, file){
 
     var sel = slotSheetSelect(slot);
 
-    /* Algumas planilhas marcam mais de uma aba como "visível" mesmo quando,
-       na prática, só uma tem conteúdo (a outra é um modelo/rascunho vazio
-       deixado visível por engano). Nesse caso a gente escolhe direto a aba
-       com dado e nem mostra a lista — só pede pra escolher quando há
-       ambiguidade real (2+ abas visíveis com linhas). */
+    /* Escolhe a única aba que realmente atende ao contrato da Base 2 ou 3.
+       Isso evita cair em "GRUPO - SM" no Portfólio ou em "Demais
+       Publicações" nas Melhorias, ambos visíveis no arquivo real. */
+    var compatible = meta.visible.filter(function(n){
+      var candidate = parseSheetRows(buf, n);
+      return validateSlot(slot, candidate).ok;
+    });
     var withData = meta.visible.filter(function(n){ return parseSheetRows(buf, n).length > 0; });
-    if (meta.visible.length > 1 && withData.length !== 1){
-      st.chosen = withData[0] || meta.visible[0];
+    if (compatible.length !== 1 && meta.visible.length > 1){
+      st.chosen = compatible[0] || withData[0] || meta.visible[0];
       sel.innerHTML = meta.visible.map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+"</option>"; }).join("");
       sel.value = st.chosen;
       sel.hidden = false;
     } else {
-      st.chosen = withData[0] || meta.visible[0];
+      st.chosen = compatible[0] || withData[0] || meta.visible[0];
       sel.hidden = true; sel.innerHTML = "";
     }
     applySheetChoice(slot);
@@ -1288,29 +1340,27 @@ function applySheetChoice(slot){
   setSlotStatus(slot, check.ok ? "ok" : "error", check.ok ? "Concluído" : "Recusado");
   updateProcessBtn();
 }
-/* Base 4 é um único arquivo com DUAS abas obrigatórias: "Ajuste" (o
-   organograma — Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo por
-   colaborador) e "Consulta" (cruza o LECOM/ID do projeto com a Ordem de
-   Investimento, usada por linha de projeto na Apuração de Horas).
-   Diferente das outras 3 bases, aqui não há seletor manual de aba: as duas
-   são localizadas pelo nome (tolerante a maiúsculas/acentos/espaços — ver
-   findSheetName) dentro do mesmo arquivo, e lidas juntas. */
+/* Base 4 lê a fonte ampla BASE_SET.26 (organograma/cargo), a CONSULTA
+   (LECOM/ID → Ordem de Investimento) e a AJUSTE quando presente. A aba
+   BASE_SET.26 começa na linha 2 em alguns arquivos; por isso usa o parser
+   que encontra a linha de cabeçalho automaticamente. */
 function applyBase4Sheets(slot){
   var st = STATE.slots[slot];
   var sel = slotSheetSelect(slot);
   sel.hidden = true; sel.innerHTML = "";
 
+  var organogramaName = findSheetName(st.visible, "BASE_SET.26");
   var ajusteName = findSheetName(st.visible, "AJUSTE");
   var consultaName = findSheetName(st.visible, "CONSULTA");
   var faltando = [];
-  if (!ajusteName) faltando.push('aba "Ajuste"');
+  if (!organogramaName && !ajusteName) faltando.push('aba "BASE_SET.26" ou "Ajuste"');
   if (!consultaName) faltando.push('aba "Consulta"');
 
   var fn = slotFnLabel(slot);
   slotChooseBtn(slot).textContent = "Trocar arquivo";
 
   if (faltando.length){
-    st.ok = false; st.ajusteRows = null; st.consultaRows = null; st.rows = null;
+    st.ok = false; st.organogramaRows = null; st.ajusteRows = null; st.consultaRows = null; st.rows = null;
     fn.classList.add("wrap");
     fn.textContent = st.file.name + " · Não encontrei " + faltando.join(" e ") +
       " (abas no arquivo: " + st.visible.join(", ") + ").";
@@ -1319,22 +1369,28 @@ function applyBase4Sheets(slot){
     return;
   }
 
-  var ajusteRows = remapHeadersToCanonical(parseSheetRows(st.buf, ajusteName), REQUIRED_COLS.base4Ajuste);
+  var organogramaRows = organogramaName
+    ? remapHeadersToCanonical(parseSheetRowsWithHeader(st.buf, organogramaName, REQUIRED_COLS.base4Organograma), REQUIRED_COLS.base4Organograma)
+    : remapHeadersToCanonical(parseSheetRows(st.buf, ajusteName), REQUIRED_COLS.base4Ajuste);
+  var ajusteRows = ajusteName
+    ? remapHeadersToCanonical(parseSheetRows(st.buf, ajusteName), REQUIRED_COLS.base4Ajuste)
+    : [];
   var consultaRows = prepareConsultaRows(parseSheetRows(st.buf, consultaName));
-  var checkAjuste = validateSlot("base4Ajuste", ajusteRows);
+  var checkOrganograma = validateSlot("base4Organograma", organogramaRows);
+  var checkAjuste = ajusteName ? validateSlot("base4Ajuste", ajusteRows) : { ok: true, msg: "não enviada (sem overrides)" };
   var checkConsulta = validateConsultaRows(consultaRows);
-  var ok = checkAjuste.ok && checkConsulta.ok;
+  var ok = checkOrganograma.ok && checkAjuste.ok && checkConsulta.ok;
 
-  st.ajusteRows = ajusteRows; st.consultaRows = consultaRows; st.rows = ajusteRows;
+  st.organogramaRows = organogramaRows; st.ajusteRows = ajusteRows; st.consultaRows = consultaRows; st.rows = organogramaRows;
   st.ok = ok;
 
   fn.classList.toggle("wrap", !ok);
-  fn.textContent = st.file.name + " · Ajuste: " + checkAjuste.msg + " · Consulta: " + checkConsulta.msg;
+  fn.textContent = st.file.name + " · BASE_SET.26: " + checkOrganograma.msg + " · AJUSTE: " + checkAjuste.msg + " · Consulta: " + checkConsulta.msg;
   setSlotStatus(slot, ok ? "ok" : "error", ok ? "Concluído" : "Recusado");
   updateProcessBtn();
 }
 function resetSlot(slot){
-  STATE.slots[slot] = { file: null, buf: null, visible: [], chosen: null, rows: null, ajusteRows: null, consultaRows: null, ok: false };
+  STATE.slots[slot] = { file: null, buf: null, visible: [], chosen: null, rows: null, organogramaRows: null, ajusteRows: null, consultaRows: null, ok: false };
   slotZone(slot).classList.remove("ok","error","over");
   var fn = slotFnLabel(slot);
   fn.classList.remove("wrap");
@@ -1379,7 +1435,7 @@ function processUpload(){
   document.getElementById("processBtn").disabled = true;
   setTimeout(function(){
     try{
-      var model = buildModel(STATE.slots.base1.rows, STATE.slots.base2.rows, STATE.slots.base3.rows, STATE.slots.base4.ajusteRows, STATE.slots.base4.consultaRows);
+      var model = buildModel(STATE.slots.base1.rows, STATE.slots.base2.rows, STATE.slots.base3.rows, STATE.slots.base4.organogramaRows, STATE.slots.base4.ajusteRows, STATE.slots.base4.consultaRows);
       STATE.model = model;
       STATE.exportSheets = buildExportSheets(model);
       renderSummary(model);

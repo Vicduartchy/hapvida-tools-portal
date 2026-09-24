@@ -28,6 +28,16 @@ describe("apuracao de horas por recursos x squad no portal", () => {
     expect(toolHtml).not.toContain("cdn.jsdelivr.net");
   });
 
+  it("usa BASE_SET.26 para cargos e detecta as abas reais automaticamente", () => {
+    expect(toolHtml).toContain("BASE_SET.26");
+    expect(toolHtml).toContain("base4Organograma");
+    expect(toolHtml).toContain("parseSheetRowsWithHeader");
+    expect(toolHtml).toContain("organogramaRows");
+    expect(toolHtml).toContain("var compatible = meta.visible.filter");
+    expect(toolHtml).toContain("AJUSTE: ");
+    expect(toolHtml).toContain("Consulta: ");
+  });
+
   it("substitui o card de alocacao no catalogo", () => {
     const cardStart = homeTsx.indexOf('slug: "alocacao-horas-tipo-demanda"');
     const cardEnd = homeTsx.indexOf("\n  },", cardStart);
