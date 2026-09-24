@@ -38,6 +38,13 @@ describe("apuracao de horas por recursos x squad no portal", () => {
     expect(toolHtml).toContain("Consulta: ");
   });
 
+  it("normaliza formatos de nome e não trata N/A como cargo válido", () => {
+    expect(toolHtml).toContain('"SOBRENOME, NOME"');
+    expect(toolHtml).toContain("function isOrgEmpty");
+    expect(toolHtml).toContain('"#N/A"');
+    expect(toolHtml).toContain("function nameTokens");
+  });
+
   it("substitui o card de alocacao no catalogo", () => {
     const cardStart = homeTsx.indexOf('slug: "alocacao-horas-tipo-demanda"');
     const cardEnd = homeTsx.indexOf("\n  },", cardStart);

@@ -556,26 +556,128 @@ function indexByLecom(rows, field){
   return m;
 }
 
-/* Chave de cruzamento por nome de pessoa: além de normalizeName (Título
-   Caso, espaços colapsados), remove acentos e ignora caixa — assim
-   "José Vitor" e "JOSE VITOR" (ou "Jose Vitor", sem acento — comum em
-   organogramas digitados à mão) batem no cruzamento mesmo quando a
-   grafia usada na Base 1 e na Base 4 diverge só nisso. Usada só como
-   CHAVE de busca; o nome exibido continua vindo de normalizeName (ver
-   indexByName e buildModel), preservando a acentuação de quem tiver a
-   grafia mais confiável pro caso (a Base 4, fonte de verdade). */
+/* Chave de cruzamento por nome de pessoa: remove acentos, caixa e
+   pontuação, além de inverter o formato "SOBRENOME, NOME" quando ele
+   aparece no export de horas. Assim "José Vitor", "JOSE VITOR" e
+   "VITOR, JOSE" usam a mesma chave sem alterar a grafia exibida. */
 function foldNameKey(raw){
-  var n = normalizeName(raw);
-  if (!n) return null;
-  return stripAccents(n).toUpperCase();
+  if (isBlank(raw)) return null;
+  var s = stripAccents(String(raw)).trim().toUpperCase();
+  if (!s) return null;
+  if (s.indexOf(",") !== -1){
+    var commaParts = s.split(",").map(function(part){ return part.trim(); }).filter(Boolean);
+    if (commaParts.length === 2) s = commaParts[1] + " " + commaParts[0];
+    else s = commaParts.join(" ");
+  }
+  s = s.replace(/[^A-Z0-9]+/g, " ").replace(/\s+/g, " ").trim();
+  return s || null;
 }
 
-/* Base 4 · Organograma é indexada pela chave de nome "dobrada"
-   (foldNameKey: acento/caixa-insensível), a mesma usada pro "USUARIOS" da
-   Base 1 — assim o cruzamento não depende de as duas bases usarem a mesma
-   caixa (MAIÚSCULA vs Nome Próprio) nem a mesma acentuação (comum quando
-   uma base vem de export automático e a outra é digitada à mão). Quando há
-   mais de uma linha pro mesmo nome na Base 4, fica a primeira. */
+var ORG_EMPTY_VALUES = ["N/A", "NA", "N.A.", "-", "#N/A", "NULL", "NONE", "NÃO INFORMADO", "NAO INFORMADO"];
+function isOrgEmpty(v){
+  if (isBlank(v)) return true;
+  var s = stripAccents(String(v)).trim().toUpperCase();
+  return ORG_EMPTY_VALUES.indexOf(s) !== -1;
+}
+function nameTokens(raw){
+  var key = foldNameKey(raw);
+  if (!key) return [];
+  return key.split(" ").filter(function(token){ return ["DE","DA","DO","DAS","DOS","E","DI","DEL"].indexOf(token) === -1; });
+}
+function tokenSimilarity(a, b){
+  a = String(a || ""); b = String(b || "");
+  if (a === b) return 1;
+  if (!a || !b) return 0;
+  var prev = [], curr = [], i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++){
+    curr[0] = i;
+    for (j = 1; j <= b.length; j++){
+      curr[j] = Math.min(
+        curr[j - 1] + 1,
+        prev[j] + 1,
+        prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1)
+      );
+    }
+    prev = curr;
+    curr = [];
+  }
+  return 1 - prev[b.length] / Math.max(a.length, b.length);
+}
+function emailNameKey(raw){
+  if (isBlank(raw)) return null;
+  var local = String(raw).trim().split("@")[0].replace(/^(T_|U_|USR_|USER_)/i, "");
+  return foldNameKey(local.replace(/[._-]+/g, " "));
+}
+function tokenSetSubset(shorter, longer){
+  if (!shorter.length || shorter.length < 2 || shorter.length > longer.length) return false;
+  return shorter.every(function(token){ return longer.indexOf(token) !== -1; });
+}
+function buildNameResolver(rows, field){
+  var exact = indexByName(rows, field);
+  var entries = [];
+  exact.forEach(function(row, key){ entries.push({ key: key, row: row, tokens: nameTokens(key) }); });
+  return { exact: exact, entries: entries, cache: new Map() };
+}
+function resolvePerson(resolver, rawName, rawEmail){
+  var cacheKey = String(rawName || "") + "||" + String(rawEmail || "");
+  if (resolver.cache.has(cacheKey)) return resolver.cache.get(cacheKey);
+  var nameKey = foldNameKey(rawName);
+  var exact = nameKey ? resolver.exact.get(nameKey) : null;
+  if (exact){ resolver.cache.set(cacheKey, exact); return exact; }
+
+  var sourceTokens = nameTokens(rawName);
+  var emailKey = emailNameKey(rawEmail);
+  var emailTokens = nameTokens(emailKey);
+  var emailMatches = resolver.entries.filter(function(entry){
+    return tokenSetSubset(emailTokens, entry.tokens);
+  });
+  if (emailMatches.length === 1){
+    resolver.cache.set(cacheKey, emailMatches[0].row);
+    return emailMatches[0].row;
+  }
+
+  /* Variações semânticas conservadoras: aceita nomes em que todos os tokens
+     significativos de uma versão aparecem na outra (ex.: "Lucas Martins"
+     x "Lucas Martins do Nascimento") ou apenas uma pequena diferença de
+     digitação (ex.: Souza/Sousa, Gessica/Gessyca), desde que o candidato
+     seja único. Nunca escolhe o primeiro entre dois candidatos parecidos. */
+  if (sourceTokens.length >= 2){
+    var subsetMatches = resolver.entries.filter(function(entry){
+      return tokenSetSubset(sourceTokens, entry.tokens) || tokenSetSubset(entry.tokens, sourceTokens);
+    });
+    if (subsetMatches.length === 1){
+      resolver.cache.set(cacheKey, subsetMatches[0].row);
+      return subsetMatches[0].row;
+    }
+
+    var fuzzy = resolver.entries.map(function(entry){
+      var sourceCoverage = sourceTokens.reduce(function(total, token){
+        return total + Math.max.apply(null, entry.tokens.map(function(candidate){ return tokenSimilarity(token, candidate); }));
+      }, 0) / sourceTokens.length;
+      var candidateCoverage = entry.tokens.reduce(function(total, token){
+        return total + Math.max.apply(null, sourceTokens.map(function(candidate){ return tokenSimilarity(token, candidate); }));
+      }, 0) / entry.tokens.length;
+      var exactTokens = sourceTokens.filter(function(token){ return entry.tokens.indexOf(token) !== -1; }).length;
+      return { entry: entry, score: (sourceCoverage + candidateCoverage) / 2, sourceCoverage: sourceCoverage, candidateCoverage: candidateCoverage, exactTokens: exactTokens };
+    }).filter(function(candidate){
+      return candidate.exactTokens >= 2 && candidate.sourceCoverage >= 0.86 && candidate.candidateCoverage >= 0.90;
+    }).sort(function(a, b){ return b.score - a.score; });
+    if (fuzzy.length === 1 || (fuzzy.length > 1 && fuzzy[0].score - fuzzy[1].score >= 0.035)){
+      resolver.cache.set(cacheKey, fuzzy[0].entry.row);
+      return fuzzy[0].entry.row;
+    }
+  }
+
+  resolver.cache.set(cacheKey, null);
+  return null;
+}
+
+/* Base 4 · Organograma é indexada pela chave de nome "dobrada". Quando há
+   mais de uma linha pro mesmo nome, a linha com mais campos realmente
+   preenchidos vence; N/A, #N/A e vazios não contam como informação. Isso
+   evita que uma linha de projeto sem cargo esconda outra linha do mesmo
+   colaborador que contém o cargo correto. */
 function indexByName(rows, field){
   var m = new Map();
   rows.forEach(function(r){
@@ -589,7 +691,7 @@ function indexByName(rows, field){
 function orgCompletenessScore(row){
   if (!row) return 0;
   var fields = ["CARGO", "DIRETORIA", "GESTOR DIRETO", "GERENTE", "GERENTE EXECUTIVO", "SQUAD", "SQUAD 1", "SM RESPONSAVEL"];
-  return fields.reduce(function(score, field){ return score + (isBlank(row[field]) ? 0 : 1); }, 0);
+  return fields.reduce(function(score, field){ return score + (isOrgEmpty(row[field]) ? 0 : 1); }, 0);
 }
 function mergeOrgRows(baseRow, ajusteRow){
   if (!baseRow && !ajusteRow) return null;
@@ -597,7 +699,7 @@ function mergeOrgRows(baseRow, ajusteRow){
   [baseRow, ajusteRow].forEach(function(row){
     if (!row) return;
     Object.keys(row).forEach(function(key){
-      if (!isBlank(row[key])) out[key] = row[key];
+      if (!isOrgEmpty(row[key])) out[key] = row[key];
     });
   });
   return out;
@@ -615,8 +717,10 @@ function buildModel(rows1, rows2, rows3, rows4Organograma, rows4Ajuste, rows4Con
   /* Base 4 · BASE_SET.26 (fonte ampla de pessoas/cargos), AJUSTE (override
      manual opcional) e CONSULTA (LECOM/ID → Ordem de Investimento) são
      indexadas separadamente. */
-  var idx4 = indexByName(rows4Organograma || [], "COLABORADOR");
-  var idx4Ajuste = indexByName(rows4Ajuste || [], "COLABORADOR");
+  var resolver4 = buildNameResolver(rows4Organograma || [], "COLABORADOR");
+  var resolver4Ajuste = buildNameResolver(rows4Ajuste || [], "COLABORADOR");
+  var idx4 = resolver4.exact;
+  var idx4Ajuste = resolver4Ajuste.exact;
   var idx4Consulta = indexByLecom(rows4Consulta || [], "LECOM");
   var items = [];
   var realized2 = new Map(), realized3 = new Map();
@@ -681,8 +785,10 @@ function buildModel(rows1, rows2, rows3, rows4Organograma, rows4Ajuste, rows4Con
        NOME exibido também passa a vir da Base 4 (fonte de verdade pra
        grafia oficial); só cai pro nome como veio na Base 1 quando ele não
        é encontrado lá. */
-    var personKey = foldNameKey(r["USUARIOS"]);
-    var orgRow = mergeOrgRows(idx4.get(personKey) || null, idx4Ajuste.get(personKey) || null);
+    var orgRow = mergeOrgRows(
+      resolvePerson(resolver4, r["USUARIOS"], r["USUARIOS - EMAIL"]),
+      resolvePerson(resolver4Ajuste, r["USUARIOS"], r["USUARIOS - EMAIL"])
+    );
     var recursoNome = (orgRow && normalizeName(orgRow["COLABORADOR"])) || normalizeName(r["USUARIOS"]) || "(Não informado)";
 
     items.push({
@@ -930,10 +1036,10 @@ function buildOrganogramaBundle(rows4, rows4Ajuste){
     var entry = people.get(key);
     if (!entry){ entry = { row: {}, squads: new Set() }; people.set(key, entry); }
     Object.keys(raw).forEach(function(field){
-      if (!isBlank(raw[field]) && (override || isBlank(entry.row[field]))) entry.row[field] = raw[field];
+      if (!isOrgEmpty(raw[field]) && (override || isOrgEmpty(entry.row[field]))) entry.row[field] = raw[field];
     });
     ["SQUAD", "SQUAD 1", "SQUAD 2", "SQUAD 3", "SQUAD 4", "SQUAD 5", "SQUAD 6"].forEach(function(field){
-      if (!isBlank(raw[field])) entry.squads.add(String(raw[field]));
+      if (!isOrgEmpty(raw[field])) entry.squads.add(String(raw[field]));
     });
   }
   (rows4 || []).forEach(function(row){ addRow(row, false); });
@@ -1429,6 +1535,17 @@ function renderSummary(model){
   document.getElementById("summaryGrid").innerHTML = html;
   document.getElementById("resultCard").hidden = false;
 }
+function cargoMatchSummary(model){
+  var people = new Map();
+  model.items.forEach(function(item){
+    var current = people.get(item.recurso);
+    var hasCargo = !isOrgEmpty(item.cargo);
+    people.set(item.recurso, Boolean(current) || hasCargo);
+  });
+  var total = people.size;
+  var filled = Array.from(people.values()).filter(Boolean).length;
+  return { total: total, filled: filled, pct: total ? (filled / total * 100) : 0 };
+}
 
 function processUpload(){
   document.getElementById("statusMsg").textContent = "Cruzando bases…";
@@ -1440,7 +1557,8 @@ function processUpload(){
       STATE.exportSheets = buildExportSheets(model);
       renderSummary(model);
       setStep(3);
-      document.getElementById("statusMsg").textContent = "Cruzamento concluído.";
+      var cargoStats = cargoMatchSummary(model);
+      document.getElementById("statusMsg").textContent = "Cruzamento concluído. Cargo identificado para " + fmtNum(cargoStats.filled) + " de " + fmtNum(cargoStats.total) + " colaboradores (" + fmtPct(cargoStats.pct) + ").";
       document.getElementById("resetBtn").hidden = false;
       document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
     }catch(e){
