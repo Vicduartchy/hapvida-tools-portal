@@ -1,632 +1,1510 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Protótipo — Horas por Tipo de Demanda e Diretoria</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Apuração de Horas por Recursos x Squad — Hub do Agile Coach · Hapvida</title>
+<script src="/shared/vendor/xlsx-full.min.js"></script>
+<script src="/shared/vendor/exceljs-4.4.0.min.js"></script>
 <style>
   :root{
-    --azul:#1A3DAA;
-    --azul-escuro:#0F2370;
-    --laranja:#F47920;
-    --amarelo:#FFC20E;
-    --vermelho:#E8272A;
-    --verde:#2E9E44;
-    --cinza-claro:#F2F4F9;
-    --cinza-borda:#D7DCE8;
-    --texto:#1F2430;
-    --texto-muted:#5B6478;
+    color-scheme: light;
+    --bg:#f9f9f7; --surface:#fcfcfb; --surface-2:#f2f1ec; --surface-3:#e9e8e1;
+    --border: rgba(11,11,11,.10); --border-strong: rgba(11,11,11,.16);
+    --text:#0b0b0b; --text-2:#52514e; --text-muted:#898781;
+    --accent:#2a78d6; --accent-ink:#ffffff; --accent-wash: rgba(42,120,214,.10);
+    --cat-projetos:#2a78d6; --cat-melhorias:#eb6834; --cat-incidente:#1baf7a;
+    --cat-requisicao:#eda100; --cat-outros:#4a3aa7; --cat-nident:#e34948;
+    --status-good:#0ca30c; --status-critical:#d03b3b; --status-good-text:#0b8f0b; --status-critical-text:#c22f2f;
+    --font-head: 'Manrope', system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-body: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --radius: 14px; --radius-sm: 9px;
+    --shadow: 0 1px 2px rgba(11,11,11,.05), 0 6px 20px -8px rgba(11,11,11,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#232321; --surface-3:#2b2b28;
+      --border: rgba(255,255,255,.10); --border-strong: rgba(255,255,255,.18);
+      --text:#ffffff; --text-2:#c3c2b7; --text-muted:#8f8e88;
+      --accent:#3987e5; --accent-ink:#ffffff; --accent-wash: rgba(57,135,229,.16);
+      --cat-projetos:#3987e5; --cat-melhorias:#d95926; --cat-incidente:#199e70;
+      --cat-requisicao:#c98500; --cat-outros:#9085e9; --cat-nident:#e66767;
+      --status-good-text:#4ade80; --status-critical-text:#f87171;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -8px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#0d0d0d; --surface:#1a1a19; --surface-2:#232321; --surface-3:#2b2b28;
+    --border: rgba(255,255,255,.10); --border-strong: rgba(255,255,255,.18);
+    --text:#ffffff; --text-2:#c3c2b7; --text-muted:#8f8e88;
+    --accent:#3987e5; --accent-ink:#ffffff; --accent-wash: rgba(57,135,229,.16);
+    --cat-projetos:#3987e5; --cat-melhorias:#d95926; --cat-incidente:#199e70;
+    --cat-requisicao:#c98500; --cat-outros:#9085e9; --cat-nident:#e66767;
+    --status-good-text:#4ade80; --status-critical-text:#f87171;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px -8px rgba(0,0,0,.5);
   }
   *{box-sizing:border-box;}
-  body{
-    font-family: 'Segoe UI', Arial, sans-serif;
-    background:#EEF1F8;
-    margin:0;
-    padding:24px;
-    color:var(--texto);
-  }
-  .wrap{max-width:1180px;margin:0 auto;}
-  .header{
-    display:flex;
-    justify-content:space-between;
-    align-items:flex-end;
-    margin-bottom:18px;
-  }
-  h1{
-    font-size:20px;
-    font-weight:700;
-    color:var(--azul);
-    margin:0 0 4px;
-  }
-  .subtitle{
-    font-size:13px;
-    color:var(--texto-muted);
-    margin:0;
-  }
-  .badge-periodo{
-    background:var(--cinza-claro);
-    border:1px solid var(--cinza-borda);
-    border-radius:6px;
-    padding:6px 12px;
-    font-size:12px;
-    color:var(--texto-muted);
-  }
-  .upload-card{
-    background:#fff;
-    border:1px dashed #AAB6D5;
-    border-radius:10px;
-    padding:14px 16px;
-    margin-bottom:16px;
-    display:flex;
-    flex-wrap:wrap;
-    align-items:center;
-    gap:10px 14px;
-  }
-  .upload-copy{ flex:1 1 360px; }
-  .upload-title{ font-size:13px; font-weight:700; color:var(--azul-escuro); margin-bottom:3px; }
-  .upload-help{ font-size:12px; color:var(--texto-muted); line-height:1.4; }
-  .upload-actions{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-  .file-btn, .secondary-btn{
-    border:1px solid var(--azul);
-    border-radius:6px;
-    padding:7px 11px;
-    font:600 12px 'Segoe UI', Arial, sans-serif;
-    cursor:pointer;
-    transition:background .15s ease, color .15s ease;
-  }
-  .file-btn{ background:var(--azul); color:#fff; }
-  .file-btn:hover{ background:var(--azul-escuro); }
-  .secondary-btn{ background:#fff; color:var(--azul); }
-  .secondary-btn:hover{ background:#EEF3FF; }
-  #arquivo-planilha{
-    position:absolute;
-    width:1px;
-    height:1px;
-    opacity:0;
-    overflow:hidden;
-  }
-  .upload-status{
-    flex:1 0 100%;
-    min-height:16px;
-    font-size:11.5px;
-    color:var(--texto-muted);
-  }
-  .upload-status.success{ color:#27753A; }
-  .upload-status.error{ color:#A32224; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font-body); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+  h1,h2,h3{ font-family:var(--font-head); margin:0; letter-spacing:-0.01em; text-wrap:balance; }
+  button{ font-family:inherit; font-size:inherit; color:inherit; cursor:pointer; }
+  .tabular{ font-variant-numeric: tabular-nums; }
+  [hidden]{ display:none!important; }
 
-  .kpis{
-    display:grid;
-    grid-template-columns:repeat(5,1fr);
-    gap:12px;
-    margin-bottom:20px;
-  }
-  .kpi{
-    background:#fff;
-    border:1px solid var(--cinza-borda);
-    border-radius:8px;
-    padding:12px 14px;
-    border-top:3px solid var(--azul);
-  }
-  .kpi.total{border-top-color:var(--azul-escuro);}
-  .kpi-label{font-size:11px;color:var(--texto-muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}
-  .kpi-valor{font-size:19px;font-weight:700;color:var(--texto);}
-  .kpi-pct{font-size:12px;color:var(--texto-muted);margin-top:2px;}
+  .app{ max-width:880px; margin:0 auto; padding: 20px 16px 64px; display:flex; flex-direction:column; gap:16px; }
+  .topbar{ display:flex; align-items:center; gap:12px; padding-bottom:4px; }
+  .mark{ width:38px; height:38px; border-radius:11px; flex:none; background:linear-gradient(155deg, var(--accent), var(--cat-melhorias)); display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; }
+  .titles{ min-width:0; margin-right:auto; }
+  .titles h1{ font-size:18px; font-weight:800; }
+  .titles .sub{ font-size:12px; color:var(--text-muted); }
+  .icon-btn{ width:34px; height:34px; border-radius:999px; border:1px solid var(--border-strong); background:var(--surface); display:flex; align-items:center; justify-content:center; flex:none; }
+  .icon-btn:hover{ background:var(--surface-2); }
 
-  .card{
-    background:#fff;
-    border-radius:10px;
-    border:1px solid var(--cinza-borda);
-    overflow:hidden;
-  }
-  .table-scroll{
-    overflow-x:auto;
-  }
-  .table-scroll table{
-    min-width:980px;
-  }
-  .card-header{
-    background:var(--azul);
-    color:#fff;
-    padding:12px 16px;
-    font-size:14px;
-    font-weight:700;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-  }
-  .toggle{
-    display:flex;
-    gap:6px;
-    background:rgba(255,255,255,.15);
-    border-radius:6px;
-    padding:2px;
-  }
-  .toggle button{
-    border:none;
-    background:transparent;
-    color:#fff;
-    font-size:11px;
-    padding:5px 10px;
-    border-radius:5px;
-    cursor:pointer;
-    opacity:.75;
-  }
-  .toggle button.active{
-    background:#fff;
-    color:var(--azul);
-    opacity:1;
-    font-weight:700;
-  }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px; }
+  .note{ font-size:12.5px; color:var(--text-muted); line-height:1.55; }
+  .note b{ color:var(--text-2); }
 
-  table{
-    width:100%;
-    border-collapse:collapse;
-    font-size:13px;
-  }
-  th, td{
-    padding:9px 12px;
-    text-align:right;
-    border-bottom:1px solid var(--cinza-borda);
-    white-space:nowrap;
-  }
-  th:first-child, td:first-child{ text-align:left; }
-  thead th{
-    background:var(--cinza-claro);
-    color:var(--azul-escuro);
-    font-weight:700;
-    font-size:11.5px;
-    text-transform:uppercase;
-    letter-spacing:.02em;
-    position:sticky;
-    top:0;
-  }
-  tbody tr:nth-child(even){ background:#FAFBFD; }
-  tbody tr:hover{ background:#EEF3FF; }
-  td.diretoria{ font-weight:600; color:var(--texto); }
-  td.tipo-demanda{ font-weight:600; color:var(--texto); }
-  td.total-col{ font-weight:700; border-left:2px solid var(--cinza-borda); }
+  .drop-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  @media (max-width:860px){ .drop-grid{ grid-template-columns:repeat(2,1fr); } }
+  @media (max-width:480px){ .drop-grid{ grid-template-columns:1fr; } }
+  /* min-width:0 é essencial aqui: .dropzone é item de grid (.drop-grid), e por
+     padrão um item de grid tem min-width:auto, que respeita o tamanho
+     intrínseco do conteúdo — inclusive o nome do arquivo em .fn, que usa
+     white-space:nowrap. Sem isso, um nome de arquivo comprido (ex.: "BASE 3
+     - PROJETOS.xlsx · 793 linhas reconhecidas") força essa coluna do grid a
+     crescer além de 1fr e empurra a última base pra fora do card à direita,
+     em vez de deixar o próprio .fn cortar o texto com reticências. */
+  .dropzone{ cursor:pointer; border:1.5px dashed var(--border-strong); border-radius:12px; padding:18px 12px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:6px; background:var(--surface-2); min-height:160px; min-width:0; justify-content:center; transition:border-color .15s, background .15s; }
+  .dropzone:hover{ border-color:var(--accent); background:var(--accent-wash); }
+  .dropzone:hover .choose-btn{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .dropzone.over{ border-color:var(--accent); background:var(--accent-wash); }
+  .dropzone.ok{ border-color: rgba(12,163,12,.55); background: rgba(12,163,12,.08); }
+  .dropzone.error{ border-color: rgba(208,59,59,.6); background: rgba(208,59,59,.08); }
+  .dropzone .ic{ font-size:24px; }
+  .dropzone .t{ font-weight:800; font-size:13px; }
+  .dropzone .d{ font-size:11px; color:var(--text-muted); margin-bottom:2px; }
+  .dropzone .choose-btn{ cursor:pointer; pointer-events:none; font-family:inherit; display:inline-flex; align-items:center; gap:5px; border-radius:999px; border:1.5px solid var(--accent); background:var(--surface); color:var(--accent); font-weight:800; font-size:11.5px; padding:6px 14px; }
+  /* Selo de status do upload (Carregando/Concluído/Recusado). Some ao lado
+     da borda verde/vermelha do quadro pra deixar o estado inequívoco mesmo
+     pra quem não distingue bem as cores da borda. */
+  .dropzone .status-badge{ font-size:9.5px; font-weight:800; text-transform:uppercase; letter-spacing:.04em; padding:3px 9px; border-radius:999px; }
+  .dropzone .status-badge.loading{ background: var(--accent-wash); color: var(--accent); }
+  .dropzone .status-badge.ok{ background: rgba(12,163,12,.15); color: var(--status-good-text); }
+  .dropzone .status-badge.error{ background: rgba(208,59,59,.15); color: var(--status-critical-text); }
+  .dropzone .fn{ font-size:11px; color:var(--text-2); font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+  /* Quando a recusa tem um motivo (ex.: "Colunas ausentes: X, Y"), o texto
+     completo precisa aparecer — sem isso a mensagem mais importante da tela
+     ficava cortada com "..." e ninguém conseguia saber o que corrigir. */
+  .dropzone .fn.wrap{ white-space:normal; overflow:visible; text-overflow:clip; line-height:1.4; }
+  .dropzone input{ display:none; }
+  .dropzone select{ font-size:10.5px; margin-top:4px; max-width:100%; border-radius:6px; border:1px solid var(--border-strong); background:var(--surface); padding:3px 5px; }
 
-  .cell{ display:flex; flex-direction:column; align-items:flex-end; gap:2px; }
-  .cell .horas{ font-weight:600; }
-  .cell .pct{ font-size:11px; color:var(--texto-muted); }
-  .barra-bg{
-    width:100%; height:4px; background:var(--cinza-claro); border-radius:2px; margin-top:3px; overflow:hidden;
-  }
-  .barra{ height:100%; border-radius:2px; }
+  .btn{ display:inline-flex; align-items:center; justify-content:center; gap:7px; border-radius:999px; border:1px solid var(--border-strong); background:var(--surface); padding:11px 20px; font-weight:700; font-size:13.5px; color:var(--text); }
+  .btn:hover{ background:var(--surface-2); }
+  .btn.primary{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); font-size:14.5px; padding:13px 22px; }
+  .btn.primary:hover{ filter:brightness(1.06); }
+  .btn.big{ width:100%; }
+  .btn:disabled{ opacity:.45; cursor:not-allowed; }
+  .btn.ghost{ border-color:transparent; background:transparent; }
 
-  tfoot td{
-    background:var(--azul-escuro);
-    color:#fff;
-    font-weight:700;
-    border-bottom:none;
-  }
-  tfoot td.diretoria{ color:#fff; }
-  tfoot td.tipo-demanda{ color:#fff; }
-  tfoot .cell .pct{ color:#C9D3F0; }
+  .summary-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  @media (max-width:560px){ .summary-grid{ grid-template-columns:repeat(2,1fr); } }
+  .stat{ border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px 14px; background:var(--surface-2); }
+  .stat .lbl{ font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:700; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+  .stat .dot{ width:8px; height:8px; border-radius:2px; flex:none; }
+  .stat .val{ font-family:var(--font-head); font-weight:800; font-size:20px; margin-top:4px; }
+  .stat .sub{ font-size:11px; color:var(--text-muted); }
 
-  .legend{
-    display:flex;
-    gap:16px;
-    padding:10px 16px;
-    font-size:11.5px;
-    color:var(--texto-muted);
-    border-top:1px solid var(--cinza-borda);
-    flex-wrap:wrap;
-  }
-  .legend span{ display:flex; align-items:center; gap:5px; }
-  .dot{ width:9px; height:9px; border-radius:2px; display:inline-block; }
+  .sheet-list{ display:flex; flex-direction:column; gap:8px; }
+  .sheet-row{ display:flex; align-items:center; gap:10px; padding:9px 12px; border:1px solid var(--border); border-radius:9px; background:var(--surface-2); font-size:12.5px; }
+  .sheet-row .n{ font-weight:800; color:var(--accent); min-width:20px; }
+  .sheet-row .t{ font-weight:700; }
+  .sheet-row .d{ color:var(--text-muted); margin-left:auto; }
 
-  .nota{
-    margin-top:14px;
-    font-size:12px;
-    color:var(--texto-muted);
-    background:#FFF6E9;
-    border:1px solid #FFE0AA;
-    border-radius:8px;
-    padding:10px 14px;
+  .steps{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; font-size:11.5px; color:var(--text-muted); font-weight:700; }
+  .steps .step{ display:flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px; background:var(--surface-2); }
+  .steps .step.active{ color:var(--accent); background:var(--accent-wash); }
+  .steps .step.done{ color: var(--status-good-text); }
+  .steps .sep{ opacity:.5; }
+
+  .toast{ position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--text); color:var(--bg); padding:10px 16px; border-radius:10px; font-size:12.5px; font-weight:700; z-index:200; box-shadow:var(--shadow); max-width:90vw; }
+  .footline{ text-align:center; }
+
+  /* Design HAC — aplicado quando a ferramenta é aberta dentro do Portal de Ferramentas. */
+  :root{
+    color-scheme:light;
+    --bg:#eef2f8; --surface:#ffffff; --surface-2:#f8fafc; --surface-3:#eef3ff;
+    --border:#e2e8f0; --border-strong:#cbd5e1; --text:#0f172a; --text-2:#475569; --text-muted:#64748b;
+    --accent:#1746a2; --accent-ink:#ffffff; --accent-wash:#eef3ff;
+    --cat-projetos:#2563c7; --cat-melhorias:#e56b2f; --cat-incidente:#2e9e63;
+    --cat-requisicao:#d99500; --cat-outros:#6657b8; --cat-nident:#d94b4b;
+    --status-good:#16824a; --status-critical:#c83c42; --status-good-text:#16824a; --status-critical-text:#c83c42;
+    --font-head:'Segoe UI', Arial, sans-serif; --font-body:'Segoe UI', Arial, sans-serif;
+    --radius:12px; --radius-sm:8px; --shadow:0 3px 14px rgba(20,37,63,.07);
   }
-  .nota b{ color:#8A5A00; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ color-scheme:light; } }
+  *{box-sizing:border-box;}
+  body{background:var(--bg); color:var(--text); font-family:var(--font-body);}
+  .app{max-width:1500px; padding:24px 28px 56px; gap:16px;}
+  .topbar{position:relative; overflow:hidden; background:linear-gradient(110deg,#0c2c72 0%,#1746a2 60%,#1e56b8 100%); color:#fff; padding:16px 18px; border-radius:12px; box-shadow:0 3px 14px rgba(12,44,114,.2);}
+  .topbar::after{content:""; position:absolute; left:0; right:0; bottom:0; height:4px; background:linear-gradient(90deg,#e8272a 0 33%,#f47920 33% 66%,#ffc20e 66% 100%);}
+  .mark{width:44px; height:44px; border-radius:12px; background:#fff; padding:8px; box-shadow:0 2px 7px rgba(0,0,0,.12);}
+  .mark img{width:100%; height:100%; object-fit:contain; display:block;}
+  .titles h1{font-size:20px; font-weight:800; letter-spacing:-.02em;}
+  .titles .sub{font-size:12px; color:#dbe7ff;}
+  .hc-eyebrow{font-size:10px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#cfe0ff; margin-bottom:2px;}
+  .portal-badge{margin-left:auto; padding:6px 11px; border:1px solid rgba(255,255,255,.28); border-radius:999px; background:rgba(255,255,255,.1); color:#e7efff; font-size:10px; font-weight:800; white-space:nowrap;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px; box-shadow:var(--shadow);}
+  .dropzone{background:#f8fafc; border-color:#cbd5e1; border-radius:10px;}
+  .dropzone:hover,.dropzone.over{border-color:#1746a2; background:#eef3ff;}
+  .dropzone.ok{border-color:rgba(22,130,74,.55); background:#f0faf4;}
+  .dropzone.error{border-color:rgba(200,60,66,.6); background:#fff4f4;}
+  .dropzone .choose-btn{border-color:#1746a2; color:#1746a2; background:#fff;}
+  .dropzone:hover .choose-btn{background:#1746a2; border-color:#1746a2; color:#fff;}
+  .btn{border-color:#cbd5e1; border-radius:8px; background:#fff; color:#334155;}
+  .btn:hover{background:#f8fafc;}
+  .btn.primary{background:#1746a2; border-color:#1746a2; color:#fff; border-radius:8px;}
+  .btn.primary:hover{background:#0c2c72;}
+  .btn.ghost{color:#1746a2;}
+  .summary-grid{gap:12px;}
+  .stat{background:#f8fafc; border-color:#e2e8f0; border-radius:9px;}
+  .stat .val{color:#0f172a;}
+  .sheet-row{background:#f8fafc; border-color:#e2e8f0;}
+  .sheet-row .n{color:#1746a2;}
+  .steps .step{background:#f1f5f9;}
+  .steps .step.active{color:#1746a2; background:#eef3ff;}
+  .toast{background:#0f172a; color:#fff;}
+  .footline{color:#64748b;}
+  @media (max-width:700px){.app{padding:16px 12px 44px;} .topbar{padding:14px;} .portal-badge{display:none;} .titles h1{font-size:17px;} .titles .sub{font-size:11px;} .hc-eyebrow{font-size:9px;} }
 </style>
+
+
 </head>
 <body>
-<div class="wrap">
-
-  <div class="header">
-    <div>
-      <h1>Alocação de Horas por Tipo de Demanda</h1>
-      <p class="subtitle">Visão consolidada — tipos de demanda nas linhas e diretorias nas colunas</p>
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="mark"><img src="/assets/hac-mark.png" alt=""></div>
+    <div class="titles">
+      <div class="hc-eyebrow">Hub do Agile Coach · Hapvida</div>
+      <h1>Apuração de Horas por Recursos x Squad</h1>
+      <div class="sub">Cruza Horas × Melhorias × Projetos × Organograma e devolve a planilha pronta</div>
     </div>
-    <div class="badge-periodo">01/07/2026 – 10/09/2026</div>
-  </div>
-
-  <div class="upload-card">
-    <div class="upload-copy">
-      <div class="upload-title">Gerar esta visão a partir de uma planilha</div>
-      <div class="upload-help">Selecione um arquivo .xlsx, .xls ou .csv com as colunas de tipo de demanda, diretoria e horas.</div>
-    </div>
-    <div class="upload-actions">
-      <label class="file-btn" for="arquivo-planilha">Selecionar planilha</label>
-      <input id="arquivo-planilha" type="file" accept=".xlsx,.xls,.csv,text/csv">
-      <button type="button" class="secondary-btn" id="btn-exemplo">Restaurar exemplo</button>
-    </div>
-    <div class="upload-status" id="upload-status">Exibindo os dados de exemplo que acompanham o protótipo.</div>
-  </div>
-
-  <div class="kpis" id="kpis">
-    <div class="kpi total">
-      <div class="kpi-label">Total geral</div>
-      <div class="kpi-valor">133.905h</div>
-      <div class="kpi-pct">32.873 tasks</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">LECOM</div>
-      <div class="kpi-valor">107.018h</div>
-      <div class="kpi-pct">79,9% do total</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Incidente</div>
-      <div class="kpi-valor">12.864h</div>
-      <div class="kpi-pct">9,6% do total</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Requisição</div>
-      <div class="kpi-valor">5.493h</div>
-      <div class="kpi-pct">4,1% do total</div>
-    </div>
-    <div class="kpi">
-      <div class="kpi-label">Origem em branco</div>
-      <div class="kpi-valor">5.191h</div>
-      <div class="kpi-pct">3,9% do total</div>
-    </div>
-  </div>
+    <span class="portal-badge">100% offline · dados locais</span>
+  </header>
 
   <div class="card">
-    <div class="card-header">
-      <span>Tipo de Demanda × Diretoria</span>
-      <div class="toggle">
-        <button class="active" id="btn-horas">Horas</button>
-        <button id="btn-pct">% da linha</button>
+    <div class="steps" style="margin-bottom:14px">
+      <span class="step" id="step1">① Enviar as 4 bases</span>
+      <span class="sep">→</span>
+      <span class="step" id="step2">② Processar</span>
+      <span class="sep">→</span>
+      <span class="step" id="step3">③ Baixar planilha cruzada</span>
+    </div>
+
+    <div class="drop-grid">
+      <div class="dropzone" id="dz-base1" data-slot="base1">
+        <div class="ic">🕒</div>
+        <div class="t">Base 1 · Horas</div>
+        <div class="d">Export do Azure (apontamentos)</div>
+        <button type="button" class="choose-btn" id="choose-base1">📎 Selecionar arquivo</button>
+        <div class="status-badge" id="status-base1" hidden></div>
+        <div class="fn" id="fn-base1">Nenhum arquivo selecionado</div>
+        <select id="sheet-base1" hidden></select>
+        <input type="file" accept=".xlsx,.xls" id="file-base1">
+      </div>
+      <div class="dropzone" id="dz-base2" data-slot="base2">
+        <div class="ic">🛠️</div>
+        <div class="t">Base 2 · Melhorias</div>
+        <div class="d">Compromisso de melhorias do trimestre</div>
+        <button type="button" class="choose-btn" id="choose-base2">📎 Selecionar arquivo</button>
+        <div class="status-badge" id="status-base2" hidden></div>
+        <div class="fn" id="fn-base2">Nenhum arquivo selecionado</div>
+        <select id="sheet-base2" hidden></select>
+        <input type="file" accept=".xlsx,.xls" id="file-base2">
+      </div>
+      <div class="dropzone" id="dz-base3" data-slot="base3">
+        <div class="ic">📦</div>
+        <div class="t">Base 3 · Projetos</div>
+        <div class="d">Portfólio de projetos comprometidos</div>
+        <button type="button" class="choose-btn" id="choose-base3">📎 Selecionar arquivo</button>
+        <div class="status-badge" id="status-base3" hidden></div>
+        <div class="fn" id="fn-base3">Nenhum arquivo selecionado</div>
+        <select id="sheet-base3" hidden></select>
+        <input type="file" accept=".xlsx,.xls" id="file-base3">
+      </div>
+      <div class="dropzone" id="dz-base4" data-slot="base4">
+        <div class="ic">🧑‍💼</div>
+        <div class="t">Base 4 · Organograma</div>
+        <div class="d">1 arquivo com 2 abas: Ajuste + Consulta</div>
+        <button type="button" class="choose-btn" id="choose-base4">📎 Selecionar arquivo</button>
+        <div class="status-badge" id="status-base4" hidden></div>
+        <div class="fn" id="fn-base4">Nenhum arquivo selecionado</div>
+        <select id="sheet-base4" hidden></select>
+        <input type="file" accept=".xlsx,.xls" id="file-base4">
       </div>
     </div>
-    <div class="table-scroll">
-      <table id="tabela">
-        <thead>
-          <tr id="cabecalho-diretorias"></tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-        <tfoot>
-          <tr id="linha-total"></tr>
-        </tfoot>
-      </table>
+    <p class="note" style="margin-top:12px">Clique em qualquer ponto do quadro de cada base (ou arraste o arquivo até ele) para selecionar. Nas Bases 1-3, apenas a <b>aba visível</b> de cada planilha é lida (abas ocultas são ignoradas); se houver mais de uma aba visível, escolha a correta na lista que aparece sob o arquivo. A <b>Base 4 é diferente</b>: o mesmo arquivo precisa ter duas abas chamadas <b>"Ajuste"</b> (o organograma) e <b>"Consulta"</b> (LECOM/ID → Ordem de Investimento) — as duas são lidas automaticamente, sem precisar escolher. Tudo roda no seu navegador — nenhum arquivo sai da sua máquina.</p>
+
+    <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap">
+      <button class="btn primary" id="processBtn" disabled style="flex:1 1 220px">Processar bases</button>
+      <button class="btn ghost" id="resetBtn" hidden>Novo cruzamento</button>
     </div>
-    <div class="legend" id="legend">
-      <span><span class="dot" style="background:#1A3DAA"></span>LECOM</span>
-      <span><span class="dot" style="background:#E8272A"></span>Incidente</span>
-      <span><span class="dot" style="background:#F47920"></span>Requisição</span>
-      <span><span class="dot" style="background:#FFC20E"></span>Task Avulsa</span>
-      <span><span class="dot" style="background:#8A8FA0"></span>Origem em Branco</span>
-    </div>
+    <p class="note" id="statusMsg" style="margin-top:8px"></p>
   </div>
 
-  <div class="nota" id="nota">
-    <b>Como a visão é calculada:</b> a página soma as horas por tipo de demanda e diretoria. Linhas sem tipo de demanda são ignoradas, pois normalmente representam totais ou filtros da exportação.
+  <div class="card" id="resultCard" hidden>
+    <h2 style="font-size:15px; margin-bottom:12px">Resultado do cruzamento</h2>
+    <div class="summary-grid" id="summaryGrid"></div>
+    <div style="margin-top:16px">
+      <button class="btn primary big" id="downloadBtn">Baixar planilha cruzada (.xlsx)</button>
+    </div>
+    <p class="note" style="margin-top:10px">O arquivo sai com 7 abas, nesta ordem: <b>Apuração de Horas</b> (% Melhoria × % Projeto por colaborador, com Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo vindos da aba Ajuste da Base 4, e Ordem de Investimento vinda da aba Consulta da Base 4, cruzada pelo LECOM/ID de cada projeto), <b>Base Cruzada</b> (cada hora apontada, já classificada e casada com o item de compromisso, com uma linha indicando a origem de cada coluna), <b>Horas por Squad</b> (aberto por recurso, com % de participação no squad e % por tipo de demanda), <b>Compromisso · Projetos</b> e <b>Compromisso · Melhorias</b> (planejado × realizado, aberto por squad de execução), <b>Organograma</b> (cópia de referência da aba Ajuste da Base 4 enviada) e <b>Lecom Dobrados</b> (LECOMs cadastrados ao mesmo tempo como melhoria e como projeto). Cabeçalhos coloridos, datas no formato DD/MM/AAAA e nomes de colaborador normalizados (Primeira Letra Maiúscula).</p>
   </div>
 
+  <p class="note footline"></p>
+  <p class="note footline" style="opacity:.7">Hub do Agile Coach · Hapvida — processamento local no navegador</p>
 </div>
 
-<script src="/shared/vendor/xlsx-full.min.js"></script>
+<div id="toast" class="toast" hidden></div>
+
 <script>
-const CORES = {
-  'LECOM': '#1A3DAA',
-  'Incidente': '#E8272A',
-  'Requisição': '#F47920',
-  'Task Avulsa': '#FFC20E',
-  'Origem em Branco': '#8A8FA0',
+(function(){
+"use strict";
+
+/* =========================================================================
+   CRUZADOR DE COMPROMISSO — só o motor de cruzamento (sem indicadores)
+   Mesma lógica de classificação/cruzamento do Radar de Compromisso, mas a
+   única saída é uma planilha .xlsx com 7 abas.
+   ========================================================================= */
+
+var CATS = {
+  PROJETOS:         { label: "Projetos",              varName: "--cat-projetos"  },
+  MELHORIAS:        { label: "Melhorias",              varName: "--cat-melhorias" },
+  INCIDENTE:        { label: "Incidente",                varName: "--cat-incidente" },
+  REQUISICAO:       { label: "Requisição",               varName: "--cat-requisicao"},
+  NAO_IDENTIFICADO: { label: "Lecom não identificado",   varName: "--cat-nident"    },
+  OUTROS:           { label: "Task avulsa",               varName: "--cat-outros"    }
 };
-const TIPOS_PADRAO = ['LECOM','Incidente','Requisição','Task Avulsa','Origem em Branco'];
-const DADOS_EXEMPLO = {
-  total_geral: 133905.3,
-  total_tipo: {"LECOM": 107018.1, "Incidente": 12863.8, "Requisição": 5493.4, "Task Avulsa": 3339.0, "Origem em Branco": 5191.0},
-  linhas: [
-    {diretoria:"Assistencial", total:44610.8, valores:{"LECOM":39737.4,"Incidente":2514.4,"Requisição":732.0,"Task Avulsa":560.0,"Origem em Branco":1067.0}},
-    {diretoria:"Digital", total:32249.8, valores:{"LECOM":26440.3,"Incidente":1953.0,"Requisição":1475.5,"Task Avulsa":605.0,"Origem em Branco":1776.0}},
-    {diretoria:"Operadora", total:31763.3, valores:{"LECOM":21537.8,"Incidente":7844.9,"Requisição":2122.6,"Task Avulsa":222.0,"Origem em Branco":36.0}},
-    {diretoria:"Insights", total:12752.6, valores:{"LECOM":10014.4,"Incidente":38.0,"Requisição":868.8,"Task Avulsa":829.5,"Origem em Branco":1002.0}},
-    {diretoria:"IA", total:5603.2, valores:{"LECOM":4741.2,"Incidente":0,"Requisição":0,"Task Avulsa":170.0,"Origem em Branco":692.0}},
-    {diretoria:"Backoffice", total:4510.0, valores:{"LECOM":2801.5,"Incidente":265.5,"Requisição":166.5,"Task Avulsa":826.5,"Origem em Branco":450.0}},
-    {diretoria:"(sem diretoria)", total:1691.0, valores:{"LECOM":1188.0,"Incidente":248.0,"Requisição":128.0,"Task Avulsa":79.0,"Origem em Branco":48.0}},
-    {diretoria:"Modernização", total:484.0, valores:{"LECOM":317.0,"Incidente":0,"Requisição":0,"Task Avulsa":47.0,"Origem em Branco":120.0}},
-    {diretoria:"(DESATIVADO)", total:240.5, valores:{"LECOM":240.5,"Incidente":0,"Requisição":0,"Task Avulsa":0,"Origem em Branco":0}},
-  ],
-  tarefas: 32873,
-  periodo: '01/07/2026 – 10/09/2026',
-  ignoradas: 0,
+var CAT_ORDER = ["PROJETOS","MELHORIAS","INCIDENTE","REQUISICAO","NAO_IDENTIFICADO","OUTROS"];
+
+var REQUIRED_COLS = {
+  base1: ["COMPLETEDWORK", "TIPO DE DEMANDA", "DIRETORIA"],
+  base2: ["LECOM", "SQUAD", "HORAS"],
+  base3: ["LECOM", "Squad Azure", "HORAS"],
+  /* Base 4 é um único arquivo com DUAS abas obrigatórias — "Ajuste" (o
+     organograma propriamente dito, aqui) e "Consulta" (LECOM/ID → Ordem de
+     Investimento, validada à parte por validateConsultaRows já que aceita
+     "LECOM" ou "ID" como nome da coluna). Ver applyBase4Sheets. */
+  base4Ajuste: ["COLABORADOR", "GESTOR DIRETO", "GERENTE", "GERENTE EXECUTIVO", "DIRETORIA", "CARGO", "SQUAD", "SM RESPONSAVEL"]
 };
 
-let DADOS = DADOS_EXEMPLO;
-let TIPOS = [...TIPOS_PADRAO];
-let modoPct = false;
+/* ------------------------------ Utilidades ------------------------------ */
 
-function cloneDados(dados){
-  return JSON.parse(JSON.stringify(dados));
+function trimKeys(row){
+  var out = {};
+  for (var k in row){ if (Object.prototype.hasOwnProperty.call(row, k)) out[k.trim()] = row[k]; }
+  return out;
 }
-function escapeHtml(value){
-  return String(value ?? '').replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+function normalizeRows(rows){ return rows.map(trimKeys); }
+function isBlank(v){ return v === null || v === undefined || v === ""; }
+
+function normLecom(v){
+  if (isBlank(v)) return null;
+  var s = String(v).trim();
+  if (!s) return null;
+  if (/^pendente$/i.test(s)) return null;
+  s = s.replace(/[^\d]/g, "");
+  if (!s) return null;
+  s = s.replace(/^0+(?=\d)/, "");
+  return s;
 }
-function normalizarTexto(value){
-  return String(value ?? '')
-    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .trim().toUpperCase().replace(/\s+/g, ' ');
+function stripAccents(s){
+  s = String(s || "");
+  return s.normalize ? s.normalize("NFD").replace(/[̀-ͯ]/g, "") : s;
 }
-function encontrarCampo(chaves, aliases){
-  const procuradas = aliases.map(normalizarTexto);
-  return chaves.find(chave => procuradas.includes(normalizarTexto(chave)));
+function classifyTipo(raw){
+  if (isBlank(raw)) return "OUTROS";
+  var t = stripAccents(String(raw).replace(/^\s*\d+\.\s*/, "").trim()).toUpperCase();
+  if (t.indexOf("LECOM") === 0) return "LECOM";
+  if (t.indexOf("INCIDENTE") === 0) return "INCIDENTE";
+  if (t.indexOf("REQUISI") === 0) return "REQUISICAO";
+  return "OUTROS";
 }
-function numeroDaCelula(value){
-  if(typeof value === 'number') return Number.isFinite(value) ? value : 0;
-  let texto = String(value ?? '').trim().replace(/\s/g, '').replace(/[hH]$/, '');
-  if(!texto) return 0;
-  if(texto.includes(',') && texto.includes('.')){
-    texto = texto.lastIndexOf(',') > texto.lastIndexOf('.')
-      ? texto.replace(/\./g, '').replace(',', '.')
-      : texto.replace(/,/g, '');
-  } else if(texto.includes(',')) {
-    texto = texto.replace(',', '.');
+/* Converte horas vindas como texto aceitando tanto o padrão brasileiro
+   ("1.234,5") quanto o americano ("1,234.5"): quando há ponto e vírgula,
+   o separador que aparece por último é o decimal e o outro é de milhar.
+   Só vírgula = decimal ("7,5"); só ponto = decimal ("7.5"), a não ser que
+   apareça mais de uma vez ("1.234.567"), aí é milhar. Antes só a primeira
+   vírgula era trocada, e "1.234,5" virava 1,234. */
+function toNumber(v){
+  if (isBlank(v)) return 0;
+  if (typeof v === "number") return isFinite(v) ? v : 0;
+  var s = String(v).replace(/[^\d.,-]/g, "");
+  if (!s) return 0;
+  var lastComma = s.lastIndexOf(","), lastDot = s.lastIndexOf(".");
+  var nComma = (s.match(/,/g) || []).length, nDot = (s.match(/\./g) || []).length;
+  if (nComma && nDot){
+    if (lastComma > lastDot) s = s.replace(/\./g, "").replace(",", ".");
+    else s = s.replace(/,/g, "");
+  } else if (nComma){
+    s = nComma > 1 ? s.replace(/,/g, "") : s.replace(",", ".");
+  } else if (nDot > 1){
+    s = s.replace(/\./g, "");
   }
-  const numero = Number(texto);
-  return Number.isFinite(numero) ? numero : 0;
+  var n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
 }
-function nomeTipo(value){
-  const texto = String(value ?? '').trim();
-  if(!texto) return '';
-  const chave = normalizarTexto(texto);
-  const conhecidos = {
-    'LECOM':'LECOM',
-    'INCIDENTE':'Incidente',
-    'REQUISICAO':'Requisição',
-    'TASK AVULSA':'Task Avulsa',
-    'ORIGEM EM BRANCO':'Origem em Branco',
-  };
-  return conhecidos[chave] || texto;
+function toISODate(d){
+  if (!(d instanceof Date) || isNaN(d.getTime())) return null;
+  var y = d.getUTCFullYear(), m = String(d.getUTCMonth()+1).padStart(2,"0"), day = String(d.getUTCDate()).padStart(2,"0");
+  return y + "-" + m + "-" + day;
 }
-function nomeDiretoria(value){
-  const texto = String(value ?? '').trim();
-  return texto || '(sem diretoria)';
-}
-function dataDaCelula(value){
-  if(value instanceof Date && !Number.isNaN(value.getTime())) return value;
-  if(typeof value === 'number' && Number.isFinite(value)){
-    const data = new Date(Date.UTC(1899, 11, 30) + value * 86400000);
-    return Number.isNaN(data.getTime()) ? null : data;
+/* Algumas linhas da Base 1 trazem a data de encerramento como número de série
+   do Excel (célula sem formato de data aplicado) em vez de data real — o
+   SheetJS só converte pra Date quando a célula tem esse formato. Aqui a
+   gente recupera esses casos; texto que não é data (ex.: em branco) passa
+   direto, sem quebrar nada. */
+function coerceDateValue(v){
+  if (v instanceof Date) return toISODate(v);
+  if (typeof v === "number" && isFinite(v) && v > 0 && v < 100000){
+    var d = new Date(Math.round((v - 25569) * 86400000));
+    var iso = toISODate(d);
+    if (iso) return iso;
   }
-  const texto = String(value ?? '').trim();
-  if(!texto) return null;
-  const br = texto.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})/);
-  if(br) return new Date(Number(br[3]), Number(br[2]) - 1, Number(br[1]));
-  const data = new Date(texto);
-  return Number.isNaN(data.getTime()) ? null : data;
+  return v;
 }
-function formatarData(data){
-  return String(data.getDate()).padStart(2,'0') + '/' + String(data.getMonth()+1).padStart(2,'0') + '/' + data.getFullYear();
+function dateFieldsToISO(row){
+  var out = {};
+  for (var k in row){ var v = row[k]; out[k] = (v instanceof Date) ? toISODate(v) : v; }
+  return out;
 }
-function periodoDasLinhas(rows, campoData){
-  if(!campoData) return 'período do arquivo';
-  const datas = rows.map(row => dataDaCelula(row[campoData])).filter(Boolean);
-  if(!datas.length) return 'período do arquivo';
-  datas.sort((a,b) => a - b);
-  return formatarData(datas[0]) + ' – ' + formatarData(datas[datas.length - 1]);
+/* Normaliza nome de pessoa pro padrão "Primeira Letra Maiúscula, resto
+   minúsculo", mantendo conectivos (de/da/do/dos/das/e) em minúsculo quando
+   não são a primeira palavra — assim "SAMUEL SILVA DOS SANTOS" vira "Samuel
+   Silva dos Santos", e "joão pedro" vira "João Pedro". Também capitaliza
+   depois de hífen (ex.: "ana-paula" -> "Ana-Paula"). Usada tanto pro nome do
+   colaborador quanto pros nomes vindos da Base 4 (Gestor Direto, Gerente,
+   Gerente Executivo), pra não misturar caixas diferentes na mesma coluna. */
+var NAME_LOWER_CONNECTIVES = ["de", "da", "do", "dos", "das", "e"];
+function normalizeName(raw){
+  if (isBlank(raw)) return null;
+  var s = String(raw).trim().replace(/\s+/g, " ");
+  if (!s) return null;
+  return s.split(" ").map(function(word, idx){
+    var lower = word.toLowerCase();
+    if (idx > 0 && NAME_LOWER_CONNECTIVES.indexOf(lower) !== -1) return lower;
+    return lower.split("-").map(function(part){
+      if (!part) return part;
+      return part.charAt(0).toUpperCase() + part.slice(1);
+    }).join("-");
+  }).join(" ");
 }
-function corDoTipo(tipo){
-  return CORES[tipo] || '#6074B8';
-}
+function fmtNum(n){ return new Intl.NumberFormat("pt-BR").format(n||0); }
+function fmtHoras(n){ return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Math.round(n||0)); }
+function fmtPct(n){ if (!isFinite(n)) return "—"; return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(n) + "%"; }
+function esc(s){ if (s===null||s===undefined) return ""; return String(s).replace(/[&<>"']/g, function(c){ return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]; }); }
 
-function consolidarLinhas(rows, campos){
-  const porTipo = new Map();
-  const porDiretoria = new Map();
-  let tarefas = 0;
-  let ignoradas = 0;
+/* ------------------------------ Ingestão --------------------------------- */
 
-  rows.forEach(row => {
-    const tipo = nomeTipo(row[campos.tipo]);
-    if(!tipo){
-      ignoradas++;
-      return;
+function readWorkbookMeta(arrayBuffer){
+  /* Importante: a opção bookSheets:true faz o SheetJS pular por completo o
+     parse de xl/workbook.xml que traz o estado oculto de cada aba — ou seja,
+     wb.Workbook.Sheets nunca é preenchido nesse modo, e TODAS as abas acabam
+     tratadas como visíveis (bug real: planilhas do Portfólio com 1 aba
+     visível e dezenas ocultas faziam a leitura cair numa aba oculta). Por
+     isso o parse aqui precisa ser "cheio" o bastante pra popular
+     Workbook.Sheets; sheetRows:1 mantém isso rápido mesmo quando alguma aba
+     oculta tem muitas linhas, já que só usamos essa leitura pra descobrir
+     nomes + visibilidade, nunca os dados em si. */
+  var wb = XLSX.read(arrayBuffer, { type: "array", sheetRows: 1 });
+  var metas = (wb.Workbook && wb.Workbook.Sheets) || [];
+  var visible = [];
+  wb.SheetNames.forEach(function(name, i){ var m = metas[i]; if (!m || !m.Hidden) visible.push(name); });
+  if (visible.length === 0) visible = [wb.SheetNames[0]];
+  return { allNames: wb.SheetNames, visible: visible };
+}
+function parseSheetRows(arrayBuffer, sheetName){
+  var wb;
+  try{ wb = XLSX.read(arrayBuffer, { type: "array", cellDates: true, sheets: [sheetName] }); }
+  catch(e){ wb = XLSX.read(arrayBuffer, { type: "array", cellDates: true }); }
+  var ws = wb.Sheets[sheetName];
+  if (!ws) return [];
+  var rows = XLSX.utils.sheet_to_json(ws, { defval: null, raw: true });
+  return normalizeRows(rows.map(dateFieldsToISO));
+}
+function normalizeHeaderKey(k){
+  return stripAccents(String(k || "")).trim().toUpperCase().replace(/\s+/g, " ");
+}
+/* Localiza, entre os nomes de aba de um arquivo, a que corresponde a um
+   nome-alvo (ex.: "AJUSTE"), tolerando maiúsculas/acentos/espaços e também
+   um nome de aba com texto extra (ex.: "Ajuste - Organograma" ainda bate
+   com "AJUSTE"). Prefere igualdade exata; só cai pra "contém" quando há uma
+   única aba candidata, pra não escolher errado quando o nome-alvo aparece
+   em mais de uma aba. Usada só pra Base 4, que agora precisa localizar duas
+   abas fixas ("Ajuste" e "Consulta") dentro do mesmo arquivo. */
+function findSheetName(names, target){
+  var norm = normalizeHeaderKey(target);
+  var exact = names.filter(function(n){ return normalizeHeaderKey(n) === norm; });
+  if (exact.length) return exact[0];
+  var contains = names.filter(function(n){ return normalizeHeaderKey(n).indexOf(norm) !== -1; });
+  if (contains.length === 1) return contains[0];
+  return null;
+}
+/* Aba "Consulta" da Base 4: cruza o LECOM/ID do projeto (Base 1) com a
+   Ordem de Investimento. A coluna de identificação varia de nome no arquivo
+   real do usuário (já visto: "ID OU LECOM"; também aceitos: "LECOM", "ID",
+   "LECOM OU ID") — aqui ela é renomeada pro nome canônico interno "LECOM"
+   (o mesmo usado pra indexar Base 2/3), e a coluna de ordem (seja "ORDEM"
+   ou "ORDEM DE INVESTIMENTO") vira "ORDEM". Tolerante a maiúsculas/acentos/
+   espaços, como o remapHeadersToCanonical acima; se nenhum dos nomes
+   conhecidos bater exatamente, cai num último fallback: uma única coluna
+   cujo nome contenha "LECOM". */
+function prepareConsultaRows(rows){
+  if (!rows || !rows.length) return rows;
+  var sampleKeys = Object.keys(rows[0]);
+  function findKey(aliases){
+    for (var i = 0; i < aliases.length; i++){
+      var target = normalizeHeaderKey(aliases[i]);
+      var found = sampleKeys.filter(function(k){ return normalizeHeaderKey(k) === target; });
+      if (found.length === 1) return found[0];
     }
-    const diretoria = nomeDiretoria(row[campos.diretoria]);
-    const horas = numeroDaCelula(row[campos.horas]);
-    if(!porTipo.has(tipo)) porTipo.set(tipo, 0);
-    if(!porDiretoria.has(diretoria)) porDiretoria.set(diretoria, 0);
-    porTipo.set(tipo, porTipo.get(tipo) + horas);
-    porDiretoria.set(diretoria, porDiretoria.get(diretoria) + horas);
-    tarefas++;
-  });
-
-  const tipos = [
-    ...TIPOS_PADRAO.filter(tipo => porTipo.has(tipo)),
-    ...[...porTipo.keys()].filter(tipo => !TIPOS_PADRAO.includes(tipo)),
-  ];
-  const diretorias = [...porDiretoria.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .map(([diretoria]) => diretoria);
-  const total_tipo = Object.fromEntries(tipos.map(tipo => [tipo, porTipo.get(tipo)]));
-  const linhas = diretorias.map(diretoria => {
-    const valores = Object.fromEntries(tipos.map(tipo => [tipo, 0]));
-    rows.forEach(row => {
-      const tipo = nomeTipo(row[campos.tipo]);
-      const dir = nomeDiretoria(row[campos.diretoria]);
-      if(tipo && dir === diretoria) valores[tipo] += numeroDaCelula(row[campos.horas]);
-    });
-    return {diretoria, total: porDiretoria.get(diretoria), valores};
-  });
-  const total_geral = Object.values(total_tipo).reduce((sum, valor) => sum + valor, 0);
-  return {dados: {total_geral, total_tipo, linhas, tarefas, periodo: periodoDasLinhas(rows, campos.data), ignoradas}, tipos, ignoradas};
-}
-
-function fmtHoras(n){
-  return Math.round(n).toLocaleString('pt-BR') + 'h';
-}
-function fmtPct(n){
-  return n.toFixed(1).replace('.',',') + '%';
-}
-function renderCelula(valor, totalLinha, tipo){
-  const pct = totalLinha > 0 ? (valor / totalLinha * 100) : 0;
-  const cor = corDoTipo(tipo);
-  if(modoPct){
-    return `<div class="cell">
-      <span class="horas">${fmtPct(pct)}</span>
-      <span class="pct">${fmtHoras(valor)}</span>
-      <div class="barra-bg"><div class="barra" style="width:${Math.min(pct, 100)}%;background:${cor}"></div></div>
-    </div>`;
+    return null;
   }
-  return `<div class="cell">
-    <span class="horas">${fmtHoras(valor)}</span>
-    <span class="pct">${fmtPct(pct)}</span>
-    <div class="barra-bg"><div class="barra" style="width:${Math.min(pct, 100)}%;background:${cor}"></div></div>
-  </div>`;
+  var lecomKey = findKey(["LECOM", "ID OU LECOM", "LECOM OU ID", "ID"]);
+  if (!lecomKey){
+    var lecomContains = sampleKeys.filter(function(k){ return normalizeHeaderKey(k).indexOf("LECOM") !== -1; });
+    if (lecomContains.length === 1) lecomKey = lecomContains[0];
+  }
+  var ordemKey = findKey(["ORDEM", "ORDEM DE INVESTIMENTO"]);
+  if (!lecomKey && !ordemKey) return rows;
+  return rows.map(function(row){
+    var out = {};
+    for (var k in row){
+      if (k === lecomKey) out["LECOM"] = row[k];
+      else if (k === ordemKey) out["ORDEM"] = row[k];
+      else out[k] = row[k];
+    }
+    return out;
+  });
 }
-function renderKpis(){
-  const kpis = document.getElementById('kpis');
-  const principais = [...TIPOS].sort((a,b) => DADOS.total_tipo[b] - DADOS.total_tipo[a]).slice(0, 4);
-  kpis.innerHTML = `
-    <div class="kpi total">
-      <div class="kpi-label">Total geral</div>
-      <div class="kpi-valor">${fmtHoras(DADOS.total_geral)}</div>
-      <div class="kpi-pct">${Number(DADOS.tarefas || 0).toLocaleString('pt-BR')} linhas consideradas</div>
-    </div>
-    ${principais.map(tipo => `
-      <div class="kpi">
-        <div class="kpi-label">${escapeHtml(tipo)}</div>
-        <div class="kpi-valor">${fmtHoras(DADOS.total_tipo[tipo])}</div>
-        <div class="kpi-pct">${fmtPct(DADOS.total_tipo[tipo] / DADOS.total_geral * 100)} do total</div>
-      </div>
-    `).join('')}
-  `;
+function validateConsultaRows(rows){
+  if (!rows || !rows.length) return { ok: false, msg: "Planilha vazia." };
+  var sample = rows[0];
+  var missing = [];
+  if (!("LECOM" in sample)) missing.push("LECOM ou ID");
+  if (!("ORDEM" in sample)) missing.push("ORDEM");
+  if (missing.length) return { ok: false, msg: "Colunas ausentes: " + missing.join(", ") };
+  return { ok: true, msg: fmtNum(rows.length) + " linhas reconhecidas" };
 }
-function renderLegenda(){
-  document.getElementById('legend').innerHTML = TIPOS.map(tipo =>
-    `<span><span class="dot" style="background:${corDoTipo(tipo)}"></span>${escapeHtml(tipo)}</span>`
-  ).join('');
+/* Renomeia, nas linhas já lidas, qualquer cabeçalho que bata com um dos
+   nomes canônicos ignorando maiúsculas/acentos/espaços (ex.: "Sm
+   Responsável" ou "SM  RESPONSÁVEL " → "SM RESPONSAVEL"), sem tocar em
+   cabeçalhos que já batem exatamente ou que não têm um match inequívoco —
+   só evita recusar a planilha por uma diferença cosmética de digitação.
+   Usada hoje só pra Base 4, que é nova e mais sujeita a variar de nome de
+   coluna entre times; Base 1/2/3 continuam exigindo o nome exato, já
+   validado extensivamente com arquivos reais. */
+function remapHeadersToCanonical(rows, canonicalNames){
+  if (!rows || !rows.length) return rows;
+  var sampleKeys = Object.keys(rows[0]);
+  var keyMap = {};
+  canonicalNames.forEach(function(canon){
+    if (sampleKeys.indexOf(canon) !== -1) return;
+    var canonNorm = normalizeHeaderKey(canon);
+    var found = sampleKeys.filter(function(k){ return normalizeHeaderKey(k) === canonNorm; });
+    if (found.length === 1) keyMap[found[0]] = canon;
+  });
+  if (!Object.keys(keyMap).length) return rows;
+  return rows.map(function(row){
+    var out = {};
+    for (var k in row){ out[keyMap[k] || k] = row[k]; }
+    return out;
+  });
 }
-function render(){
-  document.querySelector('.badge-periodo').textContent = DADOS.periodo || 'período do arquivo';
-  renderKpis();
-  renderLegenda();
-
-  const cabecalho = document.getElementById('cabecalho-diretorias');
-  cabecalho.innerHTML = `
-    <th>Tipo de Demanda</th>
-    ${DADOS.linhas.map(l => `<th>${escapeHtml(l.diretoria)}</th>`).join('')}
-    <th class="total-col">Total</th>
-  `;
-
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = TIPOS.map(tipo => `
-    <tr>
-      <td class="tipo-demanda">${escapeHtml(tipo)}</td>
-      ${DADOS.linhas.map(l => `<td>${renderCelula(l.valores[tipo] || 0, DADOS.total_tipo[tipo], tipo)}</td>`).join('')}
-      <td class="total-col">
-        <div class="cell">
-          <span class="horas">${fmtHoras(DADOS.total_tipo[tipo])}</span>
-          <span class="pct">${fmtPct(DADOS.total_tipo[tipo] / DADOS.total_geral * 100)} do geral</span>
-        </div>
-      </td>
-    </tr>
-  `).join('');
-
-  const linhaTotal = document.getElementById('linha-total');
-  linhaTotal.innerHTML = `
-    <td class="tipo-demanda">TOTAL GERAL</td>
-    ${DADOS.linhas.map(l => `<td>${renderCelula(l.total, DADOS.total_geral, 'TOTAL')}</td>`).join('')}
-    <td class="total-col">
-      <div class="cell">
-        <span class="horas">${fmtHoras(DADOS.total_geral)}</span>
-        <span class="pct">100%</span>
-      </div>
-    </td>
-  `;
-}
-function atualizarNota(){
-  const ignoradas = Number(DADOS.ignoradas || 0);
-  document.getElementById('nota').innerHTML = `<b>Como a visão é calculada:</b> a página soma a coluna de horas agrupando por tipo de demanda (linhas) e diretoria (colunas). ${ignoradas ? `${ignoradas.toLocaleString('pt-BR')} linha(s) sem tipo de demanda foram ignoradas, pois normalmente representam totais ou filtros da exportação.` : 'Linhas sem tipo de demanda são ignoradas, pois normalmente representam totais ou filtros da exportação.'}`;
-}
-function atualizarStatus(texto, tipo){
-  const status = document.getElementById('upload-status');
-  status.textContent = texto;
-  status.className = 'upload-status' + (tipo ? ` ${tipo}` : '');
+function validateSlot(slotKey, rows){
+  if (!rows || !rows.length) return { ok: false, msg: "Planilha vazia." };
+  var need = REQUIRED_COLS[slotKey];
+  var sample = rows[0];
+  var missing = need.filter(function(c){ return !(c in sample); });
+  if (missing.length) return { ok: false, msg: "Colunas ausentes: " + missing.join(", ") };
+  return { ok: true, msg: fmtNum(rows.length) + " linhas reconhecidas" };
 }
 
-async function processarArquivo(file){
-  if(!window.XLSX){
-    atualizarStatus('Não foi possível carregar o leitor de planilhas. Verifique sua conexão com a internet e tente novamente.', 'error');
+/* ------------------------------ Modelagem -------------------------------- */
+
+function indexByLecom(rows, field){
+  var m = new Map();
+  rows.forEach(function(r){ var id = normLecom(r[field]); if (!id) return; if (!m.has(id)) m.set(id, []); m.get(id).push(r); });
+  return m;
+}
+
+/* Chave de cruzamento por nome de pessoa: além de normalizeName (Título
+   Caso, espaços colapsados), remove acentos e ignora caixa — assim
+   "José Vitor" e "JOSE VITOR" (ou "Jose Vitor", sem acento — comum em
+   organogramas digitados à mão) batem no cruzamento mesmo quando a
+   grafia usada na Base 1 e na Base 4 diverge só nisso. Usada só como
+   CHAVE de busca; o nome exibido continua vindo de normalizeName (ver
+   indexByName e buildModel), preservando a acentuação de quem tiver a
+   grafia mais confiável pro caso (a Base 4, fonte de verdade). */
+function foldNameKey(raw){
+  var n = normalizeName(raw);
+  if (!n) return null;
+  return stripAccents(n).toUpperCase();
+}
+
+/* Base 4 · Organograma é indexada pela chave de nome "dobrada"
+   (foldNameKey: acento/caixa-insensível), a mesma usada pro "USUARIOS" da
+   Base 1 — assim o cruzamento não depende de as duas bases usarem a mesma
+   caixa (MAIÚSCULA vs Nome Próprio) nem a mesma acentuação (comum quando
+   uma base vem de export automático e a outra é digitada à mão). Quando há
+   mais de uma linha pro mesmo nome na Base 4, fica a primeira. */
+function indexByName(rows, field){
+  var m = new Map();
+  rows.forEach(function(r){
+    var key = foldNameKey(r[field]);
+    if (!key) return;
+    if (!m.has(key)) m.set(key, r);
+  });
+  return m;
+}
+
+function addToSquadMap(map, lecomId, squad, horas){
+  if (!map.has(lecomId)) map.set(lecomId, new Map());
+  var sq = map.get(lecomId);
+  sq.set(squad, (sq.get(squad) || 0) + horas);
+}
+
+function buildModel(rows1, rows2, rows3, rows4Ajuste, rows4Consulta){
+  var idx2 = indexByLecom(rows2, "LECOM");
+  var idx3 = indexByLecom(rows3, "LECOM");
+  /* Base 4 · Ajuste (organograma, por colaborador) e Base 4 · Consulta
+     (LECOM/ID → Ordem de Investimento, por projeto) são indexadas
+     separadamente — a primeira por nome normalizado, a segunda por LECOM,
+     como Base 2/3. */
+  var idx4 = indexByName(rows4Ajuste || [], "COLABORADOR");
+  var idx4Consulta = indexByLecom(rows4Consulta || [], "LECOM");
+  var items = [];
+  var realized2 = new Map(), realized3 = new Map();
+  var realized2BySquad = new Map(), realized3BySquad = new Map();
+
+  rows1.forEach(function(r, i){
+    /* Alguns exports da Base 1 trazem, depois dos apontamentos de verdade,
+       uma linha de totalizador nativa do Excel ("Total", com o somatório de
+       COMPLETEDWORK), uma linha em branco separadora e/ou uma linha de
+       rodapé "Filtros aplicados: ...". Nenhuma delas é um apontamento real
+       (não têm TIPO DE DEMANDA nem ID_TASK preenchidos) — se entrarem no
+       cruzamento, a linha "Total" duplica o somatório de horas (cai em
+       "Task avulsa" por não ter tipo, inflando a categoria). Por isso são
+       identificadas e ignoradas aqui, antes de virar item. */
+    if (isBlank(r["TIPO DE DEMANDA"]) && isBlank(r["ID_TASK"])) return;
+
+    var horas = toNumber(r["COMPLETEDWORK"]);
+    var tipoRaw = r["TIPO DE DEMANDA"];
+    var tipo = classifyTipo(tipoRaw);
+    var categoria, compromisso, matchRow = null, matchBase = null, lecomId = null;
+    var squad = r["PROJECTNAME"] || "(Não informado)";
+
+    var lecomSource = null;
+    if (tipo === "LECOM"){
+      /* O LECOM da feature tem preferência (é o mais específico), mas só
+         quando ele existe no compromisso (Base 2 ou 3). Se a feature traz um
+         LECOM que não está em nenhuma das duas bases, tenta o LECOM do épico
+         antes de desistir — antes, um LECOM de feature inválido/desatualizado
+         jogava a hora direto em "Lecom não identificado" mesmo com o épico
+         apontando pra um item válido do compromisso. Se nenhum dos dois
+         casar, mantém o da feature (ou o do épico, se a feature estiver
+         vazia) só pra exibição na Base Cruzada. */
+      var lecomFeature = normLecom(r["LECOM_FEATURE"]);
+      var lecomEpic = normLecom(r["LECOM_EPIC"]);
+      var featureCasa = lecomFeature && (idx2.has(lecomFeature) || idx3.has(lecomFeature));
+      var epicCasa = lecomEpic && (idx2.has(lecomEpic) || idx3.has(lecomEpic));
+      if (featureCasa || (lecomFeature && !epicCasa)){ lecomId = lecomFeature; lecomSource = "feature"; }
+      else { lecomId = lecomEpic; lecomSource = "epic"; }
+      if (lecomId && idx2.has(lecomId)){
+        categoria = "MELHORIAS"; compromisso = "DENTRO"; matchBase = "base2"; matchRow = idx2.get(lecomId)[0];
+        realized2.set(lecomId, (realized2.get(lecomId) || 0) + horas);
+        addToSquadMap(realized2BySquad, lecomId, squad, horas);
+      } else if (lecomId && idx3.has(lecomId)){
+        categoria = "PROJETOS"; compromisso = "DENTRO"; matchBase = "base3"; matchRow = idx3.get(lecomId)[0];
+        realized3.set(lecomId, (realized3.get(lecomId) || 0) + horas);
+        addToSquadMap(realized3BySquad, lecomId, squad, horas);
+      } else { categoria = "NAO_IDENTIFICADO"; compromisso = "FORA"; }
+    } else if (tipo === "INCIDENTE"){ categoria = "INCIDENTE"; compromisso = "NA"; }
+    else if (tipo === "REQUISICAO"){ categoria = "REQUISICAO"; compromisso = "NA"; }
+    else { categoria = "OUTROS"; compromisso = "NA"; }
+
+    /* Base 4 · Ajuste é a fonte de verdade pro organograma do colaborador
+       quando ele é encontrado nela (Diretoria e Gerente passam a vir de lá,
+       sobrescrevendo o que vinha da Base 1); Gestor Direto, Gerente
+       Executivo e Cargo só existem na Base 4, então ficam em branco quando
+       o colaborador não é encontrado. Squad e SM Responsável da Base 4 são
+       lidos (ficam disponíveis em orgRow) e aparecem na aba Organograma,
+       mas não viram coluna nova nas demais abas.
+       O cruzamento em si usa foldNameKey (acento/caixa-insensível, ver
+       indexByName) pra não perder o match por causa de "José"/"Jose" ou
+       MAIÚSCULA/Próprio entre as duas bases. Encontrado o colaborador, o
+       NOME exibido também passa a vir da Base 4 (fonte de verdade pra
+       grafia oficial); só cai pro nome como veio na Base 1 quando ele não
+       é encontrado lá. */
+    var orgRow = idx4.get(foldNameKey(r["USUARIOS"])) || null;
+    var recursoNome = (orgRow && normalizeName(orgRow["COLABORADOR"])) || normalizeName(r["USUARIOS"]) || "(Não informado)";
+
+    items.push({
+      _id: i,
+      data: coerceDateValue(r["DATA DE ENCERRAMENTO DA TASK"]) || null,
+      origem: r["ORIGEM DA DEMANDA"] || null,
+      tipoRaw: tipoRaw || null,
+      workItemType: r["WORKITEMTYPE"] || null,
+      activity: r["ACTIVITY_TASK"] || null,
+      horas: horas,
+      categoria: categoria,
+      compromisso: compromisso,
+      lecomId: lecomId,
+      recurso: recursoNome,
+      diretoria: (orgRow && orgRow["DIRETORIA"]) || r["DIRETORIA"] || "(Não informado)",
+      gerente: normalizeName((orgRow && orgRow["GERENTE"]) || r["GERENTE"]) || "(Não informado)",
+      gestorDireto: normalizeName(orgRow && orgRow["GESTOR DIRETO"]) || "",
+      gerenteExecutivo: normalizeName(orgRow && orgRow["GERENTE EXECUTIVO"]) || "",
+      cargo: (orgRow && orgRow["CARGO"]) || "",
+      squad: squad,
+      epicTitle: r["TITLE_EPIC"] || "(Sem épico)",
+      featureTitle: r["TITLE_FEATURES"] || "(Sem feature)",
+      tituloLecom: lecomSource === "feature" ? (r["TITLE_FEATURES"] || null) : (lecomSource === "epic" ? (r["TITLE_EPIC"] || null) : null),
+      storyTitle: r["TITLE_STORIES"] || "(Sem user story)",
+      taskTitle: r["TITLE_TASK"] || "(Sem título)",
+      taskId: r["ID_TASK"] || null,
+      sacti: r["SACTI"] || null,
+      matchBase: matchBase,
+      squadCompromisso: matchRow ? (matchBase === "base2" ? matchRow["SQUAD"] : matchRow["Squad Azure"]) : null,
+      statusCompromisso: matchRow ? (matchBase === "base2" ? matchRow["STATUS"] : matchRow["STATUS RESUMIDO"]) : null,
+      tamanho: matchRow ? matchRow["TAMANHO"] : null,
+      horasPlanejadas: matchRow ? toNumber(matchRow["HORAS"]) : null,
+      iniciativa: matchRow ? matchRow["INICIATIVA"] : null,
+      priorizacao: matchRow && matchBase === "base2" ? matchRow["PRIORIZAÇÃO"] : null,
+      inclusaoObs: matchRow && matchBase === "base3" ? matchRow["OBS Inclusão"] : null,
+      desprior: matchRow ? matchRow["DESPRIORIZAÇÃO"] : null
+    });
+  });
+
+  return {
+    items: items, base2: rows2, base3: rows3, base4: rows4Ajuste || [], base4Consulta: rows4Consulta || [],
+    idx2: idx2, idx3: idx3, idx4: idx4, idx4Consulta: idx4Consulta,
+    realized2: realized2, realized3: realized3,
+    realized2BySquad: realized2BySquad, realized3BySquad: realized3BySquad
+  };
+}
+
+function compromissoLabel(c){
+  if (c === "DENTRO") return "Dentro do compromisso";
+  if (c === "FORA") return "Fora do compromisso";
+  return "Não se aplica";
+}
+
+/* ------------------------------ Export (7 abas) --------------------------- */
+
+/* ---- Aba 1 · Base Cruzada -------------------------------------------------
+   Uma linha por hora apontada, com uma linha extra acima do cabeçalho
+   indicando de qual base (ou de qual cálculo) cada coluna se origina.
+   A origem é definida por onde o VALOR de fato vem em buildModel(), não por
+   suposição: LECOM, por exemplo, vem do LECOM_FEATURE/LECOM_EPIC da própria
+   Base 1 (é usado pra cruzar com Base 2/3, mas o número mostrado é da
+   Base 1); já Squad/Status/Tamanho/Horas planejadas/Iniciativa/
+   Desprioriação vêm da linha casada em Base 2 ou Base 3 (matchRow), nunca
+   da Base 1. Categoria e Compromisso são resultado do cruzamento em si
+   (comparam Base 1 com Base 2/3), não um valor copiado de uma única base.
+   Diretoria e Gerente vêm da Base 4 · Organograma quando o colaborador é
+   encontrado nela (fonte de verdade), com fallback pra Base 1 quando não é
+   — por isso a origem mostrada é "Base 4 (Base 1 se colaborador não
+   encontrado)". */
+var CRUZADA_HEADERS = [
+  "Data","Categoria","Compromisso","LECOM","Diretoria","Gerente","Squad","Épico","Feature",
+  "User Story","Task","Recurso","Horas","Squad compromisso","Status compromisso","Tamanho",
+  "Horas planejadas","Iniciativa","Priorização (Melhorias)","Obs. inclusão (Projetos)",
+  "Desprioriação","Origem","Tipo (raw)"
+];
+var CRUZADA_COLTYPES = CRUZADA_HEADERS.map(function(h){
+  if (h === "Data") return "date";
+  if (h === "Horas" || h === "Horas planejadas") return "hours";
+  return "text";
+});
+var CRUZADA_ORIGIN_MAP = {
+  "Data": "base1", "Categoria": "calc", "Compromisso": "calc", "LECOM": "base1",
+  "Diretoria": "base4", "Gerente": "base4", "Squad": "base1", "Épico": "base1",
+  "Feature": "base1", "User Story": "base1", "Task": "base1", "Recurso": "base1",
+  "Horas": "base1", "Squad compromisso": "base23", "Status compromisso": "base23",
+  "Tamanho": "base23", "Horas planejadas": "base23", "Iniciativa": "base23",
+  "Priorização (Melhorias)": "base2", "Obs. inclusão (Projetos)": "base3",
+  "Desprioriação": "base23", "Origem": "base1", "Tipo (raw)": "base1"
+};
+var CRUZADA_ORIGIN_LABEL = {
+  base1: "Base 1 - Horas",
+  base23: "Base 2 - Melhorias / Base 3 - Projetos",
+  base2: "Base 2 - Melhorias",
+  base3: "Base 3 - Projetos",
+  base4: "Base 4 - Organograma (Base 1 se colaborador não encontrado)",
+  calc: "Calculado no cruzamento"
+};
+var CRUZADA_ORIGIN_TONE = CRUZADA_HEADERS.map(function(h){ return CRUZADA_ORIGIN_MAP[h]; });
+var CRUZADA_ORIGIN = CRUZADA_ORIGIN_TONE.map(function(tone){ return CRUZADA_ORIGIN_LABEL[tone]; });
+var CRUZADA_WIDTHS = CRUZADA_HEADERS.map(function(h){
+  if (["Épico","Feature","User Story","Task","Iniciativa"].indexOf(h) !== -1) return 40;
+  if (["Priorização (Melhorias)","Obs. inclusão (Projetos)"].indexOf(h) !== -1) return 30;
+  if (["Recurso","Gerente","Squad compromisso","Diretoria"].indexOf(h) !== -1) return 24;
+  return 16;
+});
+
+function buildCruzadaBundle(items){
+  var rows = items.map(function(r){
+    return [
+      r.data, CATS[r.categoria].label, compromissoLabel(r.compromisso), r.lecomId, r.diretoria, r.gerente, r.squad,
+      r.epicTitle, r.featureTitle, r.storyTitle, r.taskTitle, r.recurso, r.horas, r.squadCompromisso,
+      r.statusCompromisso, r.tamanho, r.horasPlanejadas, r.iniciativa, r.priorizacao, r.inclusaoObs, r.desprior,
+      r.origem, r.tipoRaw
+    ];
+  });
+  return {
+    headers: CRUZADA_HEADERS, colTypes: CRUZADA_COLTYPES, colWidths: CRUZADA_WIDTHS,
+    origin: CRUZADA_ORIGIN, originTone: CRUZADA_ORIGIN_TONE, rows: rows
+  };
+}
+
+/* ---- Aba 2 · Horas por Squad -----------------------------------------------
+   Uma linha por Squad + Recurso, com as horas por tipo de demanda (como já
+   existia), mais % desse recurso sobre o total do squad e % de cada tipo de
+   demanda sobre o total do próprio recurso. ---------------------------- */
+var SQUAD_HEADERS = ["Squad","Recurso"]
+  .concat(CAT_ORDER.map(function(c){ return CATS[c].label; }))
+  .concat(["Total","% do Squad"])
+  .concat(CAT_ORDER.map(function(c){ return "% " + CATS[c].label + " (recurso)"; }));
+var SQUAD_COLTYPES = ["text","text"]
+  .concat(CAT_ORDER.map(function(){ return "hours"; }))
+  .concat(["hours","percent"])
+  .concat(CAT_ORDER.map(function(){ return "percent"; }));
+var SQUAD_WIDTHS = SQUAD_HEADERS.map(function(h, i){
+  if (i === 0) return 24;
+  if (i === 1) return 28;
+  return Math.min(30, Math.max(12, h.length + 2));
+});
+
+function buildSquadBundle(items){
+  var squadMap = new Map();
+  items.forEach(function(it){
+    if (!squadMap.has(it.squad)) squadMap.set(it.squad, { squad: it.squad, total: 0, recursos: new Map() });
+    var sg = squadMap.get(it.squad);
+    sg.total += it.horas;
+    if (!sg.recursos.has(it.recurso)){
+      var o = { recurso: it.recurso, total: 0 };
+      CAT_ORDER.forEach(function(c){ o[c] = 0; });
+      sg.recursos.set(it.recurso, o);
+    }
+    var rg = sg.recursos.get(it.recurso);
+    rg[it.categoria] += it.horas;
+    rg.total += it.horas;
+  });
+
+  var squads = Array.from(squadMap.values()).sort(function(a,b){ return b.total - a.total; });
+  var rows = [];
+  squads.forEach(function(sg){
+    var recursos = Array.from(sg.recursos.values()).sort(function(a,b){ return b.total - a.total; });
+    recursos.forEach(function(rg){
+      var row = [sg.squad, rg.recurso];
+      CAT_ORDER.forEach(function(c){ row.push(rg[c]); });
+      row.push(rg.total, sg.total > 0 ? (rg.total / sg.total) : 0);
+      CAT_ORDER.forEach(function(c){ row.push(rg.total > 0 ? (rg[c] / rg.total) : 0); });
+      rows.push(row);
+    });
+  });
+  return { headers: SQUAD_HEADERS, colTypes: SQUAD_COLTYPES, colWidths: SQUAD_WIDTHS, rows: rows };
+}
+
+/* ---- Abas 3 e 4 · Compromisso Projetos / Melhorias -------------------------
+   Uma linha por item de compromisso + squad que realizou horas nele (em vez
+   de consolidar as horas realizadas de todos os squads em um só número).
+   Quando não há apontamento algum, mantém uma linha com 0h realizadas. ---- */
+var PROJETOS_HEADERS = [
+  "Iniciativa","LECOM","Título","Squad Azure","Diretor executor","Fase","Status","Horas planejadas",
+  "Squad (execução)","Horas realizadas (squad)","% execução (squad)","Horas realizadas (total)","% execução (total)"
+];
+var PROJETOS_COLTYPES = ["text","text","text","text","text","text","text","hours","text","hours","percent","hours","percent"];
+var PROJETOS_WIDTHS = [30,12,42,20,24,18,16,16,20,20,14,20,14];
+
+function buildBySquadRows(baseRows, idxField, planField, realizedMap, realizedBySquadMap, headFields){
+  var rows = [];
+  baseRows.forEach(function(r){
+    var id = normLecom(r[idxField]);
+    var planejadas = toNumber(r[planField]);
+    var totalRealizadas = id ? (realizedMap.get(id) || 0) : 0;
+    var pctTotal = planejadas > 0 ? (totalRealizadas / planejadas) : (totalRealizadas > 0 ? 1 : 0);
+    var base = headFields.map(function(f){ return f === "__LECOM__" ? id : (f === "__PLAN__" ? planejadas : r[f]); });
+    var bySquad = id ? realizedBySquadMap.get(id) : null;
+    if (bySquad && bySquad.size > 0){
+      Array.from(bySquad.entries()).sort(function(a,b){ return b[1] - a[1]; }).forEach(function(entry){
+        var squadHoras = entry[1];
+        var pctSquad = planejadas > 0 ? (squadHoras / planejadas) : (squadHoras > 0 ? 1 : 0);
+        rows.push(base.concat([entry[0], squadHoras, pctSquad, totalRealizadas, pctTotal]));
+      });
+    } else {
+      rows.push(base.concat(["—", 0, 0, totalRealizadas, pctTotal]));
+    }
+  });
+  return rows;
+}
+
+function buildProjetosBundle(model){
+  var rows = buildBySquadRows(
+    model.base3, "LECOM", "HORAS", model.realized3, model.realized3BySquad,
+    ["INICIATIVA", "__LECOM__", "TÍTULO", "Squad Azure", "DIRETOR EXECUTOR", "FASE DO PROJETO", "STATUS RESUMIDO", "__PLAN__"]
+  );
+  return { headers: PROJETOS_HEADERS, colTypes: PROJETOS_COLTYPES, colWidths: PROJETOS_WIDTHS, rows: rows };
+}
+
+var MELHORIAS_HEADERS = [
+  "Iniciativa","LECOM","Título","Squad","Diretoria TI","Gerente TI","Status","Priorização","Horas planejadas",
+  "Squad (execução)","Horas realizadas (squad)","% execução (squad)","Horas realizadas (total)","% execução (total)"
+];
+var MELHORIAS_COLTYPES = ["text","text","text","text","text","text","text","text","hours","text","hours","percent","hours","percent"];
+var MELHORIAS_WIDTHS = [30,12,42,20,18,18,14,14,16,20,20,14,20,14];
+
+function buildMelhoriasBundle(model){
+  var rows = buildBySquadRows(
+    model.base2, "LECOM", "HORAS", model.realized2, model.realized2BySquad,
+    ["INICIATIVA", "__LECOM__", "TÍTULO", "SQUAD", "DIRETORIA TI", "GERENTE TI", "STATUS", "PRIORIZAÇÃO", "__PLAN__"]
+  );
+  return { headers: MELHORIAS_HEADERS, colTypes: MELHORIAS_COLTYPES, colWidths: MELHORIAS_WIDTHS, rows: rows };
+}
+
+/* ---- Aba 6 · Organograma ----------------------------------------------------
+   Cópia de referência da aba "Ajuste" da Base 4 tal como enviada (uma linha
+   por colaborador), pra quem quiser consultar diretamente sem precisar
+   abrir o arquivo original — os nomes de pessoa (Colaborador/Gestor Direto/
+   Gerente/Gerente Executivo/SM Responsável) saem normalizados, como no
+   resto da planilha. Ordem de Investimento NÃO entra aqui: ela vem da aba
+   "Consulta" da Base 4, é uma informação por projeto (LECOM), não por
+   colaborador, e por isso aparece na Apuração de Horas (por linha de
+   projeto), não neste dump do organograma. ------------------------------ */
+var ORGANOGRAMA_HEADERS = ["Colaborador", "Gestor Direto", "Gerente", "Gerente Executivo", "Diretoria", "Cargo", "Squad", "SM Responsável"];
+var ORGANOGRAMA_COLTYPES = ["text", "text", "text", "text", "text", "text", "text", "text"];
+var ORGANOGRAMA_WIDTHS = [26, 18, 18, 18, 16, 26, 26, 18];
+
+function buildOrganogramaBundle(rows4){
+  var rows = (rows4 || []).map(function(r){
+    return [
+      normalizeName(r["COLABORADOR"]), normalizeName(r["GESTOR DIRETO"]), normalizeName(r["GERENTE"]),
+      normalizeName(r["GERENTE EXECUTIVO"]), r["DIRETORIA"], r["CARGO"], r["SQUAD"],
+      normalizeName(r["SM RESPONSAVEL"])
+    ];
+  });
+  rows.sort(function(a, b){ return String(a[0] || "").localeCompare(String(b[0] || ""), "pt-BR"); });
+  return { headers: ORGANOGRAMA_HEADERS, colTypes: ORGANOGRAMA_COLTYPES, colWidths: ORGANOGRAMA_WIDTHS, rows: rows };
+}
+
+/* ---- Aba 7 · Lecom Dobrados -------------------------------------------------
+   LECOMs cadastrados tanto na Base 2 (Melhorias) quanto na Base 3 (Projetos)
+   ao mesmo tempo — inconsistência de cadastro, já que um LECOM deveria ser
+   só uma coisa ou outra (e no motor de cruzamento a Base 2 tem prioridade
+   sobre a Base 3 quando isso acontece, ver buildModel). Uma linha por base
+   em que o LECOM aparece, pra dar pra comparar squad/gerente cadastrados
+   nas duas. A Base 3 (Portfólio) não tem uma coluna "Gerente" — usa-se
+   Diretor Executor, que é o campo equivalente mais próximo lá. ---------- */
+var LECOM_DOBRADOS_HEADERS = ["LECOM", "Squad", "Gerente", "Projeto ou Melhoria"];
+var LECOM_DOBRADOS_COLTYPES = ["text", "text", "text", "text"];
+var LECOM_DOBRADOS_WIDTHS = [12, 30, 24, 16];
+
+function buildLecomDobradosBundle(model){
+  var rows = [];
+  model.idx2.forEach(function(rows2arr, lecomId){
+    if (!model.idx3.has(lecomId)) return;
+    var r2 = rows2arr[0], r3 = model.idx3.get(lecomId)[0];
+    rows.push([lecomId, r2["SQUAD"], r2["GERENTE TI"], "Melhoria"]);
+    rows.push([lecomId, r3["Squad Azure"], r3["DIRETOR EXECUTOR"], "Projeto"]);
+  });
+  rows.sort(function(a, b){ return String(a[0]).localeCompare(String(b[0])); });
+  return { headers: LECOM_DOBRADOS_HEADERS, colTypes: LECOM_DOBRADOS_COLTYPES, colWidths: LECOM_DOBRADOS_WIDTHS, rows: rows };
+}
+
+function buildExportSheets(model){
+  function sortKey(v){ return v === null || v === undefined ? "" : String(v); }
+  var items = model.items.slice().sort(function(a,b){ return sortKey(b.data).localeCompare(sortKey(a.data)); });
+  return {
+    cruzada: buildCruzadaBundle(items),
+    squad: buildSquadBundle(items),
+    projetos: buildProjetosBundle(model),
+    melhorias: buildMelhoriasBundle(model),
+    apuracaoRows: buildApuracaoHoras(model),
+    organograma: buildOrganogramaBundle(model.base4),
+    lecomDobrados: buildLecomDobradosBundle(model)
+  };
+}
+
+/* ------------------------------ Aba 5 · Apuração de Horas ------------------
+   Por colaborador: % Melhoria x % Projeto (Projeto = categoria PROJETOS;
+   Melhoria = todo o resto — Melhorias + Incidente + Requisição + Outros +
+   Lecom não identificado — combinado a pedido, já que as duas fatias devem
+   somar 100%). Uma linha por entrada de projeto (squad+lecom) deduplicada,
+   mais uma linha por squad em que o colaborador só teve horas fora de
+   Projeto (evitando duplicar squads que já têm linha de projeto, intencional
+   — o % de melhoria/projeto sempre é o total do colaborador, mesmo na linha
+   do projeto, já que as duas colunas convivem na mesma linha).
+   Uma task só conta como "atuação no projeto" (linha com LECOM preenchido)
+   quando tem horas > 0 apontadas nela. Task com LECOM de projeto mas 0h é
+   preenchimento incompleto (task criada/movida sem apontamento) — o
+   colaborador não é considerado como tendo atuado nesse projeto, e o squad
+   dela cai na regra normal de squad-só-com-melhoria (se houver outras horas
+   ali) em vez de gerar uma linha de projeto vazia.
+   Gestor Direto / Gerente / Gerente Executivo / Cargo / Diretoria vêm da
+   Base 4 · Ajuste quando o colaborador é encontrado nela (fonte de
+   verdade); quando não é encontrado, Diretoria e Gerente caem no valor da
+   Base 1 e os demais ficam em branco (ver buildModel).
+   Ordem de Investimento vem da Base 4 · Consulta, cruzada pelo LECOM/ID do
+   PRÓPRIO PROJETO da linha (ID PROJETO EM QUE ATUOU) — não é um dado do
+   colaborador, é do projeto, então cada linha de projeto busca a sua
+   própria ordem; linhas sem LECOM (squad só com melhoria) ficam em branco.
+   ---------------------------------------------------------------------- */
+function buildApuracaoHoras(model){
+  var byColab = new Map();
+  model.items.forEach(function(it){
+    if (!byColab.has(it.recurso)) byColab.set(it.recurso, []);
+    byColab.get(it.recurso).push(it);
+  });
+
+  var rows = [];
+  byColab.forEach(function(items, colaborador){
+    var horasProjeto = 0, horasMelhoria = 0;
+    items.forEach(function(it){
+      if (it.categoria === "PROJETOS") horasProjeto += it.horas;
+      else horasMelhoria += it.horas;
+    });
+    var totalHoras = horasProjeto + horasMelhoria;
+    if (totalHoras <= 0) return;
+
+    var pctMelhoria = horasMelhoria / totalHoras;
+    var pctProjeto = horasProjeto / totalHoras;
+    var diretoria = items[0].diretoria, gerente = items[0].gerente,
+        gestorDireto = items[0].gestorDireto, gerenteExecutivo = items[0].gerenteExecutivo, cargo = items[0].cargo;
+
+    var projSeen = new Map();
+    var squadsComProjeto = new Set();
+    items.forEach(function(it){
+      if (it.categoria !== "PROJETOS" || !(it.horas > 0)) return;
+      var key = it.squad + "|||" + it.lecomId;
+      if (!projSeen.has(key)){
+        projSeen.set(key, { squad: it.squad, lecomId: it.lecomId, titulo: it.tituloLecom || it.featureTitle || it.epicTitle || "" });
+      }
+      squadsComProjeto.add(it.squad);
+    });
+
+    var squadsMelhoria = new Set();
+    items.forEach(function(it){
+      if (it.categoria === "PROJETOS") return;
+      if (!squadsComProjeto.has(it.squad)) squadsMelhoria.add(it.squad);
+    });
+
+    var outRows = [];
+    projSeen.forEach(function(p){ outRows.push({ squad: p.squad, lecomId: p.lecomId, titulo: p.titulo }); });
+    squadsMelhoria.forEach(function(squad){ outRows.push({ squad: squad, lecomId: null, titulo: "" }); });
+
+    outRows.forEach(function(o){
+      var ordemInvestimento = "";
+      if (o.lecomId && model.idx4Consulta.has(o.lecomId)){
+        ordemInvestimento = model.idx4Consulta.get(o.lecomId)[0]["ORDEM"] || "";
+      }
+      rows.push({
+        colaborador: colaborador, gestorDireto: gestorDireto, gerente: gerente, gerenteExecutivo: gerenteExecutivo,
+        diretoria: diretoria, cargo: cargo, squad: o.squad,
+        idProjeto: o.lecomId ? Number(o.lecomId) : 0, projeto: o.titulo || "",
+        ordemInvestimento: ordemInvestimento, pctMelhoria: pctMelhoria, pctProjeto: pctProjeto
+      });
+    });
+  });
+
+  rows.sort(function(a,b){
+    var s = String(a.squad).localeCompare(String(b.squad), "pt-BR");
+    if (s !== 0) return s;
+    return String(a.colaborador).localeCompare(String(b.colaborador), "pt-BR");
+  });
+  return rows;
+}
+
+var APURACAO_HEADERS = ["COLABORADOR","GESTOR DIRETO","GERENTE","GERENTE EXECUTIVO","DIRETORIA","CARGO","SQUAD 1","ID PROJETO EM QUE ATUOU","PROJETO EM QUE ATUOU","ORDEM DE INVESTIMENTO","% MELHORIA","% PROJETO","% TOTAL"];
+var APURACAO_WIDTHS = [26,18,18,18,16,16,30,12,44,16,11,11,11];
+
+/* ------------------------------ Estilo & escrita (.xlsx) -------------------
+   Cabeçalhos coloridos com a paleta sóbria azul/branco (SheetJS Community
+   não grava cor de célula, por isso a escrita usa a ExcelJS, carregada só
+   para exportar; a leitura das bases enviadas continua via SheetJS). ---- */
+var STYLE = {
+  headerFill: "FF1F4E79", headerFont: "FFFFFFFF",
+  accentFill: "FF2E75B6", accentFont: "FFFFFFFF",
+  originLightFill: "FFD9E7F5", originLightFont: "FF1F4E79",
+  borderColor: "FFC9D6E5",
+  /* Linha de origem da Base Cruzada: tons sóbrios (família azul + um
+     cinza pra "calculado" + um verde-azulado pra Base 4), do mais escuro
+     (Base 1, a base com mais colunas) ao mais claro (Base 3 isolada), pra
+     ficar fácil de diferenciar visualmente qual coluna vem de onde. */
+  originBase1Fill: "FF1F4E79", originBase1Font: "FFFFFFFF",
+  originBase23Fill: "FF2E75B6", originBase23Font: "FFFFFFFF",
+  originBase2Fill: "FF9DC3E6", originBase2Font: "FF1F4E79",
+  originBase3Fill: "FFD9E7F5", originBase3Font: "FF1F4E79",
+  originBase4Fill: "FF3F7D6C", originBase4Font: "FFFFFFFF",
+  originCalcFill: "FF757575", originCalcFont: "FFFFFFFF"
+};
+
+function cellBorder(){
+  var b = { style: "thin", color: { argb: STYLE.borderColor } };
+  return { top: b, left: b, bottom: b, right: b };
+}
+function styleHeaderCell(cell){
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: STYLE.headerFill } };
+  cell.font = { bold: true, color: { argb: STYLE.headerFont }, size: 11 };
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  cell.border = cellBorder();
+}
+function styleAccentHeaderCell(cell){
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: STYLE.accentFill } };
+  cell.font = { bold: true, color: { argb: STYLE.accentFont }, size: 11 };
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  cell.border = cellBorder();
+}
+var ORIGIN_TONE_COLORS = {
+  base1: { fill: STYLE.originBase1Fill, font: STYLE.originBase1Font },
+  base23: { fill: STYLE.originBase23Fill, font: STYLE.originBase23Font },
+  base2: { fill: STYLE.originBase2Fill, font: STYLE.originBase2Font },
+  base3: { fill: STYLE.originBase3Fill, font: STYLE.originBase3Font },
+  base4: { fill: STYLE.originBase4Fill, font: STYLE.originBase4Font },
+  calc: { fill: STYLE.originCalcFill, font: STYLE.originCalcFont }
+};
+function styleOriginCell(cell, tone){
+  var c = ORIGIN_TONE_COLORS[tone] || ORIGIN_TONE_COLORS.base1;
+  cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: c.fill } };
+  cell.font = { bold: true, color: { argb: c.font }, size: 10 };
+  cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+  cell.border = cellBorder();
+}
+function excelDateFromISO(iso){
+  if (!iso) return null;
+  var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso));
+  if (!m) return null;
+  // UTC, não hora local: ExcelJS converte pra serial usando getTime() bruto,
+  // então construir em hora local deslocaria o dia em fusos à frente de UTC.
+  return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+}
+function writeDataCell(cell, value, type){
+  if (type === "date"){ cell.value = (value instanceof Date) ? value : excelDateFromISO(value); cell.numFmt = "dd/mm/yyyy"; }
+  else if (type === "percent"){ cell.value = value; cell.numFmt = "0.00%"; }
+  else if (type === "hours"){ cell.value = value; cell.numFmt = "#,##0.00"; }
+  else { cell.value = value; }
+}
+
+/* Aba única com um cabeçalho simples (linha 1). */
+function writeSimpleSheet(wb, name, bundle){
+  var ws = wb.addWorksheet(name);
+  ws.columns = bundle.colWidths.map(function(w){ return { width: w }; });
+  bundle.headers.forEach(function(h, i){
+    var cell = ws.getCell(1, i + 1);
+    cell.value = h;
+    styleHeaderCell(cell);
+  });
+  ws.getRow(1).height = 24;
+  bundle.rows.forEach(function(arr, idx){
+    var rowIdx = idx + 2;
+    arr.forEach(function(v, ci){ writeDataCell(ws.getCell(rowIdx, ci + 1), v, bundle.colTypes[ci]); });
+  });
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+  return ws;
+}
+
+/* Base Cruzada: linha de origem (colorida por base) acima do cabeçalho. */
+function writeBaseCruzadaSheet(wb, bundle){
+  var ws = wb.addWorksheet("Base Cruzada");
+  ws.columns = bundle.colWidths.map(function(w){ return { width: w }; });
+  bundle.headers.forEach(function(h, i){
+    var oCell = ws.getCell(1, i + 1);
+    oCell.value = bundle.origin[i];
+    styleOriginCell(oCell, bundle.originTone[i]);
+    var hCell = ws.getCell(2, i + 1);
+    hCell.value = h;
+    styleHeaderCell(hCell);
+  });
+  ws.getRow(1).height = 30;
+  ws.getRow(2).height = 22;
+  bundle.rows.forEach(function(arr, idx){
+    var rowIdx = idx + 3;
+    arr.forEach(function(v, ci){ writeDataCell(ws.getCell(rowIdx, ci + 1), v, bundle.colTypes[ci]); });
+  });
+  ws.views = [{ state: "frozen", ySplit: 2 }];
+  return ws;
+}
+
+/* Apuração de Horas: sem mesclagem — cabeçalho único na linha 2 (linha 1
+   fica em branco), como pedido; % Melhoria/Projeto/Total viram colunas
+   simples no mesmo cabeçalho, sem grupo mesclado acima. */
+function writeApuracaoSheet(wb, rows){
+  var ws = wb.addWorksheet("Apuração de Horas");
+  ws.columns = APURACAO_WIDTHS.map(function(w){ return { width: w }; });
+
+  APURACAO_HEADERS.forEach(function(h, i){
+    var cell = ws.getCell(2, i + 1);
+    cell.value = h;
+    styleHeaderCell(cell);
+  });
+  var baseCol = APURACAO_HEADERS.length - 2; // índice (1-based) de "% MELHORIA"
+  ws.getRow(1).height = 8;
+  ws.getRow(2).height = 22;
+
+  rows.forEach(function(r, idx){
+    var rowIdx = idx + 3;
+    var vals = [
+      r.colaborador, r.gestorDireto, r.gerente, r.gerenteExecutivo, r.diretoria, r.cargo, r.squad,
+      r.idProjeto, r.projeto, r.ordemInvestimento
+    ];
+    vals.forEach(function(v, ci){ ws.getCell(rowIdx, ci + 1).value = v; });
+    writeDataCell(ws.getCell(rowIdx, baseCol), r.pctMelhoria, "percent");
+    writeDataCell(ws.getCell(rowIdx, baseCol + 1), r.pctProjeto, "percent");
+    writeDataCell(ws.getCell(rowIdx, baseCol + 2), r.pctMelhoria + r.pctProjeto, "percent");
+  });
+  ws.views = [{ state: "frozen", ySplit: 2 }];
+  return ws;
+}
+
+function summaryStats(model){
+  var totals = {}; CAT_ORDER.forEach(function(c){ totals[c] = { horas: 0, n: 0 }; });
+  model.items.forEach(function(it){ totals[it.categoria].horas += it.horas; totals[it.categoria].n++; });
+  var totalHoras = model.items.reduce(function(a,it){ return a+it.horas; }, 0);
+  return { totals: totals, totalHoras: totalHoras, totalItens: model.items.length };
+}
+
+/* ------------------------------ Estado & UI -------------------------------- */
+
+var SLOT_KEYS = ["base1", "base2", "base3", "base4"];
+
+var STATE = {
+  downloads: null,
+  model: null,
+  exportSheets: null,
+  slots: {
+    base1: { file: null, buf: null, visible: [], chosen: null, rows: null, ok: false },
+    base2: { file: null, buf: null, visible: [], chosen: null, rows: null, ok: false },
+    base3: { file: null, buf: null, visible: [], chosen: null, rows: null, ok: false },
+    /* Base 4 não usa "chosen" (uma aba escolhida) como as outras 3 — ela
+       lê SEMPRE duas abas fixas do mesmo arquivo, "Ajuste" e "Consulta"
+       (ver applyBase4Sheets), guardadas separadamente em ajusteRows e
+       consultaRows. */
+    base4: { file: null, buf: null, visible: [], chosen: null, rows: null, ajusteRows: null, consultaRows: null, ok: false }
+  }
+};
+
+function showToast(msg){
+  var t = document.getElementById("toast");
+  t.textContent = msg; t.hidden = false;
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function(){ t.hidden = true; }, 3600);
+}
+
+function setStep(n){
+  [1,2,3].forEach(function(i){
+    var el = document.getElementById("step"+i);
+    el.classList.toggle("active", i===n);
+    el.classList.toggle("done", i<n);
+  });
+}
+
+function slotZone(slot){ return document.getElementById("dz-" + slot); }
+function slotFileInput(slot){ return document.getElementById("file-" + slot); }
+function slotSheetSelect(slot){ return document.getElementById("sheet-" + slot); }
+function slotFnLabel(slot){ return document.getElementById("fn-" + slot); }
+function slotChooseBtn(slot){ return document.getElementById("choose-" + slot); }
+function slotStatusBadge(slot){ return document.getElementById("status-" + slot); }
+
+/* Selo de status do quadro de upload: "loading" (lendo/validando o
+   arquivo), "ok" (aceito) ou "error" (recusado, com o motivo completo — sem
+   truncar — na linha de baixo). null limpa o selo (nenhum arquivo ainda). */
+function setSlotStatus(slot, kind, label){
+  var badge = slotStatusBadge(slot);
+  var zone = slotZone(slot);
+  zone.classList.remove("ok", "error");
+  if (!kind){ badge.hidden = true; badge.className = "status-badge"; return; }
+  badge.hidden = false;
+  badge.className = "status-badge " + kind;
+  badge.textContent = label;
+  if (kind === "ok" || kind === "error") zone.classList.add(kind);
+}
+
+function updateProcessBtn(){
+  var all = SLOT_KEYS.every(function(s){ return STATE.slots[s].ok; });
+  document.getElementById("processBtn").disabled = !all;
+}
+
+function processFileIntoSlot(slot, file){
+  var st = STATE.slots[slot];
+  st.file = file;
+  slotFnLabel(slot).classList.remove("wrap");
+  slotFnLabel(slot).textContent = file.name;
+  st.ok = false; updateProcessBtn();
+  setSlotStatus(slot, "loading", "Carregando");
+  file.arrayBuffer().then(function(buf){
+    st.buf = buf;
+    var meta = readWorkbookMeta(buf);
+    st.visible = meta.visible;
+
+    if (slot === "base4"){ applyBase4Sheets(slot); return; }
+
+    var sel = slotSheetSelect(slot);
+
+    /* Algumas planilhas marcam mais de uma aba como "visível" mesmo quando,
+       na prática, só uma tem conteúdo (a outra é um modelo/rascunho vazio
+       deixado visível por engano). Nesse caso a gente escolhe direto a aba
+       com dado e nem mostra a lista — só pede pra escolher quando há
+       ambiguidade real (2+ abas visíveis com linhas). */
+    var withData = meta.visible.filter(function(n){ return parseSheetRows(buf, n).length > 0; });
+    if (meta.visible.length > 1 && withData.length !== 1){
+      st.chosen = withData[0] || meta.visible[0];
+      sel.innerHTML = meta.visible.map(function(n){ return '<option value="'+esc(n)+'">'+esc(n)+"</option>"; }).join("");
+      sel.value = st.chosen;
+      sel.hidden = false;
+    } else {
+      st.chosen = withData[0] || meta.visible[0];
+      sel.hidden = true; sel.innerHTML = "";
+    }
+    applySheetChoice(slot);
+  }).catch(function(){
+    st.ok = false;
+    setSlotStatus(slot, "error", "Recusado");
+    var fn = slotFnLabel(slot);
+    fn.classList.add("wrap");
+    fn.textContent = file.name + " · Erro ao ler o arquivo (verifique se é um .xlsx/.xls válido).";
+    updateProcessBtn();
+  });
+}
+function applySheetChoice(slot){
+  var st = STATE.slots[slot];
+  var rows = parseSheetRows(st.buf, st.chosen);
+  var check = validateSlot(slot, rows);
+  st.rows = rows; st.ok = check.ok;
+  var fn = slotFnLabel(slot);
+  fn.classList.toggle("wrap", !check.ok);
+  fn.textContent = st.file.name + " · " + check.msg;
+  slotChooseBtn(slot).textContent = "Trocar arquivo";
+  setSlotStatus(slot, check.ok ? "ok" : "error", check.ok ? "Concluído" : "Recusado");
+  updateProcessBtn();
+}
+/* Base 4 é um único arquivo com DUAS abas obrigatórias: "Ajuste" (o
+   organograma — Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo por
+   colaborador) e "Consulta" (cruza o LECOM/ID do projeto com a Ordem de
+   Investimento, usada por linha de projeto na Apuração de Horas).
+   Diferente das outras 3 bases, aqui não há seletor manual de aba: as duas
+   são localizadas pelo nome (tolerante a maiúsculas/acentos/espaços — ver
+   findSheetName) dentro do mesmo arquivo, e lidas juntas. */
+function applyBase4Sheets(slot){
+  var st = STATE.slots[slot];
+  var sel = slotSheetSelect(slot);
+  sel.hidden = true; sel.innerHTML = "";
+
+  var ajusteName = findSheetName(st.visible, "AJUSTE");
+  var consultaName = findSheetName(st.visible, "CONSULTA");
+  var faltando = [];
+  if (!ajusteName) faltando.push('aba "Ajuste"');
+  if (!consultaName) faltando.push('aba "Consulta"');
+
+  var fn = slotFnLabel(slot);
+  slotChooseBtn(slot).textContent = "Trocar arquivo";
+
+  if (faltando.length){
+    st.ok = false; st.ajusteRows = null; st.consultaRows = null; st.rows = null;
+    fn.classList.add("wrap");
+    fn.textContent = st.file.name + " · Não encontrei " + faltando.join(" e ") +
+      " (abas no arquivo: " + st.visible.join(", ") + ").";
+    setSlotStatus(slot, "error", "Recusado");
+    updateProcessBtn();
     return;
   }
-  atualizarStatus(`Lendo ${file.name}...`);
+
+  var ajusteRows = remapHeadersToCanonical(parseSheetRows(st.buf, ajusteName), REQUIRED_COLS.base4Ajuste);
+  var consultaRows = prepareConsultaRows(parseSheetRows(st.buf, consultaName));
+  var checkAjuste = validateSlot("base4Ajuste", ajusteRows);
+  var checkConsulta = validateConsultaRows(consultaRows);
+  var ok = checkAjuste.ok && checkConsulta.ok;
+
+  st.ajusteRows = ajusteRows; st.consultaRows = consultaRows; st.rows = ajusteRows;
+  st.ok = ok;
+
+  fn.classList.toggle("wrap", !ok);
+  fn.textContent = st.file.name + " · Ajuste: " + checkAjuste.msg + " · Consulta: " + checkConsulta.msg;
+  setSlotStatus(slot, ok ? "ok" : "error", ok ? "Concluído" : "Recusado");
+  updateProcessBtn();
+}
+function resetSlot(slot){
+  STATE.slots[slot] = { file: null, buf: null, visible: [], chosen: null, rows: null, ajusteRows: null, consultaRows: null, ok: false };
+  slotZone(slot).classList.remove("ok","error","over");
+  var fn = slotFnLabel(slot);
+  fn.classList.remove("wrap");
+  fn.textContent = "Nenhum arquivo selecionado";
+  slotChooseBtn(slot).textContent = "Selecionar arquivo";
+  setSlotStatus(slot, null);
+  var sel = slotSheetSelect(slot); sel.hidden = true; sel.innerHTML = "";
+  slotFileInput(slot).value = "";
+}
+function wireDropzone(slot){
+  var zone = slotZone(slot), input = slotFileInput(slot), sel = slotSheetSelect(slot);
+  zone.addEventListener("click", function(e){ if (e.target !== sel) input.click(); });
+  zone.addEventListener("dragover", function(e){ e.preventDefault(); zone.classList.add("over"); });
+  zone.addEventListener("dragleave", function(){ zone.classList.remove("over"); });
+  zone.addEventListener("drop", function(e){
+    e.preventDefault(); zone.classList.remove("over");
+    var f = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f) processFileIntoSlot(slot, f);
+  });
+  input.addEventListener("change", function(){ if (input.files[0]) processFileIntoSlot(slot, input.files[0]); });
+  sel.addEventListener("click", function(e){ e.stopPropagation(); });
+  sel.addEventListener("change", function(){ STATE.slots[slot].chosen = sel.value; applySheetChoice(slot); });
+}
+
+function renderSummary(model){
+  var s = summaryStats(model);
+  function pct(h){ return s.totalHoras > 0 ? (h / s.totalHoras * 100) : 0; }
+  var order = ["PROJETOS","MELHORIAS","INCIDENTE","REQUISICAO","NAO_IDENTIFICADO","OUTROS"];
+  var html = '<div class="stat"><div class="lbl">Total geral</div><div class="val tabular">' + fmtHoras(s.totalHoras) + ' h</div><div class="sub">' + fmtNum(s.totalItens) + ' apontamentos</div></div>';
+  order.forEach(function(c){
+    var t = s.totals[c];
+    if (t.n === 0 && t.horas === 0) return;
+    var label = c === "NAO_IDENTIFICADO" ? "Fora do compromisso" : CATS[c].label;
+    html += '<div class="stat"><div class="lbl"><span class="dot" style="background:var(' + CATS[c].varName + ')"></span>' + esc(label) + '</div><div class="val tabular">' + fmtHoras(t.horas) + ' h</div><div class="sub">' + fmtPct(pct(t.horas)) + ' · ' + fmtNum(t.n) + ' itens</div></div>';
+  });
+  document.getElementById("summaryGrid").innerHTML = html;
+  document.getElementById("resultCard").hidden = false;
+}
+
+function processUpload(){
+  document.getElementById("statusMsg").textContent = "Cruzando bases…";
+  document.getElementById("processBtn").disabled = true;
+  setTimeout(function(){
+    try{
+      var model = buildModel(STATE.slots.base1.rows, STATE.slots.base2.rows, STATE.slots.base3.rows, STATE.slots.base4.ajusteRows, STATE.slots.base4.consultaRows);
+      STATE.model = model;
+      STATE.exportSheets = buildExportSheets(model);
+      renderSummary(model);
+      setStep(3);
+      document.getElementById("statusMsg").textContent = "Cruzamento concluído.";
+      document.getElementById("resetBtn").hidden = false;
+      document.getElementById("resultCard").scrollIntoView({ behavior: "smooth", block: "start" });
+    }catch(e){
+      document.getElementById("statusMsg").textContent = "Erro ao processar: " + e.message;
+      document.getElementById("processBtn").disabled = false;
+    }
+  }, 30);
+}
+
+function resetAll(){
+  SLOT_KEYS.forEach(resetSlot);
+  STATE.model = null; STATE.exportSheets = null;
+  document.getElementById("resultCard").hidden = true;
+  document.getElementById("resetBtn").hidden = true;
+  document.getElementById("statusMsg").textContent = "";
+  setStep(1);
+  updateProcessBtn();
+}
+
+function downloadWorkbook(){
+  if (!STATE.exportSheets){ showToast("Processe as bases antes de baixar."); return; }
+  if (!STATE.downloads){ showToast("Exportação indisponível neste visualizador."); return; }
+  if (typeof ExcelJS === "undefined"){ showToast("Biblioteca de exportação indisponível neste visualizador."); return; }
   try{
-    const buffer = await file.arrayBuffer();
-    const workbook = XLSX.read(buffer, {cellDates:true});
-    const primeiraAba = workbook.SheetNames[0];
-    if(!primeiraAba) throw new Error('A planilha não possui abas.');
-    const worksheet = workbook.Sheets[primeiraAba];
-    const rows = XLSX.utils.sheet_to_json(worksheet, {defval:null, raw:true});
-    if(!rows.length) throw new Error('A primeira aba não possui linhas de dados.');
+    var wb = new ExcelJS.Workbook();
+    wb.creator = "Hub do Agile Coach - Hapvida";
+    wb.created = new Date();
 
-    const chaves = Object.keys(rows[0]);
-    const campos = {
-      tipo: encontrarCampo(chaves, ['TIPO DE DEMANDA','TIPO DEMANDA','TIPO']),
-      diretoria: encontrarCampo(chaves, ['DIRETORIA','DIRETORIA RESPONSAVEL','DIRETORIA RESPONSÁVEL']),
-      horas: encontrarCampo(chaves, ['COMPLETEDWORK','COMPLETED WORK','HORAS','HORAS TRABALHADAS','ESFORCO','ESFORÇO','WORK']),
-      data: encontrarCampo(chaves, ['DATA DE ENCERRAMENTO DA TASK','DATA ENCERRAMENTO','DATA','DATE']),
-    };
-    const faltantes = [
-      !campos.tipo && 'tipo de demanda',
-      !campos.diretoria && 'diretoria',
-      !campos.horas && 'horas (COMPLETEDWORK)',
-    ].filter(Boolean);
-    if(faltantes.length){
-      throw new Error(`Não encontrei ${faltantes.join(', ')}. Colunas encontradas: ${chaves.join(', ')}.`);
-    }
+    writeApuracaoSheet(wb, STATE.exportSheets.apuracaoRows);
+    writeBaseCruzadaSheet(wb, STATE.exportSheets.cruzada);
+    writeSimpleSheet(wb, "Horas por Squad", STATE.exportSheets.squad);
+    writeSimpleSheet(wb, "Compromisso Projetos", STATE.exportSheets.projetos);
+    writeSimpleSheet(wb, "Compromisso Melhorias", STATE.exportSheets.melhorias);
+    writeSimpleSheet(wb, "Organograma", STATE.exportSheets.organograma);
+    writeSimpleSheet(wb, "Lecom Dobrados", STATE.exportSheets.lecomDobrados);
 
-    const resultado = consolidarLinhas(rows, campos);
-    if(!resultado.tipos.length || resultado.dados.total_geral === 0){
-      throw new Error('Não encontrei horas válidas para consolidar nessa planilha.');
-    }
-    DADOS = resultado.dados;
-    TIPOS = resultado.tipos;
-    render();
-    atualizarNota();
-    atualizarStatus(`${file.name} carregada: ${resultado.dados.tarefas.toLocaleString('pt-BR')} linhas consideradas.`, 'success');
-  }catch(error){
-    console.error(error);
-    atualizarStatus(error.message || 'Não foi possível processar a planilha.', 'error');
+    wb.xlsx.writeBuffer().then(function(buf){
+      var blob = new Blob([buf], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+      return STATE.downloads.save({ filename: "HORASxLECOM CRUZADOS.xlsx", data: blob });
+    }).then(function(){
+      showToast("Planilha baixada.");
+    }).catch(function(err){
+      var code = err && err.code;
+      if (code === "declined") return;
+      showToast("Não foi possível baixar: " + (code || "erro desconhecido"));
+    });
+  }catch(e){
+    showToast("Erro ao montar o arquivo de exportação.");
   }
 }
 
-document.getElementById('arquivo-planilha').addEventListener('change', event => {
-  const file = event.target.files && event.target.files[0];
-  if(file) processarArquivo(file);
-});
-document.getElementById('btn-exemplo').addEventListener('click', () => {
-  DADOS = cloneDados(DADOS_EXEMPLO);
-  TIPOS = [...TIPOS_PADRAO];
-  render();
-  atualizarNota();
-  atualizarStatus('Exibindo novamente os dados de exemplo que acompanham o protótipo.', 'success');
-  document.getElementById('arquivo-planilha').value = '';
-});
-document.getElementById('btn-horas').onclick = function(){
-  modoPct = false;
-  this.classList.add('active');
-  document.getElementById('btn-pct').classList.remove('active');
-  render();
-};
-document.getElementById('btn-pct').onclick = function(){
-  modoPct = true;
-  this.classList.add('active');
-  document.getElementById('btn-horas').classList.remove('active');
-  render();
-};
+/* ------------------------------ Tema -------------------------------- */
 
-render();
-atualizarNota();
+function applyThemePref(){
+  var pref = null;
+  try{ pref = localStorage.getItem("cruzador-theme"); }catch(e){}
+  if (pref === "dark" || pref === "light") document.documentElement.setAttribute("data-theme", pref);
+  updateThemeBtn();
+}
+function updateThemeBtn(){
+  var stamped = document.documentElement.getAttribute("data-theme");
+  var effectiveDark = stamped ? stamped === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  document.getElementById("themeBtn").textContent = effectiveDark ? "☀️" : "🌙";
+}
+function toggleTheme(){
+  var stamped = document.documentElement.getAttribute("data-theme");
+  var effectiveDark = stamped ? stamped === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
+  var next = effectiveDark ? "light" : "dark";
+  document.documentElement.setAttribute("data-theme", next);
+  try{ localStorage.setItem("cruzador-theme", next); }catch(e){}
+  updateThemeBtn();
+}
+
+/* ------------------------------ Bootstrap -------------------------------- */
+
+/* Download nativo do navegador — usado quando a página roda fora da
+   plataforma Claude (ex.: arquivo .html aberto direto ou hospedado em outro
+   servidor), onde window.claude.use("downloads") não existe. */
+function browserDownloadFallback(){
+  return {
+    save: function(req){
+      return new Promise(function(resolve){
+        var url = URL.createObjectURL(req.data);
+        var a = document.createElement("a");
+        a.href = url; a.download = req.filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function(){ document.body.removeChild(a); URL.revokeObjectURL(url); }, 0);
+        resolve({ status: "saved" });
+      });
+    }
+  };
+}
+function initDownloads(){
+  try{
+    if (window.claude && typeof window.claude.use === "function"){
+      window.claude.use("downloads")
+        .then(function(ns){ STATE.downloads = ns; })
+        .catch(function(){ STATE.downloads = browserDownloadFallback(); });
+      return;
+    }
+  }catch(e){}
+  STATE.downloads = browserDownloadFallback();
+}
+
+function init(){
+  initDownloads();
+  SLOT_KEYS.forEach(wireDropzone);
+  document.getElementById("processBtn").addEventListener("click", function(){ setStep(2); processUpload(); });
+  document.getElementById("resetBtn").addEventListener("click", resetAll);
+  document.getElementById("downloadBtn").addEventListener("click", downloadWorkbook);
+  setStep(1);
+}
+
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+
+})();
+
 </script>
+
 </body>
 </html>
