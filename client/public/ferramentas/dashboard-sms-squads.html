@@ -442,7 +442,6 @@
 
   <div class="tabbar" id="tabBar">
     <button class="tab active" data-tab="executive">📌 Visão Executiva</button>
-    <button class="tab" data-tab="demand">🎯 Demanda por SM</button>
     <button class="tab" data-tab="quality">🧪 Qualidade dos Dados</button>
     <button class="tab" data-tab="sms">👤 SMs</button>
     <button class="tab" data-tab="squads">🧩 Squads</button>
@@ -471,19 +470,6 @@
         <div class="tablewrap"><table class="squadtable"><thead><tr><th>Status</th><th>Quantidade</th></tr></thead><tbody id="execImprovementStatusBody"></tbody></table></div>
       </div>
     </div>
-  </div>
-
-  <div class="tab-content hidden" id="tab-demand">
-    <div class="data-kpi-grid" id="demandKpiRow"></div>
-    <div class="filterbar">
-      <div class="field" style="flex:2;min-width:240px;"><label>Buscar SM ou squad</label><input type="text" id="demandSearch" placeholder="🔎 Nome do SM ou squad..."></div>
-      <div class="field"><label>Tipo de demanda</label><select id="demandType"><option value="">Projetos e melhorias</option><option value="project">Só projetos</option><option value="improvement">Só melhorias</option></select></div>
-      <div class="field"><label>Sinal de risco</label><select id="demandRisk"><option value="">Todos</option><option value="risk">Com risco ou atraso</option><option value="missing">Sem SM confirmado</option></select></div>
-      <button class="clearbtn" id="btnClearDemand">Limpar filtros</button>
-    </div>
-    <div class="resultcount" id="demandCount"></div>
-    <div class="tablewrap"><table class="squadtable" id="demandTable"><thead><tr><th data-demand-sort="sm">SM <span class="sort-arrow">↕</span></th><th data-demand-sort="squads">Squads <span class="sort-arrow">↕</span></th><th data-demand-sort="resources">Recursos <span class="sort-arrow">↕</span></th><th data-demand-sort="projects">Projetos <span class="sort-arrow">↕</span></th><th data-demand-sort="improvements">Melhorias <span class="sort-arrow">↕</span></th><th data-demand-sort="hours">Horas <span class="sort-arrow">↕</span></th><th data-demand-sort="risk">Risco <span class="sort-arrow">↕</span></th><th data-demand-sort="pressure">Pressão <span class="sort-arrow">↕</span></th></tr></thead><tbody id="demandBody"></tbody></table></div>
-    <div class="roadmap-note" style="margin-top:14px;">A pressão é um sinal comparativo calculado por volume de projetos, melhorias e horas sobre os recursos identificados. Não representa capacidade individual contratada.</div>
   </div>
 
   <div class="tab-content hidden" id="tab-quality">
@@ -1180,7 +1166,6 @@ function squadHasSM(s){
    INSIGHTS TRIMESTRAIS — projetos, melhorias, squads e SMs
    ============================================================ */
 let QUARTERLY_MODEL = null;
-const DEMAND_SORT = { key: 'pressure', dir: 'desc' };
 
 function qKey(value){ return boardKey(value || ''); }
 function qText(value){ return String(value == null ? '' : value).replace(/\s+/g, ' ').trim(); }
@@ -1383,33 +1368,6 @@ function renderExecutiveTab(){
   document.getElementById('execProjectStatusBody').innerHTML = projectStatus.length ? projectStatus.map(row=>'<tr><td>'+esc(row[0])+'</td><td>'+qFormatNumber(row[1])+'</td></tr>').join('') : qEmptyRow(2, 'Sem portfólio importado.');
   document.getElementById('execImprovementStatusBody').innerHTML = improvementStatus.length ? improvementStatus.map(row=>'<tr><td>'+esc(row[0])+'</td><td>'+qFormatNumber(row[1])+'</td></tr>').join('') : qEmptyRow(2, 'Sem melhorias importadas.');
 }
-function renderDemandTab(){
-  const body = document.getElementById('demandBody');
-  if(!body) return;
-  const model = QUARTERLY_MODEL || buildQuarterlyModel();
-  const query = qKey(document.getElementById('demandSearch').value);
-  const typeFilter = document.getElementById('demandType').value;
-  const riskFilter = document.getElementById('demandRisk').value;
-  let rows = Object.values(model.bySm).filter(row=>{
-    if(query && !qKey(row.label).includes(query) && ![...row.squads].some(key=>qKey(model.bySquad[key] && model.bySquad[key].label).includes(query))) return false;
-    if(typeFilter === 'project' && !row.projects) return false;
-    if(typeFilter === 'improvement' && !row.improvements) return false;
-    if(riskFilter === 'risk' && !row.risk) return false;
-    if(riskFilter === 'missing' && row.label !== '(Sem SM confirmado)') return false;
-    return row.projects || row.improvements || row.resourceKeys.size;
-  });
-  const sortValue = (row, key) => key === 'sm' ? row.label : (key === 'squads' ? row.squads.size : (key === 'resources' ? row.resourceKeys.size : (key === 'projects' ? row.projects : (key === 'improvements' ? row.improvements : (key === 'hours' ? row.hours : (key === 'risk' ? row.risk : row.pressureScore))))));
-  rows.sort((a,b)=>{
-    const va = sortValue(a, DEMAND_SORT.key); const vb = sortValue(b, DEMAND_SORT.key);
-    if(typeof va === 'number' && typeof vb === 'number') return DEMAND_SORT.dir === 'asc' ? va-vb : vb-va;
-    const cmp = String(va).localeCompare(String(vb), 'pt-BR', {numeric:true});
-    return DEMAND_SORT.dir === 'asc' ? cmp : -cmp;
-  });
-  const totalResources = new Set(); rows.forEach(row=>row.resourceKeys.forEach(key=>totalResources.add(key)));
-  document.getElementById('demandKpiRow').innerHTML = qKpi('demandKpiSm', qFormatNumber(rows.length), 'SMs na visão') + qKpi('demandKpiSquads', qFormatNumber(rows.reduce((n,row)=>n+row.squads.size,0)), 'Squads relacionadas') + qKpi('demandKpiResources', qFormatNumber(totalResources.size), 'Recursos únicos') + qKpi('demandKpiRisk', qFormatNumber(rows.reduce((n,row)=>n+row.risk,0)), 'Itens com risco', rows.some(row=>row.risk)?'alert':'');
-  document.getElementById('demandCount').innerHTML = '<b>'+qFormatNumber(rows.length)+'</b> SMs encontrados · clique no cabeçalho para ordenar por volume ou pressão.';
-  body.innerHTML = rows.length ? rows.map(row=>'<tr><td><b>'+esc(row.label)+'</b></td><td>'+qFormatNumber(row.squads.size)+'</td><td>'+qFormatNumber(row.resourceKeys.size)+'</td><td>'+qFormatNumber(row.projects)+'</td><td>'+qFormatNumber(row.improvements)+'</td><td>'+qFormatHours(row.hours)+'</td><td>'+(row.risk ? '<span class="badge miss">'+qFormatNumber(row.risk)+'</span>' : '0')+'</td><td><span class="badge '+(row.pressure==='Alta'?'miss':(row.pressure==='Média'?'pend':'ok'))+'">'+row.pressure+'</span></td></tr>').join('') : qEmptyRow(8, 'Importe as bases de portfólio e melhorias para visualizar a demanda por SM.');
-}
 function renderQualityTab(){
   const model = QUARTERLY_MODEL || buildQuarterlyModel();
   if(!model || !document.getElementById('qualityBody')) return;
@@ -1437,28 +1395,7 @@ function refreshQuarterlyViews(){
   QUARTERLY_MODEL = buildQuarterlyModel();
   renderQuarterlySources();
   renderExecutiveTab();
-  renderDemandTab();
   renderQualityTab();
-}
-function bindQuarterlyViews(){
-  const search = document.getElementById('demandSearch');
-  const type = document.getElementById('demandType');
-  const risk = document.getElementById('demandRisk');
-  if(search && !search.dataset.wired){ search.dataset.wired='1'; search.addEventListener('input', renderDemandTab); }
-  if(type && !type.dataset.wired){ type.dataset.wired='1'; type.addEventListener('change', renderDemandTab); }
-  if(risk && !risk.dataset.wired){ risk.dataset.wired='1'; risk.addEventListener('change', renderDemandTab); }
-  const clear = document.getElementById('btnClearDemand');
-  if(clear && !clear.dataset.wired){ clear.dataset.wired='1'; clear.addEventListener('click', ()=>{ search.value=''; type.value=''; risk.value=''; renderDemandTab(); }); }
-  document.querySelectorAll('#demandTable thead th[data-demand-sort]').forEach(th=>{
-    if(th.dataset.wired) return;
-    th.dataset.wired='1';
-    th.addEventListener('click', ()=>{
-      const key = th.getAttribute('data-demand-sort');
-      if(DEMAND_SORT.key === key) DEMAND_SORT.dir = DEMAND_SORT.dir === 'asc' ? 'desc' : 'asc';
-      else { DEMAND_SORT.key = key; DEMAND_SORT.dir = 'desc'; }
-      renderDemandTab();
-    });
-  });
 }
 window.addEventListener('hac-quarterly-change', refreshQuarterlyViews);
 window.addEventListener('hac-quarterly-error', event=>{
@@ -1466,8 +1403,6 @@ window.addEventListener('hac-quarterly-error', event=>{
   const banner = document.getElementById('quarterlyStatusBanner');
   if(banner){ banner.className='importbanner error'; banner.style.display='block'; banner.innerHTML='<b>Não consegui importar '+esc(detail.type || 'a base')+'.</b> '+esc(detail.message || 'Arquivo inválido')+' Nenhuma alteração foi aplicada.'; }
 });
-bindQuarterlyViews();
-
 function buildUnified(){
   REGISTRY = buildRegistry();
   const idx = buildSquadIndexFrom(REGISTRY);
@@ -1833,7 +1768,7 @@ document.getElementById('btnExportSmXlsx').addEventListener('click', ()=>{
    TROCA DE ABAS
    ============================================================ */
 function showTab(name){
-  ['executive','demand','quality','sms','squads','boards','charts','recursos'].forEach(k=>{
+  ['executive','quality','sms','squads','boards','charts','recursos'].forEach(k=>{
     const el = document.getElementById('tab-'+k);
     if(el) el.classList.toggle('hidden', k!==name);
   });
@@ -1853,7 +1788,6 @@ document.querySelectorAll('#tabBar .tab').forEach(btn=>{
       if(t==='charts') renderChartsTab();
       if(t==='recursos') renderRecursosTab();
       if(t==='executive') renderExecutiveTab();
-      if(t==='demand') renderDemandTab();
       if(t==='quality') renderQualityTab();
     }catch(err){
       console.error('Erro ao trocar de aba:', err);
@@ -2885,7 +2819,6 @@ function rebuildAndRender(){
   const activeTab = document.querySelector('#tabBar .tab.active');
   const t = activeTab ? activeTab.getAttribute('data-tab') : 'executive';
   if(t==='executive') renderExecutiveTab();
-  else if(t==='demand') renderDemandTab();
   else if(t==='quality') renderQualityTab();
   else if(t==='sms') renderSMsTab();
   else if(t==='boards') renderBoardsTab();

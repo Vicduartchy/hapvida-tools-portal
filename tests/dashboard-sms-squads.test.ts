@@ -181,3 +181,19 @@ describe("dashboard-sms-squads: remoção de SM atualiza SEM SM", () => {
     expect(tool.SM_VIEW.some((sm: any) => sm.squads.some((row: any) => row.id === "squad-a"))).toBe(false);
   });
 });
+
+describe("dashboard-sms-squads: abas trimestrais", () => {
+  it("remove a aba Demanda por SM sem remover a Qualidade dos Dados", () => {
+    const html = readFileSync(
+      "client/public/ferramentas/dashboard-sms-squads.html",
+      "utf-8",
+    );
+
+    expect(html).not.toContain('data-tab="demand"');
+    expect(html).not.toContain('id="tab-demand"');
+    expect(html).not.toContain("renderDemandTab");
+    expect(html).not.toContain("DEMAND_SORT");
+    expect(html).toContain('data-tab="quality"');
+    expect(html).toContain('id="tab-quality"');
+  });
+});
