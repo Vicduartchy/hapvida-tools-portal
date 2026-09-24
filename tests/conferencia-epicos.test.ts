@@ -34,13 +34,22 @@ describe("conferencia de epicos: filtros e graficos por classificacao", () => {
     expect(html).toContain("formatter: function(value){ return value; }");
   });
 
-  it("cruza LECOM contra a base de Melhorias antes de cobrar Epic", () => {
-    expect(html).toContain('id="input-melhorias"');
-    expect(html).toContain("function melhoriasRows(buffer)");
-    expect(html).toContain("norm(n).indexOf('melhoria') > -1");
-    expect(html).toContain("function classify(ado, parentId, excluded, isMelhoriaLecom)");
-    expect(html).toContain("if(isMelhoriaLecom && project && !parentId)");
-    expect(html).toContain("Melhoria não precisa de Epic");
-    expect(html).toContain("var c = classify(a, pid, excluded, !!melhoriasSet[a.lecom]);");
+  it("recebe a base de melhorias e separa projeto, conflito e melhoria isolada", () => {
+    expect(html).toContain('id="input-improvements"');
+    expect(html).toContain("function improvementRows(buffer)");
+    expect(html).toContain("PROJECT_AND_IMPROVEMENT");
+    expect(html).toContain("IMPROVEMENT_ONLY");
+    expect(html).toContain("Melhoria — Epic não aplicável");
+    expect(html).toContain("totalImprovementOnlyFeatures");
+    expect(html).toContain('id="tabOrigem"');
+    expect(html).toContain('id="originTableBody"');
+  });
+
+  it("mantem projeto + melhoria na auditoria de Epic e exibe o conflito", () => {
+    expect(html).toContain("manter esta conferência como Projeto e confirmar a origem");
+    expect(html).toContain("Conflito Projeto + Melhoria");
+    expect(html).toContain("Auditar como Projeto quanto ao Epic");
+    expect(html).toContain("Não cobrar Epic: acompanhar como Melhoria");
+    expect(html).toContain("Apenas Projetos geram cobrança de vínculo com Epic");
   });
 });
