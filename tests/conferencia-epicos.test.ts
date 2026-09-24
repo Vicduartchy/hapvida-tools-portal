@@ -33,4 +33,14 @@ describe("conferencia de epicos: filtros e graficos por classificacao", () => {
     expect(html).toContain("datalabels: {");
     expect(html).toContain("formatter: function(value){ return value; }");
   });
+
+  it("cruza LECOM contra a base de Melhorias antes de cobrar Epic", () => {
+    expect(html).toContain('id="input-melhorias"');
+    expect(html).toContain("function melhoriasRows(buffer)");
+    expect(html).toContain("norm(n).indexOf('melhoria') > -1");
+    expect(html).toContain("function classify(ado, parentId, excluded, isMelhoriaLecom)");
+    expect(html).toContain("if(isMelhoriaLecom && project && !parentId)");
+    expect(html).toContain("Melhoria não precisa de Epic");
+    expect(html).toContain("var c = classify(a, pid, excluded, !!melhoriasSet[a.lecom]);");
+  });
 });
