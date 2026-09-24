@@ -249,7 +249,7 @@
 
   <div class="panel import-highlight">
     <h2><span class="step-badge">1</span>Anexar as bases</h2>
-    <div class="desc">Cruza o Portfólio priorizado com as Features e Epics do Azure DevOps. Regra: LECOM no trimestre + Feature com Demand Type Project ou em branco + Parent vazio ou não confirmado como Epic. A lista de IDs é opcional — se anexada, restringe a conferência exatamente àqueles itens.</div>
+    <div class="desc">Cruza o Portfólio priorizado com as Features e Epics do Azure DevOps. Regra: LECOM no trimestre + Feature com Demand Type Project ou em branco + Parent vazio ou não confirmado como Epic. Com a Base de Melhorias anexada, um LECOM cadastrado como Melhoria nunca é cobrado por falta de Epic — vira ponto de revisão de cadastro. A lista de IDs é opcional — se anexada, restringe a conferência exatamente àqueles itens.</div>
 
     <div class="upload-grid">
       <div class="upload-box" id="box-portfolio">
@@ -283,6 +283,14 @@
           <div class="upload-hint" id="hint-reference">.md/.txt/.csv, qualquer formato</div>
         </label>
         <input type="file" id="input-reference" accept=".md,.txt,.csv">
+      </div>
+      <div class="upload-box optional" id="box-melhorias">
+        <label for="input-melhorias">
+          <div class="upload-icon">🛠️</div>
+          <div class="upload-name" id="name-melhorias">Base de Melhorias (opcional)</div>
+          <div class="upload-hint" id="hint-melhorias">Ex: Melhorias_Q3_v1.xlsx — evita cobrar Epic de LECOM que é Melhoria</div>
+        </label>
+        <input type="file" id="input-melhorias" accept=".xlsx,.xls">
       </div>
     </div>
 
@@ -606,13 +614,34 @@
     });
   }
 
+  function melhoriasRows(buffer){
+    if(!buffer) return {};
+    var wb = XLSX.read(buffer, { type: 'array' });
+    // O nome da aba muda a cada trimestre ("Melhorias 3T2026", "Melhorias 4T2026"...),
+    // então procura por nome (contém "melhoria") em vez de exigir o nome exato.
+    var name = wb.SheetNames.find(function(n){ return norm(n).indexOf('melhoria') > -1; }) || wb.SheetNames[0];
+    var rows = XLSX.utils.sheet_to_json(wb.Sheets[name], { defval: '' });
+    var set = {};
+    rows.forEach(function(r){
+      var lecom = key(aliases(r, ['LECOM','Lecom']));
+      if(lecom) set[lecom] = true;
+    });
+    return set;
+  }
+
   var terminal = { closed: true, resolved: true, removed: true };
 
-  function classify(ado, parentId, excluded){
+  function classify(ado, parentId, excluded, isMelhoriaLecom){
     var demand = norm(ado.demandType);
     var project = demand === 'project';
     var historical = project && terminal[norm(ado.state)] && !excluded[norm(ado.state)];
     if(historical) return { cat: 'CONFIRMAR_HISTORICO', action: 'Confirmar se o item ainda pertence ao compromisso do Portfólio Q3.' };
+    // Melhoria não tem Epic por definição — se o LECOM está cadastrado como Melhoria na base
+    // do trimestre, nunca cobra vínculo de Epic, mesmo que o Demand Type no Azure esteja
+    // marcado (errado) como Project. Vira ponto de revisão de cadastro, não de correção urgente.
+    if(isMelhoriaLecom && project && !parentId){
+      return { cat: 'REVISAR_CADASTRO', action: 'Revisar cadastro: o LECOM ' + ado.lecom + ' está catalogado como Melhoria na base do trimestre, mas o Demand Type no Azure está como Project. Corrigir a classificação na origem (Melhoria não precisa de Epic).' };
+    }
     if(project && !parentId) return { cat: 'CORRIGIR_AGORA', action: 'Corrigir agora: vincular ao Epic correto ou ajustar o Demand Type se não for Projeto.' };
     if(!clean(ado.demandType)) return {
       cat: 'REVISAR_CADASTRO',
@@ -656,8 +685,9 @@
     };
   }
 
-  function makeAudit(pbuf, featureText, epicText, target, excludedStates, referenceSet){
+  function makeAudit(pbuf, featureText, epicText, target, excludedStates, referenceSet, melhoriasBuf){
     var p = portfolioRows(pbuf, target);
+    var melhoriasSet = melhoriasRows(melhoriasBuf);
     var features = adoRows(featureText).filter(function(r){ return norm(r.workItemType) === 'feature'; });
     var epics = adoRows(epicText).filter(function(r){ return norm(r.workItemType) === 'epic'; });
     var epicIds = {}; epics.forEach(function(r){ if(r.id) epicIds[r.id] = true; });
@@ -681,7 +711,7 @@
       var pid = key(a.parent);
       var parentEpic = pid && epicIds[pid];
       var parentFeature = pid && featureIds[pid];
-      var c = classify(a, pid, excluded);
+      var c = classify(a, pid, excluded, !!melhoriasSet[a.lecom]);
       var portSquad = uniq(ps.map(function(x){ return x.squad; }));
       var mismatch = qextract(a.tags).concat(qextract(a.iterationPath)).some(function(q){ return q !== qnorm(target); });
       var action = c.action;
@@ -740,7 +770,7 @@
   /* ============================================================
      Estado da aplicação / UI
      ============================================================ */
-  var files = { portfolio: null, features: null, epics: null, reference: null };
+  var files = { portfolio: null, features: null, epics: null, reference: null, melhorias: null };
   var result = null;
   var chartInstances = {};
   var uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
@@ -751,7 +781,8 @@
     portfolio: { name: 'Portfólio (Excel)', hint: 'Ex: PORTFOLIO_Q3.xlsx' },
     features: { name: 'Features amplas (CSV)', hint: 'Ex: FeaturesQ3_ampla.csv' },
     epics: { name: 'Epics amplos (CSV)', hint: 'Ex: EpicQ3_amplo.csv' },
-    reference: { name: 'Lista de IDs (opcional)', hint: '.md/.txt/.csv, qualquer formato' }
+    reference: { name: 'Lista de IDs (opcional)', hint: '.md/.txt/.csv, qualquer formato' },
+    melhorias: { name: 'Base de Melhorias (opcional)', hint: 'Ex: Melhorias_Q3_v1.xlsx — evita cobrar Epic de LECOM que é Melhoria' }
   };
 
   function setUploadBox(kind, file){
@@ -771,7 +802,7 @@
     el('btnExecutar').disabled = !(files.portfolio && files.features && files.epics);
   }
 
-  ['portfolio','features','epics','reference'].forEach(function(kind){
+  ['portfolio','features','epics','reference','melhorias'].forEach(function(kind){
     el('input-' + kind).addEventListener('change', function(e){
       setUploadBox(kind, e.target.files && e.target.files[0] ? e.target.files[0] : null);
     });
@@ -815,11 +846,12 @@
       readAsArrayBuffer(files.portfolio),
       readAsText(files.features),
       readAsText(files.epics),
-      files.reference ? readAsText(files.reference) : Promise.resolve('')
+      files.reference ? readAsText(files.reference) : Promise.resolve(''),
+      files.melhorias ? readAsArrayBuffer(files.melhorias) : Promise.resolve(null)
     ]).then(function(vals){
       try{
         var referenceSet = vals[3] ? refIds(vals[3]) : {};
-        var audit = makeAudit(vals[0], vals[1], vals[2], quarter, excludedStates, referenceSet);
+        var audit = makeAudit(vals[0], vals[1], vals[2], quarter, excludedStates, referenceSet, vals[4]);
         result = {
           items: audit.items,
           squads: audit.squads,
@@ -829,6 +861,7 @@
           featuresFileName: files.features.name,
           epicsFileName: files.epics.name,
           referenceFileName: files.reference ? files.reference.name : '',
+          melhoriasFileName: files.melhorias ? files.melhorias.name : '',
           executadoEm: new Date().toISOString()
         };
         persistResult();
@@ -849,8 +882,8 @@
   });
 
   el('btnNovaConferencia').addEventListener('click', function(){
-    files = { portfolio: null, features: null, epics: null, reference: null };
-    ['portfolio','features','epics','reference'].forEach(function(kind){
+    files = { portfolio: null, features: null, epics: null, reference: null, melhorias: null };
+    ['portfolio','features','epics','reference','melhorias'].forEach(function(kind){
       el('input-' + kind).value = '';
       setUploadBox(kind, null);
     });
