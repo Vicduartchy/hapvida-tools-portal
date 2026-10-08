@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   Sparkles,
   UsersRound,
+  Workflow,
   X,
 } from "lucide-react";
 
@@ -163,6 +164,19 @@ const tools: Tool[] = [
     status: "Operacional",
     version: "1.0",
     tags: ["SMs", "Alocação", "Consolidação"],
+    updated: "Nova",
+  },
+  {
+    slug: "mapeamento-squads",
+    name: "Mapeamento de Squads",
+    shortName: "Mapeamento de Squads",
+    description: "Confere o par presença (CSV) x transcrição (DOCX) de cada reunião e organiza papéis, Azure, incidentes e OKR por squad, com versionamento e export em Excel. Preenchimento manual, sem extração automática por IA; base salva no navegador de quem usa.",
+    category: "Governança",
+    icon: Workflow,
+    accent: "slate",
+    status: "Operacional",
+    version: "1.0",
+    tags: ["Squads", "Mapeamento", "Papéis"],
     updated: "Nova",
   },
 ];
