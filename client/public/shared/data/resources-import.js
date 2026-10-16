@@ -409,6 +409,29 @@
     if (typeof saveOverrides === 'function') saveOverrides();
   }
 
+  /* O id de cada recurso é derivado do conteúdo (hash de squad+colaborador+função,
+     veja resourceIdentity/finalizeRows), não da posição na planilha. Isso significa
+     que, ao reimportar uma base mensal nova, a maioria dos recursos recebe exatamente
+     o mesmo id de antes (mesma pessoa, mesma squad, mesma função) — então em vez de
+     apagar todos os vínculos manuais ("Vincular a uma squad" e outras edições) a cada
+     importação, mantemos os que ainda correspondem a um recurso existente na nova base
+     e só descartamos (reportando para quem importou) os que ficaram "órfãos": pessoas
+     que saíram da base, mudaram de função ou de squad desde a última importação. */
+  function reconcileResourceOverrides(newRows) {
+    if (typeof MANUAL_OVERRIDES === 'undefined') return { kept: 0, orphaned: [] };
+    const byId = new Map((newRows || []).map((row) => [row.id, row]));
+    const orphaned = [];
+    const kept = {};
+    Object.keys(MANUAL_OVERRIDES.resources || {}).forEach((id) => {
+      if (byId.has(id)) kept[id] = MANUAL_OVERRIDES.resources[id];
+      else orphaned.push(id);
+    });
+    MANUAL_OVERRIDES.resources = kept;
+    MANUAL_OVERRIDES.deletedResourceIds = (MANUAL_OVERRIDES.deletedResourceIds || []).filter((id) => byId.has(id));
+    if (typeof saveOverrides === 'function') saveOverrides();
+    return { kept: Object.keys(kept).length, orphaned };
+  }
+
   function rebuildAfterChange() {
     if (typeof buildUnified === 'function') buildUnified();
     if (typeof buildSMView === 'function') buildSMView();
@@ -431,11 +454,15 @@
     persist(rows, meta);
     RESOURCES_RAW = cloneRows(rows);
     setCurrentMeta(meta);
-    clearResourceOverrides();
+    const reconcile = reconcileResourceOverrides(RESOURCES_RAW);
     rebuildAfterChange();
     const adjustmentText = meta.adjustmentRows ? ' Foram lidas ' + meta.adjustmentRows + ' linhas da aba AJUSTE.' : '';
+    const overridesText = reconcile.kept
+      ? ' <b>' + reconcile.kept + ' vínculo(s)/edição(ões) manuais foram mantidos</b> automaticamente' +
+        (reconcile.orphaned.length ? ' e <b>' + reconcile.orphaned.length + ' ficaram órfãos</b> (pessoa, squad ou função que não bateu com a base nova — pode exigir vínculo manual de novo).' : '.')
+      : (reconcile.orphaned.length ? ' <b>' + reconcile.orphaned.length + ' vínculo(s) manuais antigos ficaram órfãos</b> (não corresponderam a ninguém na base nova).' : '');
     showStatus('<b>Base mensal carregada.</b> ' + rows.length + ' vínculos únicos em <b>' + (meta.fileName || 'planilha') + '</b> (' + (meta.sheetName || 'aba selecionada') + '). ' +
-      'Diferença em relação à base anterior: <b>+' + diff.added + ' novos</b>, <b>−' + diff.removed + ' removidos</b> e <b>' + diff.changed + ' alterados</b>.' + adjustmentText + ' ' +
+      'Diferença em relação à base anterior: <b>+' + diff.added + ' novos</b>, <b>−' + diff.removed + ' removidos</b> e <b>' + diff.changed + ' alterados</b>.' + adjustmentText + overridesText + ' ' +
       'A base fica salva neste navegador até você escolher outra ou restaurar a base publicada.', 'ok');
   }
 
@@ -523,6 +550,7 @@
     parseWorkbook,
     diffRows,
     resourceIdentity,
+    reconcileResourceOverrides,
     formatDate,
     loadPersisted,
     restoreEmbedded,
