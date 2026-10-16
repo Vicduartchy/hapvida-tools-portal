@@ -555,6 +555,14 @@
           <option value="sem_ambos">Sem recursos e sem board</option>
         </select>
       </div>
+      <div class="field">
+        <label>Status</label>
+        <select id="sqAtivoFilter">
+          <option value="">Ativas e (DESATIVADO)</option>
+          <option value="ativas">Só ativas</option>
+          <option value="desativadas">Só (DESATIVADO)</option>
+        </select>
+      </div>
       <button class="clearbtn" id="btnClearSquad">Limpar filtros</button>
       <button class="btn btn-outline btn-sm" id="btnExpandAll">Expandir tudo</button>
       <button class="btn btn-outline btn-sm" id="btnCollapseAll">Recolher tudo</button>
@@ -1490,7 +1498,10 @@ function buildUnified(){
       boards,
       temSM: squadHasSM(s),
       temRecursos: recursos.length>0,
-      temBoards: boards.length>0
+      temBoards: boards.length>0,
+      // igual ao "ativo" de board: nome começando com "(DESATIVADO)" — normalmente
+      // uma squad "auto" criada a partir de um board desativado do Azure.
+      squadAtiva: !/^\(DESATIVADO\)/i.test(String(s.squad||'').trim())
     });
   });
   /* Squad sem NENHUM sinal nas bases mensais (zero recursos e zero boards)
@@ -2001,6 +2012,7 @@ function renderSquadsTab(){
   const q = (document.getElementById('squadSearch').value||'').trim().toLowerCase();
   const smFilter = document.getElementById('sqSmFilter').value;
   const pendFilter = document.getElementById('sqPendFilter').value;
+  const ativoFilter = document.getElementById('sqAtivoFilter').value;
   const msDir = squadMultiState.diretoria;
 
   let rows = UNIFIED.filter(s=>
@@ -2011,6 +2023,7 @@ function renderSquadsTab(){
       pendFilter==='sem_boards' ? !s.temBoards :
       pendFilter==='sem_ambos' ? (!s.temRecursos && !s.temBoards) : true
     )) &&
+    (!ativoFilter || (ativoFilter==='ativas' ? s.squadAtiva : !s.squadAtiva)) &&
     (!q || s.squad.toLowerCase().includes(q) || (s.diretor||'').toLowerCase().includes(q) || currentSMName(s).toLowerCase().includes(q) || (s.gerente||'').toLowerCase().includes(q))
   );
 
@@ -2112,11 +2125,13 @@ function renderUnmatchedSummary(){
 document.getElementById('squadSearch').addEventListener('input', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
 document.getElementById('sqSmFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
 document.getElementById('sqPendFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
+document.getElementById('sqAtivoFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
 document.getElementById('btnClearSquad').addEventListener('click', ()=>{
   squadMultiState.diretoria.clear();
   document.getElementById('squadSearch').value = '';
   document.getElementById('sqSmFilter').value = '';
   document.getElementById('sqPendFilter').value = '';
+  document.getElementById('sqAtivoFilter').value = '';
   SQUAD_PAGE = 1;
   renderSquadsTab();
 });
