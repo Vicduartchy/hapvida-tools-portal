@@ -1091,6 +1091,74 @@ function linkBoards(idx){
 }
 
 /* ============================================================
+   AUTO-CRIAÇÃO DE SQUADS A PARTIR DA BASE MENSAL
+   Squad que aparece na base de recursos (ou nos boards do Azure) e não bate
+   com nenhuma squad conhecida (SQUAD_CANON / De-Para / levantamento) quer
+   dizer que a organização mudou (reorg, squad nova, diretoria nova) — em
+   vez de ficar invisível até alguém cadastrar a squad à mão no código, ela
+   entra automaticamente como squad "auto", com a diretoria inferida do
+   próprio nome (prefixo antes do primeiro " - "/" – ") e diretor/gerente
+   tirados da própria base de recursos daquele mês. Pode ser removida pela
+   tela normalmente (botão excluir squad) se for ruído de dado — some de
+   verdade via deletedSquadIds, igual qualquer outra squad.
+   ============================================================ */
+const DIRETORIA_DISPLAY = {
+  'assistencial':'Assistencial', 'backoffice':'Backoffice', 'comercial':'Comercial',
+  'digital':'Digital', 'ia':'IA', 'insights':'Insights', 'jornada do cliente':'Jornada do Cliente',
+  'modernizacao':'Modernização', 'operadora':'Operadora', 'ti':'TI', 'incorporacoes':'Incorporações',
+  'data science hapvida':'Data Science Hapvida', 'analytics engineering':'Analytics Engineering',
+  'programas assist':'Programas Assistenciais', 'growth':'Growth'
+};
+function diretoriaFromSquadName(name){
+  const raw = String(name||'').trim();
+  const m = raw.match(/^(.*?)\s[-–]\s/);
+  const prefix = (m ? m[1] : raw).trim();
+  const k = boardKey(prefix);
+  if(!k || k==='n a' || k==='na') return 'Não classificado';
+  return DIRETORIA_DISPLAY[k] || prefix;
+}
+function mostCommon(values){
+  const counts = {};
+  let best = '', bestN = 0;
+  (values||[]).forEach(v=>{
+    const t = String(v||'').trim();
+    if(!t || t.toUpperCase()==='N/A') return;
+    counts[t] = (counts[t]||0)+1;
+    if(counts[t] > bestN){ best = t; bestN = counts[t]; }
+  });
+  return best;
+}
+function autoCreateSquadsFromUnmatched(registry, unmatchedResourceGroups, unmatchedBoardNames){
+  const deleted = new Set(MANUAL_OVERRIDES.deletedSquadIds || []);
+  const seen = new Map(); // boardKey(nome) -> nome original escolhido pra exibir
+  (unmatchedResourceGroups||[]).forEach(g=>{
+    const k = boardKey(g.squadRaw);
+    if(k && !seen.has(k)) seen.set(k, g.squadRaw);
+  });
+  (unmatchedBoardNames||[]).forEach(nome=>{
+    const k = boardKey(nome);
+    if(k && !seen.has(k)) seen.set(k, nome);
+  });
+  const created = [];
+  seen.forEach((nomeOriginal, k)=>{
+    const id = 'auto-'+slugify(nomeOriginal);
+    if(deleted.has(id)) return; // Vic já removeu essa squad "fantasma"/ruído manualmente
+    const grupo = (unmatchedResourceGroups||[]).find(g=> boardKey(g.squadRaw)===k);
+    const diretor = grupo ? mostCommon(grupo.rows.map(r=>r.diretor)) : '';
+    const gerente = grupo ? mostCommon(grupo.rows.map(r=>r.gerente_ti || r.gerente)) : '';
+    created.push({
+      id, squad: nomeOriginal,
+      diretoria: diretoriaFromSquadName(nomeOriginal), diretor, gerente,
+      sm_atual:'', sm_anterior:'', sm_proposto:'',
+      tipo:'', complexidade:'', ligacao:'', repasse:'',
+      observacoes: 'Criada automaticamente a partir da base mensal — ainda sem cadastro oficial (SM, complexidade etc.).',
+      email_sm:'', source:'auto_base_mensal', levantamento_sm:null, levantamento_raw_name:null, fonte_nomeacao:'auto'
+    });
+  });
+  return registry.concat(created);
+}
+
+/* ============================================================
    MONTAGEM DO MODELO UNIFICADO
    ============================================================ */
 let UNIFIED = []; // array de squads (registro), cada uma já com .recursos[] e .boards[]
@@ -1405,7 +1473,13 @@ window.addEventListener('hac-quarterly-error', event=>{
 });
 function buildUnified(){
   REGISTRY = buildRegistry();
-  const idx = buildSquadIndexFrom(REGISTRY);
+  let idx = buildSquadIndexFrom(REGISTRY);
+  // 1a passada: só pra descobrir o que a base mensal traz que o registro ainda não conhece
+  linkResources(idx);
+  linkBoards(idx);
+  REGISTRY = autoCreateSquadsFromUnmatched(REGISTRY, UNMATCHED_RESOURCES, (UNMATCHED_BOARDS||[]).map(b=>b.board));
+  idx = buildSquadIndexFrom(REGISTRY);
+  // 2a passada: agora com as squads novas já no registro, religa tudo de verdade
   const resByS = linkResources(idx);
   const boardsByS = linkBoards(idx);
   let list = REGISTRY.map(s=>{
