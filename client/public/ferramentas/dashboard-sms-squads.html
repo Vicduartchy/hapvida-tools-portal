@@ -1493,6 +1493,15 @@ function buildUnified(){
       temBoards: boards.length>0
     });
   });
+  /* Squad sem NENHUM sinal nas bases mensais (zero recursos e zero boards)
+     deixa de existir no dashboard — evita squad "fantasma" aparecendo como
+     ativa sem ninguém e sem trabalho nenhum por trás. Recalculado a cada
+     atualização de base: se a squad voltar a aparecer (recurso ou board)
+     num mês seguinte, ela reaparece sozinha, sem precisar reativar nada.
+     Squad "só levantamento" (declarada por um SM na pesquisa, mas que ainda
+     não tem board/recurso oficial) fica de fora dessa regra de propósito —
+     ela existe justamente para cobrir esse gap. */
+  list = list.filter(s=> s.temRecursos || s.temBoards || s.source==='levantamento_only');
   UNIFIED = applySquadOverrides(list);
   return UNIFIED;
 }
