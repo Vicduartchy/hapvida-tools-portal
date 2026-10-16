@@ -236,7 +236,7 @@
       <div class="dropzone" id="dz-base4" data-slot="base4">
         <div class="ic">🧑‍💼</div>
         <div class="t">Base 4 · Organograma</div>
-        <div class="d">1 arquivo com BASE_SET.26 + Ajuste + Consulta</div>
+        <div class="d">1 arquivo com BASE_&lt;mês&gt;.&lt;ano&gt; + Ajuste + Consulta</div>
         <button type="button" class="choose-btn" id="choose-base4">📎 Selecionar arquivo</button>
         <div class="status-badge" id="status-base4" hidden></div>
         <div class="fn" id="fn-base4">Nenhum arquivo selecionado</div>
@@ -244,7 +244,7 @@
         <input type="file" accept=".xlsx,.xls" id="file-base4">
       </div>
     </div>
-    <p class="note" style="margin-top:12px">Clique em qualquer ponto do quadro de cada base (ou arraste o arquivo até ele) para selecionar. Nas Bases 1-3, a ferramenta identifica automaticamente a aba compatível com o contrato de colunas (abas ocultas são ignoradas). A <b>Base 4</b> usa <b>"BASE_SET.26"</b> como fonte principal de colaborador, cargo e organograma, aplica a aba <b>"AJUSTE"</b> como sobreposição manual quando existir e cruza a aba <b>"CONSULTA"</b> para obter a Ordem de Investimento por LECOM/ID. A linha de cabeçalho é detectada automaticamente, inclusive quando começa na linha 2. Tudo roda no seu navegador — nenhum arquivo sai da sua máquina.</p>
+    <p class="note" style="margin-top:12px">Clique em qualquer ponto do quadro de cada base (ou arraste o arquivo até ele) para selecionar. Nas Bases 1-3, a ferramenta identifica automaticamente a aba compatível com o contrato de colunas (abas ocultas são ignoradas). A <b>Base 4</b> usa a aba <b>"BASE_&lt;mês&gt;.&lt;ano&gt;"</b> (ex.: "BASE_SET.26", "BASE_OUT.26" — o nome muda todo mês/trimestre) como fonte principal de colaborador, cargo e organograma, aplica a aba <b>"AJUSTE"</b> como sobreposição manual quando existir e cruza a aba <b>"CONSULTA"</b> para obter a Ordem de Investimento por LECOM/ID. A linha de cabeçalho é detectada automaticamente, inclusive quando começa na linha 2. Tudo roda no seu navegador — nenhum arquivo sai da sua máquina.</p>
 
     <div style="display:flex; gap:10px; margin-top:16px; flex-wrap:wrap">
       <button class="btn primary" id="processBtn" disabled style="flex:1 1 220px">Processar bases</button>
@@ -259,7 +259,7 @@
     <div style="margin-top:16px">
       <button class="btn primary big" id="downloadBtn">Baixar planilha cruzada (.xlsx)</button>
     </div>
-    <p class="note" style="margin-top:10px">O arquivo sai com 7 abas, nesta ordem: <b>Apuração de Horas</b> (% Melhoria × % Projeto por colaborador, com Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo vindos da BASE_SET.26 e dos overrides da aba Ajuste, e Ordem de Investimento vinda da aba Consulta, cruzada pelo LECOM/ID de cada projeto), <b>Base Cruzada</b> (cada hora apontada, já classificada e casada com o item de compromisso, com uma linha indicando a origem de cada coluna), <b>Horas por Squad</b> (aberto por recurso, com % de participação no squad e % por tipo de demanda), <b>Compromisso · Projetos</b> e <b>Compromisso · Melhorias</b> (planejado × realizado, aberto por squad de execução), <b>Organograma</b> (BASE_SET.26 consolidada por colaborador, com AJUSTE aplicado) e <b>Lecom Dobrados</b> (LECOMs cadastrados ao mesmo tempo como melhoria e como projeto). Cabeçalhos coloridos, datas no formato DD/MM/AAAA e nomes de colaborador normalizados (Primeira Letra Maiúscula).</p>
+    <p class="note" style="margin-top:10px">O arquivo sai com 7 abas, nesta ordem: <b>Apuração de Horas</b> (% Melhoria × % Projeto por colaborador, com Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo vindos da BASE_&lt;mês&gt;.&lt;ano&gt; e dos overrides da aba Ajuste, e Ordem de Investimento vinda da aba Consulta, cruzada pelo LECOM/ID de cada projeto), <b>Base Cruzada</b> (cada hora apontada, já classificada e casada com o item de compromisso, com uma linha indicando a origem de cada coluna), <b>Horas por Squad</b> (aberto por recurso, com % de participação no squad e % por tipo de demanda), <b>Compromisso · Projetos</b> e <b>Compromisso · Melhorias</b> (planejado × realizado, aberto por squad de execução), <b>Organograma</b> (BASE_&lt;mês&gt;.&lt;ano&gt; consolidada por colaborador, com AJUSTE aplicado) e <b>Lecom Dobrados</b> (LECOMs cadastrados ao mesmo tempo como melhoria e como projeto). Cabeçalhos coloridos, datas no formato DD/MM/AAAA e nomes de colaborador normalizados (Primeira Letra Maiúscula).</p>
   </div>
 
   <p class="note footline"></p>
@@ -467,6 +467,18 @@ function findSheetName(names, target){
   var contains = names.filter(function(n){ return normalizeHeaderKey(n).indexOf(norm) !== -1; });
   if (contains.length === 1) return contains[0];
   return null;
+}
+/* A aba principal da Base 4 segue o padrão "BASE_<mês>.<ano>" e o nome muda
+   todo mês/trimestre (ex.: "BASE_SET.26" em setembro, "BASE_OUT.26" em
+   outubro) — por isso não procura um nome fixo, reconhece o padrão em si
+   (3 letras de mês em português + ano de 2 ou 4 dígitos), tolerante a
+   maiúsculas/acentos/espaço/sublinhado. Se mais de uma aba bater no padrão
+   (não deveria acontecer), não escolhe nenhuma para não arriscar pegar a
+   errada. */
+var BASE_ORGANOGRAMA_RE = /^BASE[_\s]*(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\.?\s*\d{2,4}$/;
+function findOrganogramaSheetName(names){
+  var matches = names.filter(function(n){ return BASE_ORGANOGRAMA_RE.test(normalizeHeaderKey(n)); });
+  return matches.length === 1 ? matches[0] : null;
 }
 /* Aba "Consulta" da Base 4: cruza o LECOM/ID do projeto (Base 1) com a
    Ordem de Investimento. A coluna de identificação varia de nome no arquivo
@@ -1446,20 +1458,21 @@ function applySheetChoice(slot){
   setSlotStatus(slot, check.ok ? "ok" : "error", check.ok ? "Concluído" : "Recusado");
   updateProcessBtn();
 }
-/* Base 4 lê a fonte ampla BASE_SET.26 (organograma/cargo), a CONSULTA
-   (LECOM/ID → Ordem de Investimento) e a AJUSTE quando presente. A aba
-   BASE_SET.26 começa na linha 2 em alguns arquivos; por isso usa o parser
-   que encontra a linha de cabeçalho automaticamente. */
+/* Base 4 lê a fonte ampla BASE_<mês>.<ano> (organograma/cargo; o nome muda
+   todo mês/trimestre — ver findOrganogramaSheetName), a CONSULTA (LECOM/ID →
+   Ordem de Investimento) e a AJUSTE quando presente. Essa aba de organograma
+   começa na linha 2 em alguns arquivos; por isso usa o parser que encontra a
+   linha de cabeçalho automaticamente. */
 function applyBase4Sheets(slot){
   var st = STATE.slots[slot];
   var sel = slotSheetSelect(slot);
   sel.hidden = true; sel.innerHTML = "";
 
-  var organogramaName = findSheetName(st.visible, "BASE_SET.26");
+  var organogramaName = findOrganogramaSheetName(st.visible);
   var ajusteName = findSheetName(st.visible, "AJUSTE");
   var consultaName = findSheetName(st.visible, "CONSULTA");
   var faltando = [];
-  if (!organogramaName && !ajusteName) faltando.push('aba "BASE_SET.26" ou "Ajuste"');
+  if (!organogramaName && !ajusteName) faltando.push('aba "BASE_<mês>.<ano>" (ex.: BASE_SET.26, BASE_OUT.26) ou "Ajuste"');
   if (!consultaName) faltando.push('aba "Consulta"');
 
   var fn = slotFnLabel(slot);
@@ -1483,7 +1496,14 @@ function applyBase4Sheets(slot){
     : [];
   var consultaRows = prepareConsultaRows(parseSheetRows(st.buf, consultaName));
   var checkOrganograma = validateSlot("base4Organograma", organogramaRows);
-  var checkAjuste = ajusteName ? validateSlot("base4Ajuste", ajusteRows) : { ok: true, msg: "não enviada (sem overrides)" };
+  /* A aba AJUSTE é sobreposição manual opcional: a maioria dos meses não tem
+     nenhuma linha nela (ninguém precisou corrigir o organograma naquele
+     mês), e isso é normal, não um erro — só falta real se a aba existe, tem
+     linhas, mas está com as colunas erradas. */
+  var checkAjuste;
+  if (!ajusteName) checkAjuste = { ok: true, msg: "não enviada (sem overrides)" };
+  else if (!ajusteRows || !ajusteRows.length) checkAjuste = { ok: true, msg: "vazia (sem overrides neste mês)" };
+  else checkAjuste = validateSlot("base4Ajuste", ajusteRows);
   var checkConsulta = validateConsultaRows(consultaRows);
   var ok = checkOrganograma.ok && checkAjuste.ok && checkConsulta.ok;
 
@@ -1491,7 +1511,7 @@ function applyBase4Sheets(slot){
   st.ok = ok;
 
   fn.classList.toggle("wrap", !ok);
-  fn.textContent = st.file.name + " · BASE_SET.26: " + checkOrganograma.msg + " · AJUSTE: " + checkAjuste.msg + " · Consulta: " + checkConsulta.msg;
+  fn.textContent = st.file.name + " · " + (organogramaName || "BASE_<mês>.<ano>") + ": " + checkOrganograma.msg + " · AJUSTE: " + checkAjuste.msg + " · Consulta: " + checkConsulta.msg;
   setSlotStatus(slot, ok ? "ok" : "error", ok ? "Concluído" : "Recusado");
   updateProcessBtn();
 }
