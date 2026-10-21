@@ -254,7 +254,7 @@
   .lbl-toggle-header{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--azul);font-weight:600;cursor:pointer;white-space:nowrap;background:var(--branco);border:1.5px solid var(--azul);padding:8px 14px;border-radius:8px;}
   .lbl-toggle-header input{cursor:pointer;}
 
-  .tabbar{display:flex;gap:6px;margin:18px auto 16px;max-width:1360px;position:sticky;top:8px;z-index:50;background:var(--cinza-bg);padding:4px 0;flex-wrap:wrap;}
+  .tabbar{display:flex;gap:6px;margin:8px 0 12px;max-width:1360px;background:var(--cinza-bg);padding:4px 0;flex-wrap:wrap;}
   .tab{background:var(--branco);color:var(--azul-escuro);border:1px solid var(--cinza-borda);border-radius:8px;padding:10px 18px;font-size:13.5px;font-weight:700;cursor:pointer;font-family:Arial,Helvetica,sans-serif;}
   .tab:hover{background:#EEF2FC;}
   .tab.active{background:var(--azul);color:var(--branco);border-color:var(--azul);}
@@ -360,13 +360,41 @@
   #smHeatmap td:first-child{ white-space:nowrap; }
   #smHeatmap th, #smHeatmap td{ padding:4px 5px; font-size:11px; }
   #smHeatmap th{ white-space:normal; line-height:1.2; }
-  .globalfilter{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; background:#EEF2FF; border:1px solid #C9D3F5; border-radius:10px; padding:8px 14px; margin:0 0 12px; font-size:12px; }
-  .globalfilter .gf-title{ font-weight:700; color:var(--azul); }
-  .globalfilter label{ display:flex; align-items:center; gap:6px; color:var(--cinza-texto); font-weight:600; }
-  .globalfilter select{ padding:5px 8px; border:1px solid #C9D3F5; border-radius:6px; background:#FFF; font-size:12px; max-width:260px; }
-  .globalfilter .gf-status{ margin-left:auto; color:var(--cinza-texto); }
-  .globalfilter.active{ background:#FFF4E5; border-color:#F7C98B; }
-  .globalfilter.active .gf-status{ color:#B35A00; font-weight:700; }
+  #stickyTop{ position:sticky; top:0; z-index:60; background:var(--cinza-bg); padding:8px 0 0; margin:0 auto; max-width:1360px; }
+  .globalfilter{ background:#FFF; border:1px solid var(--cinza-borda); border-radius:10px; padding:10px 14px 8px; box-shadow:0 1px 4px rgba(0,43,138,.07); }
+  .globalfilter.active{ border-color:#F7C98B; background:#FFFBF4; }
+  .gf-row{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:8px 12px; }
+  .gf-field{ display:flex; flex-direction:column; gap:3px; }
+  .gf-field.gf-grow{ flex:1; min-width:200px; }
+  .gf-lbl{ font-size:10.5px; font-weight:700; color:var(--cinza-texto); text-transform:uppercase; letter-spacing:.03em; }
+  .globalfilter select, .globalfilter input[type=search]{ padding:6px 8px; border:1px solid var(--cinza-borda); border-radius:6px; background:#FFF; font-size:12.5px; }
+  .globalfilter input[type=search]{ width:100%; box-sizing:border-box; }
+  .gf-count{ margin-left:auto; font-size:12px; color:var(--cinza-texto); padding-bottom:6px; }
+  .gf-count b{ color:var(--azul); font-size:14px; }
+  .globalfilter.active .gf-count b{ color:#B35A00; }
+  .gf-linkbtn{ background:none; border:none; color:var(--azul); font-weight:700; font-size:12px; cursor:pointer; padding:6px 4px; }
+  .gf-more{ display:flex; flex-wrap:wrap; gap:8px 18px; align-items:flex-end; margin-top:10px; padding-top:10px; border-top:1px dashed var(--cinza-borda); }
+  .gf-more.hidden{ display:none; }
+  .gf-check{ display:flex; align-items:center; gap:5px; font-size:12px; color:var(--cinza-texto); font-weight:600; padding-bottom:6px; }
+  .gf-ctx{ display:none; gap:8px 14px; align-items:flex-end; flex-wrap:wrap; }
+  .gf-row2{ margin-top:8px; align-items:center; min-height:26px; }
+  .gf-presets-label{ font-size:10.5px; font-weight:700; color:var(--cinza-texto); text-transform:uppercase; margin-right:6px; }
+  .gf-preset{ border:1px solid #C9D3F5; background:#EEF2FF; color:var(--azul); border-radius:14px; padding:3px 11px; font-size:11.5px; font-weight:700; cursor:pointer; margin-right:5px; }
+  .gf-preset:hover{ background:#DDE5FB; }
+  .gf-preset.on{ background:var(--azul); color:#FFF; border-color:var(--azul); }
+  .gf-chips{ display:flex; flex-wrap:wrap; gap:5px; }
+  .gf-chip{ background:#FFF4E5; border:1px solid #F7C98B; color:#8A4B00; border-radius:12px; padding:2px 4px 2px 10px; font-size:11.5px; font-weight:600; }
+  .gf-chip button{ border:none; background:none; color:#8A4B00; font-size:14px; line-height:1; cursor:pointer; padding:0 5px; font-weight:700; }
+  .tab-count{ display:inline-block; margin-left:6px; background:var(--vermelho); color:#FFF; border-radius:10px; font-size:10.5px; padding:1px 7px; font-weight:700; }
+  .tab-count:empty{ display:none; }
+  .tab.active .tab-count{ background:#FFF; color:var(--vermelho); }
+  details.bases-panel{ max-width:1360px; margin:8px auto 0; padding:0 36px; }
+  details.bases-panel > summary{ cursor:pointer; list-style:none; display:flex; flex-wrap:wrap; gap:6px 14px; align-items:center; font-size:12px; font-weight:700; color:var(--azul); background:#FFF; border:1px solid var(--cinza-borda); border-radius:8px; padding:7px 12px; }
+  details.bases-panel > summary::-webkit-details-marker{ display:none; }
+  details.bases-panel > summary .bp-status{ font-weight:400; color:var(--cinza-texto); }
+  details.bases-panel .source-grid{ padding:0; max-width:none; }
+  [data-preset]{ cursor:pointer; }
+  .kpi[data-preset]:hover{ box-shadow:0 0 0 2px #C9D3F5; }
   .insight-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:10px; }
   .insight-card{ background:#FFF; border:1px solid #E4E7EF; border-left:4px solid var(--azul); border-radius:6px; padding:10px 12px; font-size:12.5px; line-height:1.55; }
   .insight-card.alert{ border-left-color:var(--vermelho); }
@@ -418,6 +446,9 @@
     <div class="offline-badge">100% offline</div>
   </div>
 </header>
+<details class="bases-panel" id="basesPanel">
+  <summary>📥 Bases e importação <span class="bp-status" id="basesSummary"></span></summary>
+  <div style="margin-top:8px;">
 <div class="source-grid" aria-label="Atualização semanal das bases">
   <div class="source-card">
     <h3>1. Recursos e squads</h3>
@@ -447,31 +478,54 @@
     <span id="improvementsDataBadge" class="source-status">Melhorias: aguardando upload semanal</span>
   </div>
 </div>
-<div style="max-width:1360px; margin:6px auto 0; padding:0 36px; font-size:10.5px; color:var(--cinza-texto);">Fluxo semanal: importe as três bases; o navegador salva os últimos arquivos e recalcula recursos, SMs, squads, projetos, melhorias e qualidade dos dados.</div>
+<div style="max-width:1360px; margin:6px 0 0; padding:0; font-size:10.5px; color:var(--cinza-texto);">Fluxo semanal: importe as três bases; o navegador salva os últimos arquivos e recalcula recursos, SMs, squads, projetos, melhorias e qualidade dos dados.</div>
+  <div class="roadmap-note" style="margin-top:8px;">
+    Divisão SM × squad: <b>Levantamentos_SMs.xlsx</b>. Nomes/diretor/gerente: conferidos contra De-Para Azure (Jun/24). <b>📥 Importar as três bases</b> recalcula o cruzamento por squad, SM, LECOM e qualidade dos dados. <b>✏️ Editar</b> e <b>🗑️ Excluir</b> continuam salvos neste navegador.
+  </div>
+  </div>
+</details>
 
 <main>
   <div id="resourcesImportStatus" class="importbanner" style="display:none;"></div>
 
-  <div class="roadmap-note">
-    Divisão SM × squad: <b>Levantamentos_SMs.xlsx</b>. Nomes/diretor/gerente: conferidos contra De-Para Azure (Jun/24). <b>📥 Importar as três bases</b> recalcula o cruzamento por squad, SM, LECOM e qualidade dos dados. <b>✏️ Editar</b> e <b>🗑️ Excluir</b> continuam salvos neste navegador.
-  </div>
 
+  <div id="stickyTop">
   <div class="globalfilter" id="globalFilterBar">
-    <span class="gf-title">🎯 Filtro global</span>
-    <label>Diretoria <select id="gfDiretoria"></select></label>
-    <label>SM <select id="gfSm"></select></label>
-    <button class="clearbtn" id="gfClear" type="button">Limpar</button>
-    <span class="gf-status" id="gfStatus">Todas as squads</span>
+    <div class="gf-row">
+      <div class="gf-field"><span class="gf-lbl">Diretoria</span><div class="msel" id="mselGfDiretoria"><button type="button" class="msel-btn" id="mselGfDiretoriaBtn">Diretoria <span class="count" id="mselGfDiretoriaCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfDiretoriaPanel"></div></div></div>
+      <div class="gf-field"><span class="gf-lbl">SM</span><div class="msel" id="mselGfSm"><button type="button" class="msel-btn" id="mselGfSmBtn">SM <span class="count" id="mselGfSmCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfSmPanel"></div></div></div>
+      <div class="gf-field"><span class="gf-lbl">Saúde</span><div class="msel" id="mselGfSaude"><button type="button" class="msel-btn" id="mselGfSaudeBtn">Saúde <span class="count" id="mselGfSaudeCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfSaudePanel"></div></div></div>
+      <div class="gf-field"><span class="gf-lbl">Status</span><select id="gfStatus"><option value="ativas">Só ativas</option><option value="todas">Ativas e desativadas</option><option value="desativadas">Só desativadas</option></select></div>
+      <div class="gf-field gf-grow"><span class="gf-lbl">Buscar</span><input type="search" id="gfBusca" placeholder="🔎 Squad, SM, diretor, gerente ou colaborador…" autocomplete="off"></div>
+      <button type="button" class="gf-linkbtn" id="gfMore">Mais filtros ▾</button>
+      <button type="button" class="clearbtn" id="gfClear">Limpar tudo</button>
+      <span class="gf-count" id="gfCount"></span>
+    </div>
+    <div class="gf-more hidden" id="gfMorePanel">
+      <div class="gf-field"><span class="gf-lbl">Pendência</span><select id="gfPend"><option value="">Todas</option><option value="sem_sm">Sem SM</option><option value="sem_pessoas">Sem pessoas</option><option value="boards_parados">Boards parados (&gt;180 dias)</option></select></div>
+      <label class="gf-check"><input type="checkbox" id="gfAcima"> SM acima do ideal (&gt;3 squads)</label>
+      <label class="gf-check"><input type="checkbox" id="gfDiverg"> SM com divergência</label>
+      <div class="gf-ctx" id="gfCtxBoards">
+        <div class="gf-field"><span class="gf-lbl">Board</span><select id="gfBoardStatus"><option value="">Ativos e desativados</option><option value="ativo">Só ativos</option><option value="desativado">Só desativados</option></select></div>
+        <div class="gf-field"><span class="gf-lbl">Vínculo com squad</span><select id="gfBoardVinculo"><option value="">Com e sem squad</option><option value="com">Só vinculados</option><option value="sem">Só sem squad</option></select></div>
+      </div>
+      <div class="gf-ctx" id="gfCtxRecursos">
+        <div class="gf-field"><span class="gf-lbl">Função</span><div class="msel" id="mselGfFuncao"><button type="button" class="msel-btn" id="mselGfFuncaoBtn">Função <span class="count" id="mselGfFuncaoCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfFuncaoPanel"></div></div></div>
+        <div class="gf-field"><span class="gf-lbl">Compartilhado</span><select id="gfCompart"><option value="">Todos</option><option value="Sim">Só compartilhados</option><option value="Não">Só dedicados</option></select></div>
+      </div>
+    </div>
+    <div class="gf-row gf-row2"><div id="gfPresets"></div><div class="gf-chips" id="gfChips"></div></div>
   </div>
 
   <div class="tabbar" id="tabBar">
     <button class="tab active" data-tab="executive">📌 Visão Executiva</button>
-    <button class="tab" data-tab="pendencias">⚠️ Pendências</button>
+    <button class="tab" data-tab="pendencias">⚠️ Pendências<span class="tab-count" id="tabCountPend"></span></button>
     <button class="tab" data-tab="quality">🧪 Qualidade dos Dados</button>
     <button class="tab" data-tab="sms">👤 SMs</button>
-    <button class="tab" data-tab="squads">🧩 Squads</button>
+    <button class="tab" data-tab="squads">🧩 Squads<span class="tab-count" id="tabCountSquads" title=""></span></button>
     <button class="tab" data-tab="boards">🗂️ Boards Azure</button>
     <button class="tab" data-tab="recursos">👥 Recursos das Squads</button>
+  </div>
   </div>
 
   <div class="tab-content" id="tab-executive">
@@ -528,8 +582,6 @@
     <div class="insight-section">
       <h3>Projetos e melhorias por squad</h3>
       <div class="filterbar">
-        <div class="field"><label for="execSmFilter">SM</label><select id="execSmFilter"><option value="">Todos os SMs</option></select></div>
-        <div class="field"><label for="execSquadSearch">Buscar</label><input type="text" id="execSquadSearch" placeholder="Squad, SM ou diretoria"></div>
         <div class="field"><label for="execSort">Ordenar por</label><select id="execSort"><option value="rodando">Rodando agora</option><option value="total">Total no trimestre</option><option value="projetos">Projetos em andamento</option><option value="melhorias">Melhorias finalizadas</option><option value="horas">Horas estimadas</option></select></div>
       </div>
       <div class="resultcount" id="execSquadCount"></div>
@@ -596,17 +648,6 @@
     <div id="conflitosSmPanel" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
 
     <div class="filterbar">
-      <div class="field" style="flex:2; min-width:220px;">
-        <label>Buscar</label>
-        <input type="text" id="smSearch" placeholder="🔎 Nome do SM ou squad...">
-      </div>
-      <div class="field">
-        <label>Diretoria</label>
-        <div class="msel" id="mselSmDiretoria"><button type="button" class="msel-btn" id="mselSmDiretoriaBtn">Diretoria <span class="count" id="mselSmDiretoriaCount" style="display:none;">0</span></button><div class="msel-panel" id="mselSmDiretoriaPanel"></div></div>
-      </div>
-      <label class="lbl-toggle-header"><input type="checkbox" id="smOverloadOnly"> Só acima do ideal (&gt;3)</label>
-      <label class="lbl-toggle-header"><input type="checkbox" id="smDivergOnly"> Só com divergência</label>
-      <button class="clearbtn" id="btnClearSm">Limpar filtros</button>
       <button class="btn btn-outline btn-sm" id="btnExpandAllSm">Expandir tudo</button>
       <button class="btn btn-outline btn-sm" id="btnCollapseAllSm">Recolher tudo</button>
       <button class="btn btn-outline btn-sm" id="btnExportSmXlsx">📊 Exportar Excel</button>
@@ -653,49 +694,6 @@
     <div id="unmatchedSummary" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
 
     <div class="filterbar">
-      <div class="field" style="flex:2; min-width:220px;">
-        <label>Buscar</label>
-        <input type="text" id="squadSearch" placeholder="🔎 Squad, diretor, gerente ou SM...">
-      </div>
-      <div class="field">
-        <label>Diretoria</label>
-        <div class="msel" id="mselSqDiretoria"><button type="button" class="msel-btn" id="mselSqDiretoriaBtn">Diretoria <span class="count" id="mselSqDiretoriaCount" style="display:none;">0</span></button><div class="msel-panel" id="mselSqDiretoriaPanel"></div></div>
-      </div>
-      <div class="field">
-        <label>SM</label>
-        <select id="sqSmFilter">
-          <option value="">Com e sem SM</option>
-          <option value="com">Só com SM</option>
-          <option value="sem">Só sem SM</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Pendência</label>
-        <select id="sqPendFilter">
-          <option value="">Todas</option>
-          <option value="sem_recursos">Sem recursos mapeados</option>
-          <option value="sem_boards">Sem board vinculado</option>
-          <option value="sem_ambos">Sem recursos e sem board</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Status</label>
-        <select id="sqAtivoFilter">
-          <option value="">Ativas e (DESATIVADO)</option>
-          <option value="ativas">Só ativas</option>
-          <option value="desativadas">Só (DESATIVADO)</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Saúde</label>
-        <select id="sqSaudeFilter">
-          <option value="">Todas</option>
-          <option value="vermelho">Vermelho</option>
-          <option value="amarelo">Amarelo</option>
-          <option value="verde">Verde</option>
-        </select>
-      </div>
-      <button class="clearbtn" id="btnClearSquad">Limpar filtros</button>
       <button class="btn btn-outline btn-sm" id="btnExpandAll">Expandir tudo</button>
       <button class="btn btn-outline btn-sm" id="btnCollapseAll">Recolher tudo</button>
       <button class="btn btn-outline btn-sm" id="btnExportSquadXlsx">📊 Exportar Excel</button>
@@ -746,34 +744,6 @@
 
     <div class="kpis" id="boardsKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));"></div>
 
-    <div class="filterbar">
-      <div class="field" style="flex:2; min-width:220px;">
-        <label>Buscar</label>
-        <input type="text" id="boardsSearch" placeholder="🔎 Board, diretor, gerente ou squad...">
-      </div>
-      <div class="field">
-        <label>Diretoria</label>
-        <div class="msel" id="mselBoardsDiretoria"><button type="button" class="msel-btn" id="mselBoardsDiretoriaBtn">Diretoria <span class="count" id="mselBoardsDiretoriaCount" style="display:none;">0</span></button><div class="msel-panel" id="mselBoardsDiretoriaPanel"></div></div>
-      </div>
-      <div class="field">
-        <label>Status</label>
-        <select id="boardsStatusFilter">
-          <option value="">Ativos e desativados</option>
-          <option value="ativo">Só ativos</option>
-          <option value="desativado">Só desativados</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Vínculo com squad</label>
-        <select id="boardsVinculoFilter">
-          <option value="">Com e sem squad</option>
-          <option value="com">Só vinculados</option>
-          <option value="sem">Só sem squad</option>
-        </select>
-      </div>
-      <button class="clearbtn" id="btnClearBoards">Limpar filtros</button>
-    </div>
-
     <div class="resultcount" id="boardsCount"></div>
 
     <div class="tablewrap">
@@ -806,18 +776,6 @@
     </div>
     <div class="panel">
       <div class="sub" style="font-weight:700;color:var(--azul);margin-bottom:10px;">Colaboradores por squad (base bruta de recursos) <span id="recursosTotalRawCount" style="font-weight:400;color:var(--cinza-texto);"></span></div>
-      <div class="filterbar">
-        <input type="text" id="recursosSearch" placeholder="🔎 Buscar squad ou colaborador...">
-        <div class="msel" id="mselRecSquad"><button type="button" class="msel-btn" id="mselRecSquadBtn">Squad <span class="count" id="mselRecSquadCount" style="display:none;">0</span></button><div class="msel-panel" id="mselRecSquadPanel"></div></div>
-        <div class="msel" id="mselRecDiretoria"><button type="button" class="msel-btn" id="mselRecDiretoriaBtn">Diretoria <span class="count" id="mselRecDiretoriaCount" style="display:none;">0</span></button><div class="msel-panel" id="mselRecDiretoriaPanel"></div></div>
-        <div class="msel" id="mselRecFuncao"><button type="button" class="msel-btn" id="mselRecFuncaoBtn">Função <span class="count" id="mselRecFuncaoCount" style="display:none;">0</span></button><div class="msel-panel" id="mselRecFuncaoPanel"></div></div>
-        <select id="recCompartilhado">
-          <option value="">Compartilhado? (todos)</option>
-          <option value="Sim">Só compartilhados</option>
-          <option value="Não">Só dedicados</option>
-        </select>
-        <button class="clearbtn" id="btnClearRecursos">Limpar filtros</button>
-      </div>
       <div class="kpis" id="recursosKpiRow"></div>
       <div class="resultcount" id="recursosCount"></div>
       <div class="tablewrap">
@@ -1384,7 +1342,7 @@ function qNewSquadAgg(key, label, squad){
     p:{ total:0, andamento:0, planejamento:0, encerrado:0, fora:0 }, m:{ total:0, finalizada:0, curso:0, fora:0 },
     horas:0, rodando:0, lecoms:new Set(), smPortfolio:{} };
 }
-function buildQuarterlyModel(){
+function buildQuarterlyModel(full){
   if(!window.HACQuarterlyImport) return null;
   const projects = HACQuarterlyImport.getRows('portfolio');
   const improvements = HACQuarterlyImport.getRows('improvements');
@@ -1395,12 +1353,12 @@ function buildQuarterlyModel(){
   const projectLecom = new Map(), improvementLecom = new Map();
   const quality = { semSquad:{p:0,m:0}, semMotivo:{p:0,m:0}, encerradoSemData:0, finalizadaSemData:0 };
 
-  const filtering = globalFilterActive();
+  const filtering = !full && globalFilterActive(), pass = filtering ? gfPredicate(true) : null, onlyActive = !full && !filtering && GF.status === 'ativas';
   function add(row, type){
-    if(filtering){
+    if(filtering || onlyActive){
       const r0 = qText(row.squad || row.squadAzure);
       const f0 = r0 ? qFindSquad(row, index) : { squad:null };
-      if(!f0.squad || !squadPassesFilter(f0.squad)) return;
+      if(filtering ? (!f0.squad || !pass(f0.squad)) : (f0.squad && f0.squad.squadAtiva === false)) return;
     }
     const raw = qText(row.squad || row.squadAzure);
     if(!raw) quality.semSquad[type==='p'?'p':'m'] += 1;
@@ -1439,7 +1397,7 @@ function buildQuarterlyModel(){
   const sumM = k => squads.reduce((t,a)=>t+a.m[k],0);
 
   /* capacidade por SM — inclui SMs sem nenhuma demanda no trimestre */
-  const smRows = filteredSMs().map(sm=>{
+  const smRows = (full ? SM_VIEW : filteredSMs(true)).map(sm=>{
     const mine = mapped.filter(a=>a.sm && boardKey(a.sm)===sm.id);
     return {
       nome: sm.nome, squadCount: sm.squadCount, squadsComDemanda: mine.filter(a=>a.p.total+a.m.total>0).length,
@@ -1474,7 +1432,7 @@ function buildQuarterlyModel(){
     semSmSquads: semSmComDemanda.length,
     semSmProjetos: semSmComDemanda.reduce((t,a)=>t+a.p.total,0), semSmMelhorias: semSmComDemanda.reduce((t,a)=>t+a.m.total,0),
     semSmRodando: semSmComDemanda.reduce((t,a)=>t+a.rodando,0),
-    squadsAtivasSemSm: SQUADS_SEM_SM.filter(s=>s.squadAtiva !== false && (!filtering || squadPassesFilter(s))).length,
+    squadsAtivasSemSm: SQUADS_SEM_SM.filter(s=>s.squadAtiva !== false && (!filtering || pass(s))).length,
     smAcima: smRows.filter(r=>r.folga<0).length, smNoLimite: smRows.filter(r=>r.folga===0).length, smComFolga: smRows.filter(r=>r.folga>0).length,
     folgaTotal, excessoTotal,
     deficitSMs: Math.ceil(semSmComDemanda.length / SM_IDEAL_SQUADS),
@@ -1486,8 +1444,8 @@ function buildQuarterlyModel(){
   return { squads, smRows, semSmComDemanda, unmapped:Object.values(unmapped), inferred:Object.values(inferred), divergencias, commonLecom, quality, metrics };
 }
 
-function qKpi(id, value, label, tone){
-  return '<div class="data-kpi-card '+(tone || '')+'"><div class="value" id="'+id+'">'+esc(value)+'</div><div class="label">'+esc(label)+'</div></div>';
+function qKpi(id, value, label, tone, preset){
+  return '<div class="data-kpi-card '+(tone || '')+'"'+(preset ? ' data-preset="'+preset+'" title="Clique para filtrar o hub por este grupo"' : '')+'><div class="value" id="'+id+'">'+esc(value)+'</div><div class="label">'+esc(label)+'</div></div>';
 }
 function qEmptyRow(columns, message){ return '<tr><td colspan="'+columns+'" class="noresults">'+esc(message)+'</td></tr>'; }
 function qLoadStatus(type){
@@ -1548,9 +1506,9 @@ function renderExecutiveTab(){
     qKpi('execKpiImprovementsDone', qFormatNumber(m.mFinalizada), 'Melhorias finalizadas') +
     qKpi('execKpiRunning', qFormatNumber(m.rodando), 'Rodando agora (projetos em andamento + melhorias em curso)') +
     qKpi('execKpiHours', qFormatHours(m.horas), 'Horas estimadas do que está rodando') +
-    qKpi('execKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda e sem SM', m.semSmSquads ? 'alert' : '') +
-    qKpi('execKpiOver', qFormatNumber(m.smAcima), 'SMs acima de '+SM_IDEAL_SQUADS+' squads', m.smAcima ? 'warn' : '') +
-    qKpi('execKpiCoverage', covText, 'Squads ativas com SM', comSmCob < ativasCob.length ? 'warn' : '');
+    qKpi('execKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda e sem SM', m.semSmSquads ? 'alert' : '', 'semsm') +
+    qKpi('execKpiOver', qFormatNumber(m.smAcima), 'SMs acima de '+SM_IDEAL_SQUADS+' squads', m.smAcima ? 'warn' : '', 'acima') +
+    qKpi('execKpiCoverage', covText, 'Squads ativas com SM', comSmCob < ativasCob.length ? 'warn' : '', 'semsm');
   document.getElementById('executiveSummary').innerHTML = empty
     ? 'Importe o <b>Portfólio</b> e as <b>Melhorias</b> para ver a demanda por squad e a capacidade dos SMs.'
     : '<b>'+qFormatNumber(m.squadsComDemanda)+'</b> squads com demanda · <b>'+qFormatNumber(m.lecomsDistintos)+'</b> LECOMs distintos · as <b>'+qFormatNumber(m.semSmSquads)+'</b> squads sem SM concentram <b>'+qFormatNumber(m.semSmProjetos)+'</b> projetos e <b>'+qFormatNumber(m.semSmMelhorias)+'</b> melhorias ('+qFormatNumber(m.semSmRodando)+' rodando).';
@@ -1578,17 +1536,9 @@ function renderExecSquadTable(model){
   model = model || QUARTERLY_MODEL;
   const body = document.getElementById('execSquadBody');
   if(!body || !model) return;
-  const smSel = document.getElementById('execSmFilter');
-  const smOptions = ['<option value="">Todos os SMs</option><option value="__none__">Sem SM</option>'].concat(model.smRows.map(r=>'<option value="'+esc(r.nome)+'">'+esc(r.nome)+'</option>')).join('');
-  if(smSel && smSel.getAttribute('data-built') !== String(model.smRows.length)){
-    const keep = smSel.value; smSel.innerHTML = smOptions; smSel.value = keep; smSel.setAttribute('data-built', String(model.smRows.length));
-  }
-  const smVal = smSel ? smSel.value : '';
-  const term = qKey((document.getElementById('execSquadSearch') || {}).value || '');
+  const term = qKey(GF.q || '');
   const sortBy = (document.getElementById('execSort') || {}).value || 'rodando';
   let rows = model.squads.filter(a=>a.p.total+a.m.total>0);
-  if(smVal === '__none__') rows = rows.filter(a=>!a.sm);
-  else if(smVal) rows = rows.filter(a=>a.sm === smVal);
   if(term) rows = rows.filter(a=>qKey(a.label+' '+a.sm+' '+a.diretoria).indexOf(term) >= 0);
   const val = { rodando:a=>a.rodando, total:a=>a.p.total+a.m.total, projetos:a=>a.p.andamento, melhorias:a=>a.m.finalizada, horas:a=>a.horas }[sortBy] || (a=>a.rodando);
   rows = rows.sort((a,b)=> val(b)-val(a) || (b.p.total+b.m.total)-(a.p.total+a.m.total) || COLLATE.compare(a.label,b.label));
@@ -1604,7 +1554,7 @@ function renderQualityTab(){
   document.getElementById('qualityKpiRow').innerHTML =
     qKpi('qualityKpiOrphan', qFormatNumber(globalFilterActive() ? 0 : ORPHAN_SQUADS.length), 'Nomes sem board no Azure', warnIf(globalFilterActive() ? 0 : ORPHAN_SQUADS.length)) +
     qKpi('qualityKpiUnmapped', qFormatNumber(m.unmappedSquads), 'Nomes de squad sem vínculo no dashboard', warnIf(m.unmappedSquads, 'alert')) +
-    qKpi('qualityKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda sem SM', warnIf(m.semSmSquads, 'alert')) +
+    qKpi('qualityKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda sem SM', warnIf(m.semSmSquads, 'alert'), 'semsm') +
     qKpi('qualityKpiDiverg', qFormatNumber(m.divergencias), 'Squads com SM diferente no Portfólio', warnIf(m.divergencias)) +
     qKpi('qualityKpiInferred', qFormatNumber(m.inferredLinks), 'Ligações por inferência', warnIf(m.inferredLinks)) +
     qKpi('qualityKpiNoReason', qFormatNumber(q.semMotivo.p + q.semMotivo.m), 'Despriorizados sem motivo', warnIf(q.semMotivo.p + q.semMotivo.m)) +
@@ -1712,9 +1662,9 @@ function renderPendenciasTab(){
   document.getElementById('pendKpiRow').innerHTML =
     qKpi('pendKpiOpen', qFormatNumber(abertas), 'Pendências abertas', abertas ? 'alert' : '') +
     qKpi('pendKpiDone', qFormatNumber(rows.length-abertas), 'Resolvidas', '') +
-    qKpi('pendKpiNoSm', qFormatNumber(ativas.filter(s=>!smOf(s)).length), 'Squads ativas sem SM', 'warn') +
-    qKpi('pendKpiOver', qFormatNumber(acima.length), 'SMs acima do limite', acima.length ? 'warn' : '') +
-    qKpi('pendKpiNoPeople', qFormatNumber(semPes.length), 'Squads ativas sem pessoas', semPes.length ? 'warn' : '') +
+    qKpi('pendKpiNoSm', qFormatNumber(ativas.filter(s=>!smOf(s)).length), 'Squads ativas sem SM', 'warn', 'semsm') +
+    qKpi('pendKpiOver', qFormatNumber(acima.length), 'SMs acima do limite', acima.length ? 'warn' : '', 'acima') +
+    qKpi('pendKpiNoPeople', qFormatNumber(semPes.length), 'Squads ativas sem pessoas', semPes.length ? 'warn' : '', 'sempessoas') +
     qKpi('pendKpiOrph', qFormatNumber(orphansAll.length), 'Nomes sem board', orphansAll.length ? 'warn' : '');
   document.querySelectorAll('.pendIdeal').forEach(el=>el.textContent = SM_IDEAL_SQUADS);
   const ban = document.getElementById('pendBanner');
@@ -1772,7 +1722,7 @@ function renderBoardHealth(){
     CHARTS.boardHealth = new Chart(document.getElementById('chartBoardHealth'), {
       type:'bar',
       data:{ labels: BOARD_AGE_BINS.map(b=>b.label), datasets:[{ data: hh.counts, backgroundColor: BOARD_AGE_BINS.map(b=>b.color), borderRadius:3 }] },
-      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{ display:true, anchor:'end', align:'top', color:'#333', font:{size:11} } }, scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } }
+      options:Object.assign({ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{ display:true, anchor:'end', align:'top', color:'#333', font:{size:11} } }, scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } }, chartClick(el=>{ if(el.index === BOARD_AGE_BINS.length - 2) applyPreset('parados'); }))
     });
   }catch(err){ console.error('boardHealth', err); }
 }
@@ -1833,9 +1783,10 @@ function renderExecCharts(model, hasQ){
         { label:'Projetos em andamento', data: sms.map(r=>r.pAndamento), backgroundColor: CHART_COLORS.azul, borderRadius:2 },
         { label:'Melhorias em curso', data: sms.map(r=>r.mCurso), backgroundColor: CHART_COLORS.laranja, borderRadius:2 }
       ] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    options:Object.assign({ indexAxis:'y', responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ position:'bottom' }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:'#fff', font:{ size:10, weight:'bold' } } },
-      scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } }
+      scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } },
+      chartClick(el=>{ const r = sms[el.index]; if(r) gfChange(()=>{ GF.sm = new Set([r.nome]); }); }))
   });
   const aggOf = new Map(); model.squads.forEach(a=>{ if(a.squad) aggOf.set(a.squad.id, a); });
   const pts = filteredSquads().filter(s=>s.squadAtiva).map(s=>{ const a = aggOf.get(s.id); return { x:s.recursos.length, y:a ? a.rodando : 0, squad:s.squad, sm:currentSMName(s) || '' }; })
@@ -1859,62 +1810,205 @@ function renderExecCharts(model, hasQ){
   });
 }
 
-/* ===== Filtro global (diretoria + SM): vale para todas as abas ===== */
-const GLOBAL_FILTER = { diretoria:'', sm:'' };
-const SEM_SM_OPTION = '__sem_sm__';
-function globalFilterActive(){ return !!(GLOBAL_FILTER.diretoria || GLOBAL_FILTER.sm); }
-function squadPassesFilter(s){
-  if(GLOBAL_FILTER.diretoria && s.diretoria !== GLOBAL_FILTER.diretoria) return false;
-  if(GLOBAL_FILTER.sm){
-    const sm = currentSMName(s);
-    if(GLOBAL_FILTER.sm === SEM_SM_OPTION) return !sm;
-    return !!sm && boardKey(sm) === boardKey(GLOBAL_FILTER.sm);
-  }
-  return true;
+/* ===== Barra única de filtros: vale para todas as abas ===== */
+const SEM_SM_OPTION = '(Sem SM)';
+const SAUDE_VALUES = ['Vermelho', 'Amarelo', 'Verde'];
+const GF_STORAGE_KEY = 'hac_hub_filters_v1';
+const gfDefault = () => ({ diretoria:new Set(), sm:new Set(), saude:new Set(), funcao:new Set(), q:'', status:'ativas', pend:'', acima:false, diverg:false, boardStatus:'', boardVinculo:'', compartilhado:'' });
+const GF = gfDefault();
+const PEND_LABEL = { sem_sm:'Sem SM', sem_pessoas:'Sem pessoas', boards_parados:'Boards parados há mais de 180 dias' };
+const STATUS_LABEL = { ativas:'Só ativas', todas:'Ativas e desativadas', desativadas:'Só desativadas' };
+let _gfPred = null, _gfPredNoQ = null, _modelSig = '';
+function gfInvalidate(){ _gfPred = null; _gfPredNoQ = null; _modelSig = ''; }
+function activeTabName(){ const b = document.querySelector('#tabBar .tab.active'); return b ? b.getAttribute('data-tab') : 'executive'; }
+/* filtros que recortam o universo (a busca por texto não conta: ela só afeta as tabelas e contadores) */
+function globalFilterActive(){
+  return !!(GF.diretoria.size || GF.sm.size || GF.saude.size || GF.pend || GF.acima || GF.diverg || GF.status === 'desativadas');
 }
-function filteredSquads(){ return globalFilterActive() ? UNIFIED.filter(squadPassesFilter) : UNIFIED; }
-function filteredSMs(){
-  if(!globalFilterActive()) return SM_VIEW;
-  const ids = new Set(filteredSquads().map(s=>s.id));
-  return SM_VIEW.filter(sm=>sm.squads.some(s=>ids.has(s.id)));
+let FULL_MODEL = null;
+function gfBuildPredicate(ignoreQ){
+  const smKeys = new Set([...GF.sm].filter(n=>n !== SEM_SM_OPTION).map(boardKey));
+  const semSm = GF.sm.has(SEM_SM_OPTION);
+  const q = ignoreQ ? '' : GF.q.trim().toLowerCase();
+  const smSet = flag => new Set(SM_VIEW.filter(flag).map(sm=>sm.id));
+  const acima = GF.acima ? smSet(sm=>sm.overload) : null;
+  const diverg = GF.diverg ? smSet(sm=>sm.divergencias.length > 0) : null;
+  const health = GF.saude.size ? buildHealthMap() : null;
+  const paradas = GF.pend === 'boards_parados' ? new Set(boardHealth().paradas.map(x=>x.squad.id)) : null;
+  return s=>{
+    if(GF.status === 'ativas' && !s.squadAtiva) return false;
+    if(GF.status === 'desativadas' && s.squadAtiva) return false;
+    if(GF.diretoria.size && !GF.diretoria.has(s.diretoria)) return false;
+    const sm = currentSMName(s), smk = sm ? boardKey(sm) : '';
+    if(GF.sm.size && !((sm && smKeys.has(smk)) || (!sm && semSm))) return false;
+    if(acima && !(smk && acima.has(smk))) return false;
+    if(diverg && !(smk && diverg.has(smk))) return false;
+    if(health){ const n = (health.get(s.id) || {}).nivel || ''; if(!GF.saude.has(n.charAt(0).toUpperCase() + n.slice(1))) return false; }
+    if(GF.pend === 'sem_sm' && sm) return false;
+    if(GF.pend === 'sem_pessoas' && s.recursos.length) return false;
+    if(paradas && !paradas.has(s.id)) return false;
+    if(q && ((s.squad||'')+' '+(s.diretor||'')+' '+(s.gerente||'')+' '+sm+' '+(s.diretoria||'')).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  };
 }
+function gfPredicate(ignoreQ){
+  if(ignoreQ){ if(!_gfPredNoQ) _gfPredNoQ = gfBuildPredicate(true); return _gfPredNoQ; }
+  if(!_gfPred) _gfPred = gfBuildPredicate(false);
+  return _gfPred;
+}
+function squadPassesFilter(s){ return gfPredicate(false)(s); }
+function filteredSquads(){ return UNIFIED.filter(gfPredicate(false)); }
+function filteredSMs(ignoreQ){ const pred = gfPredicate(!!ignoreQ); return SM_VIEW.filter(sm=>sm.squads.some(pred)); }
+function filteredSquadsAnyStatus(){ const st = GF.status; GF.status = 'todas'; const pred = gfBuildPredicate(false); GF.status = st; return UNIFIED.filter(pred); }
 function filteredBoards(){
-  if(!globalFilterActive()) return ALL_BOARDS;
-  const ids = new Set(filteredSquads().map(s=>s.id));
-  return ALL_BOARDS.filter(b=>b.squadId && ids.has(b.squadId));
+  const ids = new Set(UNIFIED.filter(gfPredicate(true)).map(s=>s.id)), narrow = globalFilterActive();
+  return ALL_BOARDS.filter(b=> b.squadId ? ids.has(b.squadId) : (!narrow && GF.status === 'todas'));
 }
-function resourcePassesFilter(r){
-  if(GLOBAL_FILTER.diretoria && r.diretoria !== GLOBAL_FILTER.diretoria) return false;
-  if(GLOBAL_FILTER.sm){
-    if(GLOBAL_FILTER.sm === SEM_SM_OPTION) return !r._sm;
-    return !!r._sm && boardKey(r._sm) === boardKey(GLOBAL_FILTER.sm);
-  }
-  return true;
+function makeResourcePredicate(){
+  const ids = new Set(UNIFIED.filter(gfPredicate(true)).map(s=>s.id)), known = new Set(UNIFIED.map(s=>s.id)), narrow = globalFilterActive();
+  const q = GF.q.trim().toLowerCase();
+  return r=>{
+    if(r._sid && known.has(r._sid) ? !ids.has(r._sid) : (narrow || GF.status !== 'todas')) return false;
+    if(GF.compartilhado && r.compartilhado !== GF.compartilhado) return false;
+    if(GF.funcao.size && !GF.funcao.has(r.funcao)) return false;
+    if(q && ((r.squad||'')+' '+(r.colaborador||'')+' '+(r._sm||'')+' '+(r.diretoria||'')).toLowerCase().indexOf(q) < 0) return false;
+    return true;
+  };
 }
-function renderGlobalFilterBar(){
-  const selD = document.getElementById('gfDiretoria'), selS = document.getElementById('gfSm');
-  if(!selD || !selS) return;
+
+/* atalhos de um clique (também usados pelos cards de KPI e pelos gráficos) */
+const GF_PRESETS = {
+  semsm:      { label:'Squads sem SM', on:()=>GF.sm.size === 1 && GF.sm.has(SEM_SM_OPTION), set:()=>{ GF.sm = new Set([SEM_SM_OPTION]); }, off:()=>{ GF.sm = new Set(); } },
+  acima:      { label:'SMs acima do limite', on:()=>GF.acima, set:()=>{ GF.acima = true; }, off:()=>{ GF.acima = false; } },
+  vermelho:   { label:'Em vermelho', on:()=>GF.saude.size === 1 && GF.saude.has('Vermelho'), set:()=>{ GF.saude = new Set(['Vermelho']); }, off:()=>{ GF.saude = new Set(); } },
+  amarelo:    { label:'Em amarelo', on:()=>GF.saude.size === 1 && GF.saude.has('Amarelo'), set:()=>{ GF.saude = new Set(['Amarelo']); }, off:()=>{ GF.saude = new Set(); } },
+  verde:      { label:'Em verde', on:()=>GF.saude.size === 1 && GF.saude.has('Verde'), set:()=>{ GF.saude = new Set(['Verde']); }, off:()=>{ GF.saude = new Set(); } },
+  parados:    { label:'Boards parados', on:()=>GF.pend === 'boards_parados', set:()=>{ GF.pend = 'boards_parados'; }, off:()=>{ GF.pend = ''; } },
+  sempessoas: { label:'Sem pessoas', on:()=>GF.pend === 'sem_pessoas', set:()=>{ GF.pend = 'sem_pessoas'; }, off:()=>{ GF.pend = ''; } }
+};
+const GF_PRESET_BAR = ['semsm','acima','vermelho','parados','sempessoas'];
+function applyPreset(key){
+  const p = GF_PRESETS[key]; if(!p) return;
+  if(p.on()) p.off(); else p.set();
+  applyGlobalFilter();
+}
+function gfChange(fn){ fn(); applyGlobalFilter(); }
+
+/* chips dos filtros ativos */
+let _gfChips = [];
+function gfCollectChips(){
+  const chips = [];
+  GF.diretoria.forEach(v=>chips.push({ label:'Diretoria: '+v, remove:()=>GF.diretoria.delete(v) }));
+  GF.sm.forEach(v=>chips.push({ label:'SM: '+v, remove:()=>GF.sm.delete(v) }));
+  GF.saude.forEach(v=>chips.push({ label:'Saúde: '+v, remove:()=>GF.saude.delete(v) }));
+  if(GF.q) chips.push({ label:'Busca: '+GF.q, remove:()=>{ GF.q = ''; } });
+  if(GF.status !== 'ativas') chips.push({ label:'Status: '+STATUS_LABEL[GF.status], remove:()=>{ GF.status = 'ativas'; } });
+  if(GF.pend) chips.push({ label:'Pendência: '+PEND_LABEL[GF.pend], remove:()=>{ GF.pend = ''; } });
+  if(GF.acima) chips.push({ label:'SM acima de '+SM_IDEAL_SQUADS+' squads', remove:()=>{ GF.acima = false; } });
+  if(GF.diverg) chips.push({ label:'SM com divergência', remove:()=>{ GF.diverg = false; } });
+  if(GF.boardStatus) chips.push({ label:'Board: '+(GF.boardStatus === 'ativo' ? 'só ativos' : 'só desativados'), remove:()=>{ GF.boardStatus = ''; } });
+  if(GF.boardVinculo) chips.push({ label:'Board: '+(GF.boardVinculo === 'com' ? 'só vinculados' : 'só sem squad'), remove:()=>{ GF.boardVinculo = ''; } });
+  if(GF.compartilhado) chips.push({ label:'Compartilhado: '+GF.compartilhado, remove:()=>{ GF.compartilhado = ''; } });
+  GF.funcao.forEach(v=>chips.push({ label:'Função: '+v, remove:()=>GF.funcao.delete(v) }));
+  return chips;
+}
+
+/* sincroniza a barra com o estado (opções, valores, chips, contador, atalhos) */
+function gfSyncUI(){
+  if(!document.getElementById('mselGfDiretoria')) return;
   const dirs = uniqueSorted(UNIFIED.map(s=>s.diretoria));
-  const sms = uniqueSorted(SM_VIEW.map(sm=>sm.nome));
-  if(GLOBAL_FILTER.diretoria && dirs.indexOf(GLOBAL_FILTER.diretoria) < 0) GLOBAL_FILTER.diretoria = '';
-  if(GLOBAL_FILTER.sm && GLOBAL_FILTER.sm !== SEM_SM_OPTION && sms.indexOf(GLOBAL_FILTER.sm) < 0) GLOBAL_FILTER.sm = '';
-  selD.innerHTML = '<option value="">Todas as diretorias</option>' + dirs.map(d=>'<option value="'+esc(d)+'"'+(d===GLOBAL_FILTER.diretoria?' selected':'')+'>'+esc(d)+'</option>').join('');
-  selS.innerHTML = '<option value="">Todos os SMs</option><option value="'+SEM_SM_OPTION+'"'+(GLOBAL_FILTER.sm===SEM_SM_OPTION?' selected':'')+'>(Sem SM)</option>' + sms.map(n=>'<option value="'+esc(n)+'"'+(n===GLOBAL_FILTER.sm?' selected':'')+'>'+esc(n)+'</option>').join('');
-  const bar = document.getElementById('globalFilterBar'), st = document.getElementById('gfStatus');
-  bar.classList.toggle('active', globalFilterActive());
-  st.textContent = globalFilterActive() ? 'Filtro ativo: '+filteredSquads().length+' de '+UNIFIED.length+' squads' : 'Todas as squads';
+  const sms = [SEM_SM_OPTION].concat(uniqueSorted(SM_VIEW.map(sm=>sm.nome)));
+  const onChange = () => applyGlobalFilter();
+  renderMultiSelect('diretoria', 'mselGfDiretoria', dirs, onChange, GF);
+  renderMultiSelect('sm', 'mselGfSm', sms, onChange, GF);
+  renderMultiSelect('saude', 'mselGfSaude', SAUDE_VALUES, onChange, GF);
+  const funcoes = uniqueSorted(RESOURCES_RAW.map(r=>r.funcao));
+  renderMultiSelect('funcao', 'mselGfFuncao', funcoes, onChange, GF);
+  ['mselGfDiretoria','mselGfSm','mselGfSaude','mselGfFuncao'].forEach((id, i)=> wireMultiSelect(['diretoria','sm','saude','funcao'][i], id, onChange, GF));
+  const setVal = (id, v) => { const el = document.getElementById(id); if(el && el.value !== v) el.value = v; };
+  setVal('gfStatus', GF.status); setVal('gfPend', GF.pend); setVal('gfBoardStatus', GF.boardStatus); setVal('gfBoardVinculo', GF.boardVinculo); setVal('gfCompart', GF.compartilhado);
+  const busca = document.getElementById('gfBusca'); if(busca && document.activeElement !== busca && busca.value !== GF.q) busca.value = GF.q;
+  document.getElementById('gfAcima').checked = GF.acima; document.getElementById('gfDiverg').checked = GF.diverg;
+  const bar = document.getElementById('globalFilterBar');
+  _gfChips = gfCollectChips();
+  bar.classList.toggle('active', _gfChips.length > 0);
+  document.getElementById('gfChips').innerHTML = _gfChips.map((c,i)=>'<span class="gf-chip">'+esc(c.label)+' <button type="button" data-chip="'+i+'" title="Remover este filtro">×</button></span>').join('');
+  const total = UNIFIED.length, shown = filteredSquads().length;
+  document.getElementById('gfCount').innerHTML = '<b>'+shown+'</b> de '+total+' squads';
+  document.getElementById('gfPresets').innerHTML = '<span class="gf-presets-label">Atalhos</span>' + GF_PRESET_BAR.map(k=>'<button type="button" class="gf-preset'+(GF_PRESETS[k].on() ? ' on' : '')+'" data-gf-preset="'+k+'">'+GF_PRESETS[k].label+'</button>').join('');
+  const extras = [GF.pend, GF.acima, GF.diverg, GF.boardStatus, GF.boardVinculo, GF.compartilhado, GF.funcao.size].filter(Boolean).length;
+  const more = document.getElementById('gfMore'); more.textContent = 'Mais filtros'+(extras ? ' ('+extras+')' : '')+' '+(document.getElementById('gfMorePanel').classList.contains('hidden') ? '▾' : '▴');
+  gfSyncContext();
 }
+function gfSyncContext(){
+  const t = activeTabName();
+  const b = document.getElementById('gfCtxBoards'), r = document.getElementById('gfCtxRecursos');
+  if(b) b.style.display = t === 'boards' ? 'flex' : 'none';
+  if(r) r.style.display = t === 'recursos' ? 'flex' : 'none';
+}
+
+/* memória: URL (para compartilhar) e navegador (para reabrir de onde parou) */
+function gfSerialize(){
+  return { d:[...GF.diretoria], s:[...GF.sm], h:[...GF.saude], f:[...GF.funcao], q:GF.q, st:GF.status, p:GF.pend, a:GF.acima ? 1 : 0, v:GF.diverg ? 1 : 0, bs:GF.boardStatus, bv:GF.boardVinculo, c:GF.compartilhado, t:activeTabName() };
+}
+function gfPersist(){
+  const json = JSON.stringify(gfSerialize());
+  try{ localStorage.setItem(GF_STORAGE_KEY, json); }catch(e){}
+  try{ history.replaceState(null, '', '#f=' + encodeURIComponent(json)); }catch(e){}
+}
+function gfRestore(){
+  let json = null;
+  const m = /[#&]f=([^&]+)/.exec(location.hash || '');
+  if(m){ try{ json = decodeURIComponent(m[1]); }catch(e){} }
+  if(!json){ try{ json = localStorage.getItem(GF_STORAGE_KEY); }catch(e){} }
+  if(!json) return null;
+  try{
+    const o = JSON.parse(json);
+    GF.diretoria = new Set(o.d || []); GF.sm = new Set(o.s || []); GF.saude = new Set(o.h || []); GF.funcao = new Set(o.f || []);
+    GF.q = String(o.q || ''); GF.status = STATUS_LABEL[o.st] ? o.st : 'ativas'; GF.pend = PEND_LABEL[o.p] ? o.p : '';
+    GF.acima = !!o.a; GF.diverg = !!o.v; GF.boardStatus = o.bs || ''; GF.boardVinculo = o.bv || ''; GF.compartilhado = o.c || '';
+    return o.t || null;
+  }catch(e){ return null; }
+}
+
 function applyGlobalFilter(){
-  renderGlobalFilterBar();
-  QUARTERLY_MODEL = buildQuarterlyModel();
-  const active = document.querySelector('#tabBar .tab.active');
-  renderTabByName(active ? active.getAttribute('data-tab') : 'executive');
+  gfInvalidate();
+  SQUAD_PAGE = 1; SM_PAGE = 1; BOARDS_PAGE = 1;
+  const msig = JSON.stringify([...GF.diretoria, '|', ...GF.sm, '|', ...GF.saude, GF.status, GF.pend, GF.acima, GF.diverg]);
+  if(msig !== _modelSig || !QUARTERLY_MODEL){ _modelSig = msig; QUARTERLY_MODEL = buildQuarterlyModel(); }
+  gfSyncUI();
+  gfPersist();
+  const tab = activeTabName();
+  if(tab !== 'pendencias') updateTabBadges();
+  renderTabByName(tab);
+  if(tab === 'pendencias') updateTabBadges(true);
+}
+function updateTabBadges(skipRender){
+  if(!skipRender){ try{ renderPendenciasTab(); }catch(err){ console.error('badges', err); } }
+  const abertas = PEND_ROWS.filter(r=>!r.ok).length;
+  const p = document.getElementById('tabCountPend'); if(p) p.textContent = abertas ? abertas : '';
+  const verm = document.getElementById('tabCountSquads');
+  if(verm){ const h = buildHealthMap(); let n = 0; filteredSquads().forEach(s=>{ if((h.get(s.id)||{}).nivel === 'vermelho') n++; }); verm.textContent = n ? n : ''; verm.title = n+' squads ativas em vermelho'; }
 }
 function wireGlobalFilter(){
-  const reset = () => { SQUAD_PAGE = 1; SM_PAGE = 1; BOARDS_PAGE = 1; applyGlobalFilter(); };
-  document.getElementById('gfDiretoria').addEventListener('change', e=>{ GLOBAL_FILTER.diretoria = e.target.value; reset(); });
-  document.getElementById('gfSm').addEventListener('change', e=>{ GLOBAL_FILTER.sm = e.target.value; reset(); });
-  document.getElementById('gfClear').addEventListener('click', ()=>{ GLOBAL_FILTER.diretoria = ''; GLOBAL_FILTER.sm = ''; reset(); });
+  const byId = id => document.getElementById(id);
+  byId('gfBusca').addEventListener('input', debounce(()=>gfChange(()=>{ GF.q = byId('gfBusca').value; }), 220));
+  byId('gfStatus').addEventListener('change', e=>gfChange(()=>{ GF.status = e.target.value; }));
+  byId('gfPend').addEventListener('change', e=>gfChange(()=>{ GF.pend = e.target.value; }));
+  byId('gfAcima').addEventListener('change', e=>gfChange(()=>{ GF.acima = e.target.checked; }));
+  byId('gfDiverg').addEventListener('change', e=>gfChange(()=>{ GF.diverg = e.target.checked; }));
+  byId('gfBoardStatus').addEventListener('change', e=>gfChange(()=>{ GF.boardStatus = e.target.value; }));
+  byId('gfBoardVinculo').addEventListener('change', e=>gfChange(()=>{ GF.boardVinculo = e.target.value; }));
+  byId('gfCompart').addEventListener('change', e=>gfChange(()=>{ GF.compartilhado = e.target.value; }));
+  byId('gfClear').addEventListener('click', ()=>gfChange(()=>{ Object.assign(GF, gfDefault()); byId('gfBusca').value = ''; }));
+  byId('gfMore').addEventListener('click', ()=>{ byId('gfMorePanel').classList.toggle('hidden'); gfSyncUI(); });
+  byId('gfChips').addEventListener('click', e=>{ const i = e.target.getAttribute && e.target.getAttribute('data-chip'); if(i != null && _gfChips[+i]) gfChange(()=>_gfChips[+i].remove()); });
+  byId('gfPresets').addEventListener('click', e=>{ const k = e.target.getAttribute && e.target.getAttribute('data-gf-preset'); if(k) applyPreset(k); });
+  document.addEventListener('click', e=>{ const el = e.target.closest && e.target.closest('[data-preset]'); if(el) applyPreset(el.getAttribute('data-preset')); });
+}
+function chartClick(handler){
+  return { onClick:(evt, els, chart)=>{ if(els && els.length) handler(els[0], chart); },
+           onHover:(evt, els)=>{ if(evt && evt.native && evt.native.target) evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; } };
 }
 function renderTabByName(t){
   try{
@@ -1929,15 +2023,23 @@ function renderTabByName(t){
 }
 let PEND_ROWS = [];
 function refreshQuarterlyViews(){
-  renderGlobalFilterBar();
+  gfInvalidate();
+  FULL_MODEL = buildQuarterlyModel(true);
   QUARTERLY_MODEL = buildQuarterlyModel();
+  _modelSig = JSON.stringify([...GF.diretoria, '|', ...GF.sm, '|', ...GF.saude, GF.status, GF.pend, GF.acima, GF.diverg]);
+  gfSyncUI();
   renderQuarterlySources();
+  renderBasesSummary();
   renderExecutiveTab();
   renderQualityTab();
-  renderPendenciasTab();
+  updateTabBadges();
 }
-['execSmFilter','execSort'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change', ()=>renderExecSquadTable()); });
-{ const el=document.getElementById('execSquadSearch'); if(el) el.addEventListener('input', ()=>renderExecSquadTable()); }
+function renderBasesSummary(){
+  const el = document.getElementById('basesSummary'); if(!el) return;
+  const pick = id => { const b = document.getElementById(id); return b ? b.textContent.trim().split(' · ')[0] : ''; };
+  el.textContent = '· ' + [pick('resourcesDataBadge'), pick('portfolioDataBadge'), pick('improvementsDataBadge')].filter(Boolean).join(' · ');
+}
+{ const el=document.getElementById('execSort'); if(el) el.addEventListener('change', ()=>renderExecSquadTable()); }
 window.addEventListener('hac-quarterly-change', refreshQuarterlyViews);
 window.addEventListener('hac-quarterly-error', event=>{
   const detail = event.detail || {};
@@ -1978,6 +2080,7 @@ function buildUnified(){
   ORPHAN_SQUADS = list.filter(s=> !s.temBoards && (s.temRecursos || !isBlank(s.levantamento_sm) || s.source==='levantamento_only'));
   list = list.filter(s=> s.temBoards);
   UNIFIED = applySquadOverrides(list);
+  gfInvalidate();
   return UNIFIED;
 }
 
@@ -2082,7 +2185,6 @@ function buildSMView(){
    ============================================================ */
 const SM_SORT = { key: 'squadCount', dir: 'desc' };
 const OPEN_SM_ROWS = new Set();
-const smMultiState = { diretoria: new Set() };
 const PAGE_SIZE = 15;
 let SM_PAGE = 1;
 let SQUAD_PAGE = 1;
@@ -2166,21 +2268,7 @@ function renderSMsTab(){
   if(!document.getElementById('smBody')) return;
   wireSmSort();
 
-  const allDiretorias = uniqueSorted(filteredSMs().flatMap(sm=>sm.diretorias));
-  renderMultiSelect('diretoria', 'mselSmDiretoria', allDiretorias, renderSMsTab, smMultiState);
-  wireMultiSelect('diretoria', 'mselSmDiretoria', ()=>{ SM_PAGE=1; renderSMsTab(); }, smMultiState);
-
-  const q = (document.getElementById('smSearch').value||'').trim().toLowerCase();
-  const overloadOnly = document.getElementById('smOverloadOnly').checked;
-  const divergOnly = document.getElementById('smDivergOnly').checked;
-  const msDir = smMultiState.diretoria;
-
-  let rows = filteredSMs().filter(sm=>
-    (!msDir.size || sm.diretorias.some(d=>msDir.has(d))) &&
-    (!overloadOnly || sm.overload) &&
-    (!divergOnly || sm.divergencias.length>0) &&
-    (!q || sm.nome.toLowerCase().includes(q) || sm.squads.some(s=>s.squad.toLowerCase().includes(q)))
-  );
+  let rows = filteredSMs();
 
   const sk = SM_SORT.key, sd = SM_SORT.dir;
   rows = rows.slice().sort((a,b)=>{
@@ -2292,17 +2380,6 @@ function renderSemSMPanel(){
   });
 }
 
-document.getElementById('smSearch').addEventListener('input', ()=>{ SM_PAGE=1; renderSMsTab(); });
-document.getElementById('smOverloadOnly').addEventListener('change', ()=>{ SM_PAGE=1; renderSMsTab(); });
-document.getElementById('smDivergOnly').addEventListener('change', ()=>{ SM_PAGE=1; renderSMsTab(); });
-document.getElementById('btnClearSm').addEventListener('click', ()=>{
-  smMultiState.diretoria.clear();
-  document.getElementById('smSearch').value = '';
-  document.getElementById('smOverloadOnly').checked = false;
-  document.getElementById('smDivergOnly').checked = false;
-  SM_PAGE = 1;
-  renderSMsTab();
-});
 document.getElementById('btnExpandAllSm').addEventListener('click', ()=>{
   SM_VIEW.forEach(sm=> OPEN_SM_ROWS.add(sm.id));
   renderSMsTab();
@@ -2340,7 +2417,9 @@ document.querySelectorAll('#tabBar .tab').forEach(btn=>{
     try{
       const t = btn.getAttribute('data-tab');
       showTab(t);
+      gfSyncContext();
       renderTabByName(t);
+      gfPersist();
     }catch(err){
       console.error('Erro ao trocar de aba:', err);
       alert('Erro ao abrir a aba: ' + err.message);
@@ -2471,29 +2550,8 @@ function renderSquadsTab(){
   if(!document.getElementById('squadBody')) return;
   wireSquadSort();
 
-  renderMultiSelect('diretoria', 'mselSqDiretoria', uniqueSorted(filteredSquads().map(s=>s.diretoria)), renderSquadsTab, squadMultiState);
-  wireMultiSelect('diretoria', 'mselSqDiretoria', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); }, squadMultiState);
-
-  const q = (document.getElementById('squadSearch').value||'').trim().toLowerCase();
-  const smFilter = document.getElementById('sqSmFilter').value;
-  const pendFilter = document.getElementById('sqPendFilter').value;
-  const ativoFilter = document.getElementById('sqAtivoFilter').value;
-  const saudeFilter = document.getElementById('sqSaudeFilter').value;
   const health = buildHealthMap();
-  const msDir = squadMultiState.diretoria;
-
-  let rows = filteredSquads().filter(s=>
-    (!msDir.size || msDir.has(s.diretoria)) &&
-    (!smFilter || (smFilter==='com' ? s.temSM : !s.temSM)) &&
-    (!pendFilter || (
-      pendFilter==='sem_recursos' ? !s.temRecursos :
-      pendFilter==='sem_boards' ? !s.temBoards :
-      pendFilter==='sem_ambos' ? (!s.temRecursos && !s.temBoards) : true
-    )) &&
-    (!ativoFilter || (ativoFilter==='ativas' ? s.squadAtiva : !s.squadAtiva)) &&
-    (!saudeFilter || ((health.get(s.id) || {}).nivel === saudeFilter)) &&
-    (!q || s.squad.toLowerCase().includes(q) || (s.diretor||'').toLowerCase().includes(q) || currentSMName(s).toLowerCase().includes(q) || (s.gerente||'').toLowerCase().includes(q))
-  );
+  let rows = filteredSquads();
 
   const sk = SQUAD_SORT.key, sd = SQUAD_SORT.dir;
   rows = rows.slice().sort((a,b)=>{
@@ -2594,21 +2652,6 @@ function renderUnmatchedSummary(){
   });
 }
 
-document.getElementById('squadSearch').addEventListener('input', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
-document.getElementById('sqSmFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
-document.getElementById('sqPendFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
-document.getElementById('sqAtivoFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
-document.getElementById('sqSaudeFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
-document.getElementById('btnClearSquad').addEventListener('click', ()=>{
-  squadMultiState.diretoria.clear();
-  document.getElementById('squadSearch').value = '';
-  document.getElementById('sqSmFilter').value = '';
-  document.getElementById('sqPendFilter').value = '';
-  document.getElementById('sqAtivoFilter').value = '';
-  document.getElementById('sqSaudeFilter').value = '';
-  SQUAD_PAGE = 1;
-  renderSquadsTab();
-});
 document.getElementById('btnExpandAll').addEventListener('click', ()=>{
   UNIFIED.forEach(s=> OPEN_ROWS.add(s.id));
   renderSquadsTab();
@@ -2633,7 +2676,6 @@ document.getElementById('btnExportSquadXlsx').addEventListener('click', ()=>{
    RENDER — ABA BOARDS AZURE
    ============================================================ */
 const BOARDS_SORT = { key: 'board', dir: 'asc' };
-const boardsMultiState = { diretoria: new Set() };
 let BOARDS_PAGE = 1;
 
 function wireBoardsSort(){
@@ -2666,17 +2708,11 @@ function renderBoardsTab(){
   wireBoardsSort();
   renderSquadDatalist();
 
-  const allDiretorias = uniqueSorted(filteredBoards().map(b=>b.diretoria));
-  renderMultiSelect('diretoria', 'mselBoardsDiretoria', allDiretorias, renderBoardsTab, boardsMultiState);
-  wireMultiSelect('diretoria', 'mselBoardsDiretoria', ()=>{ BOARDS_PAGE=1; renderBoardsTab(); }, boardsMultiState);
+  const q = GF.q.trim().toLowerCase();
+  const statusFilter = GF.boardStatus, vinculoFilter = GF.boardVinculo;
+  const base = vinculoFilter === 'sem' ? (globalFilterActive() ? [] : ALL_BOARDS.filter(b=>!b.squadId)) : filteredBoards();
 
-  const q = (document.getElementById('boardsSearch').value||'').trim().toLowerCase();
-  const statusFilter = document.getElementById('boardsStatusFilter').value;
-  const vinculoFilter = document.getElementById('boardsVinculoFilter').value;
-  const msDir = boardsMultiState.diretoria;
-
-  let rows = filteredBoards().filter(b=>
-    (!msDir.size || msDir.has(b.diretoria)) &&
+  let rows = base.filter(b=>
     (!statusFilter || (statusFilter==='ativo' ? b.ativo : !b.ativo)) &&
     (!vinculoFilter || (vinculoFilter==='com' ? !!b.squadId : !b.squadId)) &&
     (!q || b.board.toLowerCase().includes(q) || (b.diretor||'').toLowerCase().includes(q) || (b.gerente||'').toLowerCase().includes(q) || (b.squadNome||'').toLowerCase().includes(q))
@@ -2691,7 +2727,7 @@ function renderBoardsTab(){
     return sd==='asc' ? cmp : -cmp;
   });
 
-  document.getElementById('boardsCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+filteredBoards().length+'</b> boards encontrados';
+  document.getElementById('boardsCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+base.length+'</b> boards encontrados';
 
   const total = filteredBoards().length;
   const ativos = filteredBoards().filter(b=>b.ativo).length;
@@ -2734,17 +2770,6 @@ function renderBoardsTab(){
   renderPaginationControls('boardsPagination', rows.length, BOARDS_PAGE, PAGE_SIZE, (p)=>{ BOARDS_PAGE=p; renderBoardsTab(); });
 }
 
-document.getElementById('boardsSearch').addEventListener('input', ()=>{ BOARDS_PAGE=1; renderBoardsTab(); });
-document.getElementById('boardsStatusFilter').addEventListener('change', ()=>{ BOARDS_PAGE=1; renderBoardsTab(); });
-document.getElementById('boardsVinculoFilter').addEventListener('change', ()=>{ BOARDS_PAGE=1; renderBoardsTab(); });
-document.getElementById('btnClearBoards').addEventListener('click', ()=>{
-  boardsMultiState.diretoria.clear();
-  document.getElementById('boardsSearch').value = '';
-  document.getElementById('boardsStatusFilter').value = '';
-  document.getElementById('boardsVinculoFilter').value = '';
-  BOARDS_PAGE = 1;
-  renderBoardsTab();
-});
 
 /* ============================================================
    GRÁFICOS POR ABA (a aba Gráficos foi desfeita: cada gráfico mora onde gera decisão)
@@ -2780,7 +2805,7 @@ function stackedByDiretoria(squads){
 
 /* ---- semáforo de saúde por squad ---- */
 function buildHealthMap(){
-  const model = QUARTERLY_MODEL;
+  const model = FULL_MODEL || QUARTERLY_MODEL;
   const hasQ = !!(model && (model.metrics.projects || model.metrics.improvements));
   const aggOf = new Map(); if(model) model.squads.forEach(a=>{ if(a.squad) aggOf.set(a.squad.id, a); });
   const paradas = new Set(boardHealth().paradas.map(x=>x.squad.id));
@@ -2816,9 +2841,10 @@ function renderSmCharts(){
   makeChart('smSquads', 'chartSmSquads', {
     type:'bar',
     data:{ labels: sms.map(s=>s.nome), datasets:[{ label:'Squads', data: sms.map(s=>s.squadCount), backgroundColor: sms.map(s=>s.squadCount > SM_IDEAL_SQUADS ? CHART_COLORS.vermelho : CHART_COLORS.azul), borderRadius:3 }] },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    options:Object.assign({ indexAxis:'y', responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:ctx=>ctx.parsed.x+' squad(s)'+(ctx.parsed.x > SM_IDEAL_SQUADS ? ' — acima do ideal' : '') } }, datalabels:barLabel('right') },
       scales:{ x:{ beginAtZero:true, grace:'12%', ticks:{ precision:0 } }, y:{ ticks:{ autoSkip:false, font:{ size:10 } } } } },
+      chartClick(el=>{ const sm = sms[el.index]; if(sm) gfChange(()=>{ GF.sm = new Set([sm.nome]); }); })),
     plugins:[limitLine]
   });
   /* mapa de calor: quantas squads cada SM tem em cada diretoria */
@@ -2848,16 +2874,18 @@ function renderSquadCharts(){
   makeChart('sqSaude', 'chartSqSaude', {
     type:'bar',
     data:{ labels, datasets: niveis.map(([k,nome,cor])=>({ label:nome, backgroundColor:cor, data: labels.map(d=>dirs[d].filter(s=>(health.get(s.id)||{}).nivel === k).length) })) },
-    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    options:Object.assign({ indexAxis:'y', responsive:true, maintainAspectRatio:false,
       plugins:{ legend:{ position:'bottom' }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:ctx=>ctx.datasetIndex === 1 ? '#333' : '#fff', font:{ size:10, weight:'bold' } } },
-      scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } }
+      scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } },
+      chartClick(el=>{ const d = labels[el.index], nivel = niveis[el.datasetIndex]; if(d && nivel) gfChange(()=>{ GF.diretoria = new Set([d]); GF.saude = new Set([nivel[1]]); }); }))
   });
   const bins = [['0',0,0],['1–5',1,5],['6–10',6,10],['11–20',11,20],['21+',21,Infinity]];
   const counts = bins.map(([,lo,hi])=>ativas.filter(s=>s.recursos.length >= lo && s.recursos.length <= hi).length);
   makeChart('sqPessoas', 'chartSqPessoas', {
     type:'bar',
     data:{ labels: bins.map(b=>b[0]+' pessoas'), datasets:[{ data:counts, backgroundColor:[CHART_COLORS.vermelho, CHART_COLORS.laranja, CHART_COLORS.azul, CHART_COLORS.azul, CHART_COLORS.azul], borderRadius:3 }] },
-    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:barLabel('top') }, scales:{ y:{ beginAtZero:true, grace:'12%', ticks:{ precision:0 } } } }
+    options:Object.assign({ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:barLabel('top') }, scales:{ y:{ beginAtZero:true, grace:'12%', ticks:{ precision:0 } } } },
+      chartClick(el=>{ if(el.index === 0) applyPreset('sempessoas'); }))
   });
 }
 
@@ -2921,7 +2949,7 @@ function renderBoardStatusChart(){
 /* ---- Recursos: função, diretoria e pessoas em várias squads ---- */
 function renderRecursosCharts(){
   if(!document.getElementById('chartRecFuncao')) return;
-  const rows = resourceViewRows().filter(resourcePassesFilter);
+  const rows = resourceViewRows().filter(makeResourcePredicate());
   const funcao = {};
   rows.forEach(r=>{ let f = (r.funcao || '').trim() || '(sem função informada)'; f = f.charAt(0).toUpperCase() + f.slice(1).toLowerCase(); funcao[f] = (funcao[f] || 0) + 1; });
   const top = Object.entries(funcao).sort((a,b)=>b[1]-a[1]).slice(0,12);
@@ -2973,7 +3001,6 @@ function renderDiretoriaCoverage(){
    ABA RECURSOS — colaboradores por squad (base bruta RESOURCES_RAW)
    ============================================================ */
 const RESOURCES_SORT = { key: null, dir: 'asc' };
-const resourcesMultiState = { squad: new Set(), diretoria: new Set(), funcao: new Set() };
 function resourceViewRows(){
   const idx = buildSquadIndexFrom(REGISTRY);
   return RESOURCES_RAW.filter(r=>MANUAL_OVERRIDES.deletedResourceIds.indexOf(r.id)===-1).map(r=>{
@@ -2986,31 +3013,16 @@ function resourceViewRows(){
       gerente_ti: base.gerente_ti || (sq && sq.gerente) || '',
       diretor: base.diretor || (sq && sq.diretor) || '',
       diretoria: base.diretoria || (sq && sq.diretoria) || '',
-      _sm: (sq && currentSMName(sq)) || ''
+      _sm: (sq && currentSMName(sq)) || '',
+      _sid: sq ? sq.id : ''
     });
   });
 }
 function renderRecursosTab(){
   if(!document.getElementById('recursosBody')) return;
-  const resourceRows = resourceViewRows().filter(resourcePassesFilter);
+  const allRows = resourceViewRows(), resourceRows = allRows.filter(makeResourcePredicate());
   document.getElementById('recursosTotalRawCount').textContent = '— ' + resourceRows.length + ' vínculos únicos na base mensal';
-
-  [['squad','mselRecSquad'], ['diretoria','mselRecDiretoria'], ['funcao','mselRecFuncao']].forEach(([field, id])=>{
-    renderMultiSelect(field, id, uniqueSorted(resourceRows.map(r=>r[field])), renderRecursosTab, resourcesMultiState);
-    wireMultiSelect(field, id, renderRecursosTab, resourcesMultiState);
-  });
-
-  const q = (document.getElementById('recursosSearch').value||'').trim().toLowerCase();
-  const compFilter = document.getElementById('recCompartilhado').value;
-  const msSquad = resourcesMultiState.squad, msDir = resourcesMultiState.diretoria, msFunc = resourcesMultiState.funcao;
-
-  let rows = resourceRows.filter(r=>
-    (!msSquad.size || msSquad.has(r.squad)) &&
-    (!msDir.size || msDir.has(r.diretoria)) &&
-    (!msFunc.size || msFunc.has(r.funcao)) &&
-    (!compFilter || r.compartilhado === compFilter) &&
-    (!q || (r.squad||'').toLowerCase().includes(q) || (r.colaborador||'').toLowerCase().includes(q))
-  );
+  let rows = resourceRows;
 
   if(RESOURCES_SORT.key){
     const sk = RESOURCES_SORT.key, sign = RESOURCES_SORT.dir==='asc' ? 1 : -1;
@@ -3020,10 +3032,10 @@ function renderRecursosTab(){
   }
 
   /* o DOM só recebe uma página por vez; mudar filtro, busca ou ordenação volta para a primeira */
-  const sig = JSON.stringify([q, compFilter, [...msSquad], [...msDir], [...msFunc], RESOURCES_SORT.key, RESOURCES_SORT.dir]);
+  const sig = JSON.stringify(Object.assign(gfSerialize(), { t:0, sk:RESOURCES_SORT.key, sd:RESOURCES_SORT.dir }));
   if(sig !== _recursosSig){ _recursosSig = sig; _recursosLimit = RECURSOS_PAGE; }
   const shown = rows.slice(0, _recursosLimit);
-  document.getElementById('recursosCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+resourceRows.length+'</b> vínculos encontrados'+(shown.length<rows.length ? ' · mostrando <b>'+shown.length+'</b>' : '');
+  document.getElementById('recursosCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+allRows.length+'</b> vínculos'+(shown.length<rows.length ? ' · mostrando <b>'+shown.length+'</b>' : '');
 
   const totalColab = resourceRows.length;
   const totalSquadsComRecurso = new Set(resourceRows.map(r=>r.squad)).size;
@@ -3068,14 +3080,6 @@ document.getElementById('recursosBody').addEventListener('click', e=>{
   if(act==='more') _recursosLimit += RECURSOS_PAGE;
   else if(act==='all') _recursosLimit = Infinity;
   else return;
-  renderRecursosTab();
-});
-document.getElementById('recursosSearch').addEventListener('input', debounce(renderRecursosTab, 150));
-document.getElementById('recCompartilhado').addEventListener('change', renderRecursosTab);
-document.getElementById('btnClearRecursos').addEventListener('click', ()=>{
-  ['squad','diretoria','funcao'].forEach(f=> resourcesMultiState[f].clear());
-  document.getElementById('recursosSearch').value = '';
-  document.getElementById('recCompartilhado').value = '';
   renderRecursosTab();
 });
 
@@ -3350,11 +3354,18 @@ loadOverrides();
 if(window.HACResourcesImport) HACResourcesImport.loadPersisted();
 if(window.HACQuarterlyImport){ HACQuarterlyImport.loadPersisted(); HACQuarterlyImport.bindUI(); }
 wireGlobalFilter();
+const _restoredTab = gfRestore();
 buildUnified();
 buildSMView();
 refreshQuarterlyViews();
-showTab('executive');
-renderExecutiveTab();
+{
+  const ok = ['executive','pendencias','quality','sms','squads','boards','recursos'];
+  const first = ok.indexOf(_restoredTab) >= 0 ? _restoredTab : 'executive';
+  showTab(first);
+  gfSyncContext();
+  renderTabByName(first);
+  gfPersist();
+}
 
 /* selo de dados ao vivo — calculado a partir do que está de fato carregado,
    nunca um texto fixo, pra você sempre conseguir conferir se é a versão certa */
