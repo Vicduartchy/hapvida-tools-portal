@@ -902,10 +902,15 @@ function buildSquadIndexFrom(list, withAliases){
   return idx;
 }
 function buildSquadIndex(){ return buildSquadIndexFrom(SQUAD_CANON); }
+/* boards que NÃO podem casar por aproximação (só por nome exato): o nome genérico
+   casaria por substring com squads que contêm a palavra (ex.: "Analytics" é um
+   projeto à parte, não a squad "Insights - Analytics Engineering - ...") */
+const BOARDS_SEM_FUZZY = ['analytics'];
 function matchSquad(name, idx){
   const bk = boardKey(name);
   if(!bk) return null;
   for(const it of idx){ if(it.key === bk) return it.squad; }
+  if(BOARDS_SEM_FUZZY.indexOf(bk) >= 0) return null;
   for(const it of idx){ if(it.key.length>=6 && bk.endsWith(' '+it.key)) return it.squad; }
   for(const it of idx){ if(it.key.length>=8 && bk.indexOf(it.key)>=0) return it.squad; }
   for(const it of idx){ if(bk.length>=8 && it.key.indexOf(bk)>=0) return it.squad; }
