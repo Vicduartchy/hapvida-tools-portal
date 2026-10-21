@@ -356,6 +356,11 @@
     background:#FFF; border:1px solid #E4E7EF; border-radius:10px; padding:16px;
   }
   .chart-card.full{ grid-column:1 / -1; }
+  .insight-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:10px; }
+  .insight-card{ background:#FFF; border:1px solid #E4E7EF; border-left:4px solid var(--azul); border-radius:6px; padding:10px 12px; font-size:12.5px; line-height:1.55; }
+  .insight-card.alert{ border-left-color:var(--vermelho); }
+  .insight-card.warn{ border-left-color:var(--laranja); }
+  .chart-note{ margin-top:8px; font-size:10.5px; color:var(--cinza-texto); line-height:1.6; }
   .chart-card h4{
     margin:0 0 12px; font-size:13px; color:var(--azul); text-transform:uppercase; letter-spacing:.3px;
   }
@@ -455,6 +460,27 @@
     <div id="quarterlyStatusBanner" class="importbanner" style="display:none; font-size:12px; line-height:1.6;"></div>
     <div class="data-kpi-grid" id="executiveKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));"></div>
     <div class="resultcount" id="executiveSummary"></div>
+
+    <div class="insight-section">
+      <h3>Leitura rápida</h3>
+      <div class="insight-cards" id="execInsights"></div>
+    </div>
+
+    <div class="insight-section">
+      <h3>Carga e capacidade</h3>
+      <div class="resultcount" id="execChartsNote"></div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h4>Carga real por SM <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— o que está rodando; ⚠ marca SM acima de 3 squads</span></h4>
+          <div class="chart-wrap" style="height:640px;"><canvas id="chartExecCargaSm"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Pessoas × demanda por squad <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— linhas tracejadas = mediana</span></h4>
+          <div class="chart-wrap" style="height:600px;"><canvas id="chartExecPessoasDemanda"></canvas></div>
+          <div class="chart-note">Canto superior esquerdo: muita demanda para poucas pessoas. Canto inferior direito: muitas pessoas com pouca entrega rodando. Vermelho = squad sem SM.</div>
+        </div>
+      </div>
+    </div>
 
     <div class="insight-section">
       <h3>Capacidade dos SMs</h3>
@@ -612,6 +638,22 @@
   </div>
 
   <div class="tab-content hidden" id="tab-boards">
+
+    <div class="insight-section">
+      <h3>Saúde dos boards</h3>
+      <div class="resultcount" id="boardHealthNote"></div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h4>Boards ativos por tempo sem atualização</h4>
+          <div class="chart-wrap"><canvas id="chartBoardHealth"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Squads ativas com todos os boards parados há mais de 180 dias</h4>
+          <div class="tablewrap" style="max-height:280px; overflow:auto;"><table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Última atualização</th><th>Dias</th></tr></thead><tbody id="boardHealthBody"></tbody></table></div>
+        </div>
+      </div>
+      <div class="chart-note">A data é a de atualização do projeto no Azure DevOps e a referência é a atualização mais recente da base de boards, não o dia de hoje. Ela indica abandono provável, mas não prova falta de atividade nos work items.</div>
+    </div>
 
     <div class="kpis" id="boardsKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));"></div>
 
@@ -1532,6 +1574,7 @@ function renderExecutiveTab(){
   document.getElementById('execDirBody').innerHTML = dirRows.length ? dirRows.map(r=>'<tr><td><b>'+esc(r.nome)+'</b></td><td>'+qNum(r.squads)+'</td><td>'+(r.semSm ? '<span class="badge miss">'+r.semSm+'</span>' : '<span class="badge ok">0</span>')+'</td><td>'+qNum(r.sms.size)+'</td><td>'+qNum(r.p)+'</td><td>'+qNum(r.pAnd)+'</td><td>'+qNum(r.m)+'</td><td>'+qNum(r.mFin)+'</td><td>'+qNum(r.mCur)+'</td><td>'+qFormatHours(r.horas)+'</td></tr>').join('') : qEmptyRow(10, 'Sem demanda importada.');
 
   renderExecSquadTable(model);
+  try{ renderExecInsights(model, !empty); renderExecCharts(model, !empty); }catch(err){ console.error('Execução dos insights/gráficos', err); }
 }
 function renderExecSquadTable(model){
   model = model || QUARTERLY_MODEL;
@@ -1682,6 +1725,138 @@ function renderPendenciasTab(){
   document.getElementById('pendNoSmBody').innerHTML = semSmList.length ? semSmList.map(s=>{ const d = dem(s); return '<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+s.recursos.length+'</td><td>'+(hasQ?d.p:'—')+'</td><td>'+(hasQ?d.m:'—')+'</td></tr>'; }).join('') : qEmptyRow(5, 'Todas as squads ativas têm SM.');
   document.getElementById('pendNoPeopleBody').innerHTML = semPes.length ? semPes.map(s=>'<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+(smOf(s)?esc(smOf(s)):'<span class="badge nok">Sem SM</span>')+'</td></tr>').join('') : qEmptyRow(3, 'Todas as squads ativas têm pessoas.');
   document.getElementById('pendSmPortBody').innerHTML = foraHub.length ? foraHub.map(([n,c])=>'<tr><td>'+esc(n)+'</td><td>'+c+'</td><td>'+(SM_DESLIGADOS.some(d=>boardKey(n).indexOf(d)>=0)?'<span class="badge nok">Desligado</span>':'<span class="badge pend">Não é SM no Hub</span>')+'</td></tr>').join('') : qEmptyRow(3, 'Todos os SM/PMO do Portfólio são SMs do Hub.');
+}
+
+/* ===== Saúde dos boards: tempo sem atualização (referência = data mais recente da base) ===== */
+function parseBrDate(s){
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(String(s||'').trim());
+  return m ? new Date(+m[3], +m[2]-1, +m[1]) : null;
+}
+const BOARD_AGE_BINS = [
+  { label:'Até 30 dias', max:30, color:'#2E9E44' }, { label:'31–90 dias', max:90, color:'#FFC20E' },
+  { label:'91–180 dias', max:180, color:'#F47920' }, { label:'Mais de 180 dias', max:Infinity, color:'#E8272A' },
+  { label:'Sem data', max:null, color:'#B9C1D9' }
+];
+function boardHealth(){
+  const dated = ALL_BOARDS.map(b=>parseBrDate(b.lastUpdated)).filter(Boolean);
+  const ref = dated.length ? new Date(Math.max.apply(null, dated)) : null;
+  const dayMs = 86400000;
+  const ageOf = b => { const d = parseBrDate(b.lastUpdated); return (d && ref) ? Math.round((ref - d)/dayMs) : null; };
+  const counts = BOARD_AGE_BINS.map(()=>0);
+  ALL_BOARDS.filter(b=>b.ativo).forEach(b=>{
+    const age = ageOf(b);
+    const i = age == null ? BOARD_AGE_BINS.length-1 : BOARD_AGE_BINS.findIndex(x=>x.max != null && age <= x.max);
+    counts[i] += 1;
+  });
+  const paradas = [];
+  UNIFIED.filter(s=>s.squadAtiva).forEach(s=>{
+    const ages = s.boards.filter(b=>b.ativo).map(ageOf).filter(a=>a != null);
+    if(!ages.length) return;
+    const freshest = Math.min.apply(null, ages);
+    if(freshest > 180){
+      const last = s.boards.filter(b=>b.ativo && ageOf(b) === freshest)[0];
+      paradas.push({ squad:s, dias:freshest, ultima:last ? last.lastUpdated : '' });
+    }
+  });
+  paradas.sort((a,b)=>b.dias - a.dias || COLLATE.compare(a.squad.squad, b.squad.squad));
+  return { ref, counts, total: counts.reduce((t,n)=>t+n,0), paradas };
+}
+function renderBoardHealth(){
+  const body = document.getElementById('boardHealthBody'); if(!body) return;
+  const hh = boardHealth();
+  const fmt = d => d ? d.toLocaleDateString('pt-BR') : '—';
+  document.getElementById('boardHealthNote').innerHTML = '<b>'+hh.total+'</b> boards ativos · referência: <b>'+fmt(hh.ref)+'</b> · <b>'+hh.counts[3]+'</b> parados há mais de 180 dias e <b>'+hh.paradas.length+'</b> squads ativas com todos os boards nessa situação.';
+  body.innerHTML = hh.paradas.length ? hh.paradas.map(x=>'<tr><td>'+esc(x.squad.squad)+'</td><td>'+(currentSMName(x.squad) ? esc(currentSMName(x.squad)) : '<span class="badge miss">Sem SM</span>')+'</td><td>'+esc(x.squad.diretoria||'—')+'</td><td>'+esc(x.ultima)+'</td><td>'+x.dias+'</td></tr>').join('') : qEmptyRow(5, 'Nenhuma squad ativa com todos os boards parados há mais de 180 dias.');
+  try{
+    destroyChart('boardHealth');
+    CHARTS.boardHealth = new Chart(document.getElementById('chartBoardHealth'), {
+      type:'bar',
+      data:{ labels: BOARD_AGE_BINS.map(b=>b.label), datasets:[{ data: hh.counts, backgroundColor: BOARD_AGE_BINS.map(b=>b.color), borderRadius:3 }] },
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, datalabels:{ display:true, anchor:'end', align:'top', color:'#333', font:{size:11} } }, scales:{ y:{ beginAtZero:true, ticks:{precision:0} } } }
+    });
+  }catch(err){ console.error('boardHealth', err); }
+}
+
+/* ===== Visão Executiva: leitura rápida e gráficos de carga ===== */
+function median(nums){
+  const a = nums.slice().sort((x,y)=>x-y); if(!a.length) return 0;
+  const mid = a.length >> 1; return a.length % 2 ? a[mid] : (a[mid-1] + a[mid]) / 2;
+}
+function renderExecInsights(model, hasQ){
+  const box = document.getElementById('execInsights'); if(!box) return;
+  const cards = [];
+  const add = (tone, html) => cards.push({ tone, html });
+  const top = (arr, n, fmt) => arr.slice(0, n).map(fmt).join(', ');
+  const ativas = UNIFIED.filter(s=>s.squadAtiva);
+  const m = model.metrics;
+
+  if(hasQ && model.semSmComDemanda.length){
+    const lista = model.semSmComDemanda.slice().sort((a,b)=>(b.p.total+b.m.total)-(a.p.total+a.m.total));
+    add('alert', '<b>'+m.semSmSquads+' squads com demanda não têm SM</b>: '+qFormatNumber(m.semSmProjetos)+' projetos e '+qFormatNumber(m.semSmMelhorias)+' melhorias, '+qFormatNumber(m.semSmRodando)+' rodando. Maiores: '+top(lista, 3, a=>esc(a.label)+' ('+(a.p.total+a.m.total)+')')+'.');
+  }
+  const acima = model.smRows.filter(r=>r.folga < 0);
+  if(acima.length) add('warn', '<b>'+acima.length+' SMs estão acima de '+SM_IDEAL_SQUADS+' squads</b> ('+m.excessoTotal+' squads acima do ideal), enquanto '+m.smComFolga+' SMs têm folga ('+m.folgaTotal+' vagas). Maiores: '+top(acima, 3, r=>esc(r.nome)+' ('+r.squadCount+')')+'.');
+  if(hasQ && m.rodando){
+    const maior = model.smRows.slice().sort((a,b)=>b.rodando - a.rodando)[0];
+    if(maior && maior.rodando){
+      const pct = Math.round(maior.rodando / m.rodando * 100);
+      add(pct >= 15 ? 'warn' : '', '<b>'+esc(maior.nome)+'</b> concentra <b>'+maior.rodando+'</b> dos '+qFormatNumber(m.rodando)+' itens rodando ('+pct+'%), em '+maior.squadCount+' squad'+(maior.squadCount === 1 ? '' : 's')+'.');
+    }
+    const ociosos = model.smRows.filter(r=>r.squadCount > 0 && r.rodando === 0);
+    if(ociosos.length) add('', '<b>'+ociosos.length+' SMs têm squads, mas nenhum item rodando</b> no trimestre: '+top(ociosos, 4, r=>esc(r.nome))+(ociosos.length > 4 ? ' e outros' : '')+'. Conferir se falta demanda importada ou se o nome da squad não bate.');
+    const carga = ativas.map(s=>{ const a = model.squads.find(x=>x.squad && x.squad.id === s.id); return { s, rodando: a ? a.rodando : 0, pessoas: s.recursos.length }; })
+      .filter(x=>x.pessoas >= 3 && x.rodando > 0).sort((a,b)=>b.rodando/b.pessoas - a.rodando/a.pessoas)[0];
+    if(carga) add('', 'Maior carga por pessoa (squads com 3+ pessoas): <b>'+esc(carga.s.squad)+'</b>, com <b>'+carga.rodando+'</b> itens rodando para <b>'+carga.pessoas+'</b> pessoas ('+(carga.rodando/carga.pessoas).toFixed(1).replace('.', ',')+' por pessoa).');
+    if(m.projects) add('', '<b>'+qFormatNumber(m.pFora)+' projetos</b> ('+Math.round(m.pFora/m.projects*100)+'%) estão despriorizados, cancelados ou suspensos'+(model.quality.semMotivo.p ? '; '+model.quality.semMotivo.p+' sem motivo registrado' : '')+'.');
+  } else if(!hasQ){
+    add('', 'Importe o <b>Portfólio</b> e as <b>Melhorias</b> para liberar os insights de demanda, carga por SM e despriorizações.');
+  }
+  const bh = boardHealth();
+  if(bh.paradas.length) add('warn', '<b>'+bh.paradas.length+' squads ativas têm todos os boards parados há mais de 180 dias</b> (referência: '+bh.ref.toLocaleDateString('pt-BR')+'). Lista na aba Boards Azure.');
+  const semPes = ativas.filter(s=>!s.recursos.length).length;
+  if(semPes) add('warn', '<b>'+semPes+' de '+ativas.length+' squads ativas ('+Math.round(semPes/ativas.length*100)+'%) não têm pessoas cadastradas</b>, o que limita qualquer leitura de carga por pessoa.');
+
+  const order = { alert:0, warn:1, '':2 };
+  cards.sort((a,b)=>order[a.tone] - order[b.tone]);
+  box.innerHTML = cards.slice(0, 8).map(c=>'<div class="insight-card '+c.tone+'">'+c.html+'</div>').join('');
+}
+function renderExecCharts(model, hasQ){
+  const note = document.getElementById('execChartsNote'); if(!note) return;
+  destroyChart('execCargaSm'); destroyChart('execPessoasDemanda');
+  if(!hasQ){ note.innerHTML = 'Os gráficos de carga aparecem depois da importação do Portfólio e das Melhorias.'; return; }
+  note.innerHTML = '';
+  const sms = model.smRows.filter(r=>r.squadCount > 0 || r.rodando > 0).sort((a,b)=>b.rodando - a.rodando || b.squadCount - a.squadCount);
+  CHARTS.execCargaSm = new Chart(document.getElementById('chartExecCargaSm'), {
+    type:'bar',
+    data:{ labels: sms.map(r=>r.nome+' · '+r.squadCount+' squad'+(r.squadCount === 1 ? '' : 's')+(r.folga < 0 ? ' ⚠' : '')),
+      datasets:[
+        { label:'Projetos em andamento', data: sms.map(r=>r.pAndamento), backgroundColor: CHART_COLORS.azul, borderRadius:2 },
+        { label:'Melhorias em curso', data: sms.map(r=>r.mCurso), backgroundColor: CHART_COLORS.laranja, borderRadius:2 }
+      ] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom' }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:'#fff', font:{ size:10, weight:'bold' } } },
+      scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } }
+  });
+  const aggOf = new Map(); model.squads.forEach(a=>{ if(a.squad) aggOf.set(a.squad.id, a); });
+  const pts = UNIFIED.filter(s=>s.squadAtiva).map(s=>{ const a = aggOf.get(s.id); return { x:s.recursos.length, y:a ? a.rodando : 0, squad:s.squad, sm:currentSMName(s) || '' }; })
+    .filter(p=>p.x > 0 || p.y > 0);
+  const medX = median(pts.filter(p=>p.x > 0).map(p=>p.x)), medY = median(pts.filter(p=>p.y > 0).map(p=>p.y));
+  const medianLines = { id:'medianLines', afterDatasetsDraw(chart){
+    const { ctx, chartArea, scales } = chart; ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle = '#8A93AD'; ctx.lineWidth = 1;
+    const x = scales.x.getPixelForValue(medX), y = scales.y.getPixelForValue(medY);
+    ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.moveTo(chartArea.left, y); ctx.lineTo(chartArea.right, y); ctx.stroke(); ctx.restore();
+  } };
+  const ds = (label, list, color) => ({ label, data:list, backgroundColor:color+'AA', borderColor:color, pointRadius:5, pointHoverRadius:7 });
+  CHARTS.execPessoasDemanda = new Chart(document.getElementById('chartExecPessoasDemanda'), {
+    type:'scatter',
+    data:{ datasets:[ ds('Com SM', pts.filter(p=>p.sm), CHART_COLORS.azul), ds('Sem SM', pts.filter(p=>!p.sm), CHART_COLORS.vermelho) ] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom' }, datalabels:{ display:false },
+        tooltip:{ callbacks:{ label:ctx=>{ const p = ctx.raw; return [p.squad, p.x+' pessoas · '+p.y+' itens rodando', p.sm ? 'SM: '+p.sm : 'Sem SM']; } } } },
+      scales:{ x:{ beginAtZero:true, title:{ display:true, text:'Pessoas na squad (mediana '+medX+')' }, ticks:{ precision:0 } },
+               y:{ beginAtZero:true, title:{ display:true, text:'Itens rodando (mediana '+medY+')' }, ticks:{ precision:0 } } } },
+    plugins:[medianLines]
+  });
 }
 function refreshQuarterlyViews(){
   QUARTERLY_MODEL = buildQuarterlyModel();
@@ -2096,7 +2271,7 @@ document.querySelectorAll('#tabBar .tab').forEach(btn=>{
       showTab(t);
       if(t==='sms') renderSMsTab();
       if(t==='squads') renderSquadsTab();
-      if(t==='boards') renderBoardsTab();
+      if(t==='boards'){ renderBoardsTab(); renderBoardHealth(); }
       if(t==='charts') renderChartsTab();
       if(t==='recursos') renderRecursosTab();
       if(t==='executive') renderExecutiveTab();
@@ -3156,7 +3331,7 @@ function rebuildAndRender(){
   else if(t==='quality') renderQualityTab();
   else if(t==='pendencias') renderPendenciasTab();
   else if(t==='sms') renderSMsTab();
-  else if(t==='boards') renderBoardsTab();
+  else if(t==='boards'){ renderBoardsTab(); renderBoardHealth(); }
   else if(t==='charts') renderChartsTab();
   else if(t==='recursos') renderRecursosTab();
   else renderSquadsTab();
