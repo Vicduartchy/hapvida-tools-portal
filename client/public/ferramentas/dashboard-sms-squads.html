@@ -863,7 +863,9 @@ if(typeof Chart !== 'undefined'){
 }
 
 function esc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function uniqueSorted(arr){ return [...new Set(arr.filter(v=>v && v!=='—'))].sort((a,b)=>a.localeCompare(b,'pt-BR')); }
+const COLLATE = new Intl.Collator('pt-BR');
+const COLLATE_NUM = new Intl.Collator('pt-BR', {numeric:true});
+function uniqueSorted(arr){ return [...new Set(arr.filter(v=>v && v!=='—'))].sort(COLLATE.compare); }
 /* trata null/undefined/''/'—'/'-' como "vazio" — usado pra sm_atual, diretor etc que vêm com traço quando não preenchidos */
 function isBlank(v){ const s = String(v==null?'':v).trim(); return s==='' || s==='—' || s==='-'; }
 /* placeholders de vaga em aberto ("CONTRATAR (D) - Pleno") não são pessoas — nunca tratar como SM real */
@@ -923,7 +925,6 @@ function buildSquadIndexFrom(list, withAliases){
   idx.sort((a,b)=> b.key.length - a.key.length);
   return idx;
 }
-function buildSquadIndex(){ return buildSquadIndexFrom(SQUAD_CANON); }
 /* boards que NÃO podem casar por aproximação (só por nome exato): o nome genérico
    casaria por substring com squads que contêm a palavra (ex.: "Analytics" é um
    projeto à parte, não a squad "Insights - Analytics Engineering - ...") */
@@ -1072,7 +1073,7 @@ function linkResources(idx){
       (unmatchedMap[k] = unmatchedMap[k] || []).push(r);
     }
   });
-  UNMATCHED_RESOURCES = Object.keys(unmatchedMap).sort((a,b)=>a.localeCompare(b,'pt-BR')).map(k=>({
+  UNMATCHED_RESOURCES = Object.keys(unmatchedMap).sort((a,b)=>COLLATE.compare(a,b)).map(k=>({
     squadRaw: k, count: unmatchedMap[k].length, rows: unmatchedMap[k]
   }));
   return bySquadId;
@@ -1219,7 +1220,8 @@ let UNIFIED = []; // array de squads (registro), cada uma já com .recursos[] e 
    ============================================================ */
 const LS_OVERRIDES = 'hac_shared_dashboard_overrides_v1';
 const LS_OVERRIDES_LEGACY = 'hapvida_dashboard_v2_overrides_20260811b';
-let MANUAL_OVERRIDES = { squads:{}, deletedSquadIds:[], smRenames:{}, deletedSMKeys:[], boards:{}, deletedBoardKeys:[], resources:{}, deletedResourceIds:[], dismissedDivergences:[] };
+let MANUAL_OVERRIDES = emptyOverrides();
+function emptyOverrides(){ return { squads:{}, deletedSquadIds:[], smRenames:{}, deletedSMKeys:[], boards:{}, deletedBoardKeys:[], resources:{}, deletedResourceIds:[], dismissedDivergences:[] }; }
 function loadOverrides(){
   try{
     // Migra automaticamente da chave antiga (exclusiva desta ferramenta)
@@ -1231,7 +1233,7 @@ function loadOverrides(){
     }
     if(raw){
       const p = JSON.parse(raw);
-      if(p) MANUAL_OVERRIDES = Object.assign({squads:{},deletedSquadIds:[],smRenames:{},deletedSMKeys:[],boards:{},deletedBoardKeys:[],resources:{},deletedResourceIds:[],dismissedDivergences:[]}, p);
+      if(p) MANUAL_OVERRIDES = Object.assign(emptyOverrides(), p);
     }
   }catch(e){ console.warn('Não consegui ler overrides salvos:', e); }
 }
@@ -1410,7 +1412,7 @@ function buildQuarterlyModel(){
       rodando: mine.reduce((t,a)=>t+a.rodando,0), total: mine.reduce((t,a)=>t+a.p.total+a.m.total,0),
       folga: SM_IDEAL_SQUADS - sm.squadCount
     };
-  }).sort((a,b)=> b.squadCount-a.squadCount || b.rodando-a.rodando || a.nome.localeCompare(b.nome,'pt-BR'));
+  }).sort((a,b)=> b.squadCount-a.squadCount || b.rodando-a.rodando || COLLATE.compare(a.nome,b.nome));
 
   const semSm = mapped.filter(a=>!a.sm);
   const semSmComDemanda = semSm.filter(a=>a.p.total+a.m.total>0);
@@ -1548,7 +1550,7 @@ function renderExecSquadTable(model){
   else if(smVal) rows = rows.filter(a=>a.sm === smVal);
   if(term) rows = rows.filter(a=>qKey(a.label+' '+a.sm+' '+a.diretoria).indexOf(term) >= 0);
   const val = { rodando:a=>a.rodando, total:a=>a.p.total+a.m.total, projetos:a=>a.p.andamento, melhorias:a=>a.m.finalizada, horas:a=>a.horas }[sortBy] || (a=>a.rodando);
-  rows = rows.sort((a,b)=> val(b)-val(a) || (b.p.total+b.m.total)-(a.p.total+a.m.total) || a.label.localeCompare(b.label,'pt-BR'));
+  rows = rows.sort((a,b)=> val(b)-val(a) || (b.p.total+b.m.total)-(a.p.total+a.m.total) || COLLATE.compare(a.label,b.label));
   const cnt = document.getElementById('execSquadCount');
   if(cnt) cnt.innerHTML = '<b>'+rows.length+'</b> de <b>'+model.squads.filter(a=>a.p.total+a.m.total>0).length+'</b> squads com demanda';
   body.innerHTML = rows.length ? rows.map(a=>'<tr><td><b>'+esc(a.label)+'</b>'+(a.squad ? '' : ' <span class="badge miss">sem vínculo</span>')+'</td><td>'+(a.sm ? esc(a.sm) : '<span class="badge miss">Sem SM</span>')+'</td><td>'+esc(a.diretoria || '—')+'</td><td>'+(a.squad ? qNum(a.squad.boards.filter(b=>b.ativo).length) : '—')+'</td><td>'+qNum(a.p.total)+'</td><td>'+qNum(a.p.andamento,1)+'</td><td>'+qNum(a.p.planejamento)+'</td><td>'+qNum(a.p.encerrado)+'</td><td>'+qNum(a.p.fora)+'</td><td>'+qNum(a.m.total)+'</td><td>'+qNum(a.m.finalizada)+'</td><td>'+qNum(a.m.curso,1)+'</td><td>'+qNum(a.m.fora)+'</td><td>'+qNum(a.rodando,1)+'</td></tr>').join('') : qEmptyRow(14, 'Nenhuma squad encontrada com esses filtros.');
@@ -1580,9 +1582,9 @@ function renderQualityTab(){
   document.getElementById('qualityBody').innerHTML = rows.map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+qFormatNumber(r[1])+'</td><td>'+qFormatNumber(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join('');
   document.getElementById('qualityUnmappedBody').innerHTML = model.unmapped.length ? model.unmapped.sort((a,b)=>(b.projects+b.improvements)-(a.projects+a.improvements)).map(r=>'<tr><td>'+esc(r.label)+'</td><td>'+qFormatNumber(r.projects)+'</td><td>'+qFormatNumber(r.improvements)+'</td><td>Criar o apelido da squad no De-Para ou corrigir o nome na fonte.</td></tr>').join('') : qEmptyRow(4, 'Todos os nomes de squad têm vínculo no dashboard.');
   document.getElementById('qualityInferredBody').innerHTML = model.inferred.length ? model.inferred.map(r=>'<tr><td>'+esc(r.fonte)+'</td><td>'+esc(r.alvo)+'</td><td>'+qFormatNumber(r.projects)+'</td><td>'+qFormatNumber(r.improvements)+'</td><td>'+esc(r.motivo)+'</td></tr>').join('') : qEmptyRow(5, 'Nenhuma ligação por inferência.');
-  document.getElementById('qualityDivergBody').innerHTML = model.divergencias.length ? model.divergencias.sort((a,b)=>a.squad.localeCompare(b.squad,'pt-BR')).map(r=>'<tr><td>'+esc(r.squad)+'</td><td>'+(r.sm==='Sem SM no dashboard' ? '<span class="badge miss">Sem SM</span>' : esc(r.sm))+'</td><td>'+esc(r.portfolio)+'</td></tr>').join('') : qEmptyRow(3, 'O SM do dashboard bate com o SM/PMO do Portfólio em todas as squads.');
+  document.getElementById('qualityDivergBody').innerHTML = model.divergencias.length ? model.divergencias.sort((a,b)=>COLLATE.compare(a.squad,b.squad)).map(r=>'<tr><td>'+esc(r.squad)+'</td><td>'+(r.sm==='Sem SM no dashboard' ? '<span class="badge miss">Sem SM</span>' : esc(r.sm))+'</td><td>'+esc(r.portfolio)+'</td></tr>').join('') : qEmptyRow(3, 'O SM do dashboard bate com o SM/PMO do Portfólio em todas as squads.');
   document.getElementById('qualityOverlapBody').innerHTML = model.commonLecom.length ? model.commonLecom.map(r=>'<tr><td>'+esc(r.lecom)+'</td><td>'+esc(r.project.titulo)+'</td><td>'+esc(r.improvement.titulo)+'</td></tr>').join('') : qEmptyRow(3, 'Nenhum LECOM aparece nas duas fontes.');
-  const orph = ORPHAN_SQUADS.slice().sort((a,b)=>b.recursos.length-a.recursos.length || a.squad.localeCompare(b.squad,'pt-BR'));
+  const orph = ORPHAN_SQUADS.slice().sort((a,b)=>b.recursos.length-a.recursos.length || COLLATE.compare(a.squad,b.squad));
   const origem = s => s.source==='levantamento_only' ? 'Levantamento dos SMs' : (s.source==='handover' ? 'Cadastro-base' : 'Base de recursos');
   const orphPeople = new Set(); orph.forEach(s=>s.recursos.forEach(r=>orphPeople.add(boardKey(r.colaborador))));
   document.getElementById('qualityOrphanNote').innerHTML = 'Squad = projeto no Azure. O dashboard tem <b>'+UNIFIED.length+'</b> squads ('+UNIFIED.filter(s=>s.squadAtiva).length+' com board ativo) para <b>'+ALL_BOARDS.length+'</b> boards; squads renomeadas têm 2 boards (o antigo, desativado, e o atual). Abaixo, <b>'+orph.length+'</b> nomes que existem só nas outras bases, com <b>'+orphPeople.size+'</b> pessoas, e por isso não contam como squad.';
@@ -1676,7 +1678,7 @@ function renderPendenciasTab(){
   if(!hasQ){ ban.style.display='block'; ban.innerHTML='<b>Bases do trimestre não importadas.</b> As pendências que dependem de projetos e melhorias ficam sem número até a importação (Visão Executiva).'; } else ban.style.display='none';
 
   document.getElementById('pendOverBody').innerHTML = acima.length ? acima.map(r=>{ const sm = SM_VIEW.find(x=>x.nome===r.nome); return '<tr><td>'+esc(r.nome)+'</td><td>'+r.squadCount+'</td><td>+'+(-r.folga)+'</td><td>'+(sm?sm.squads.filter(s=>s.squadAtiva).map(s=>esc(s.squad)).join('; '):'')+'</td></tr>'; }).join('') : qEmptyRow(4, 'Nenhum SM acima do limite.');
-  const semSmList = ativas.filter(s=>!smOf(s)).sort((a,b)=>(dem(b).p+dem(b).m)-(dem(a).p+dem(a).m) || a.squad.localeCompare(b.squad,'pt-BR'));
+  const semSmList = ativas.filter(s=>!smOf(s)).sort((a,b)=>(dem(b).p+dem(b).m)-(dem(a).p+dem(a).m) || COLLATE.compare(a.squad,b.squad));
   document.getElementById('pendNoSmBody').innerHTML = semSmList.length ? semSmList.map(s=>{ const d = dem(s); return '<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+s.recursos.length+'</td><td>'+(hasQ?d.p:'—')+'</td><td>'+(hasQ?d.m:'—')+'</td></tr>'; }).join('') : qEmptyRow(5, 'Todas as squads ativas têm SM.');
   document.getElementById('pendNoPeopleBody').innerHTML = semPes.length ? semPes.map(s=>'<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+(smOf(s)?esc(smOf(s)):'<span class="badge nok">Sem SM</span>')+'</td></tr>').join('') : qEmptyRow(3, 'Todas as squads ativas têm pessoas.');
   document.getElementById('pendSmPortBody').innerHTML = foraHub.length ? foraHub.map(([n,c])=>'<tr><td>'+esc(n)+'</td><td>'+c+'</td><td>'+(SM_DESLIGADOS.some(d=>boardKey(n).indexOf(d)>=0)?'<span class="badge nok">Desligado</span>':'<span class="badge pend">Não é SM no Hub</span>')+'</td></tr>').join('') : qEmptyRow(3, 'Todos os SM/PMO do Portfólio são SMs do Hub.');
@@ -1824,7 +1826,7 @@ function buildSMView(){
       divergRecursos,
       divergencias: divergHandover.concat(divergRecursos)
     };
-  }).sort((a,b)=> b.squadCount - a.squadCount || a.nome.localeCompare(b.nome,'pt-BR'));
+  }).sort((a,b)=> b.squadCount - a.squadCount || COLLATE.compare(a.nome,b.nome));
 
   return SM_VIEW;
 }
@@ -1876,7 +1878,7 @@ function wireSmSort(){
 }
 
 function smRowDetail(sm){
-  const squadRows = sm.squads.slice().sort((a,b)=> a.squad.localeCompare(b.squad,'pt-BR'));
+  const squadRows = sm.squads.slice().sort((a,b)=> COLLATE.compare(a.squad,b.squad));
   const squadsTable = '<table class="mini-table"><thead><tr><th>Squad</th><th>Diretoria</th><th>Recursos</th><th>Boards</th></tr></thead><tbody>' +
     squadRows.map(s=> '<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+s.recursos.length+'</td><td>'+s.boards.length+'</td></tr>').join('') +
     '</tbody></table>';
@@ -1941,7 +1943,7 @@ function renderSMsTab(){
     else if(sk==='diretorias'){ va=a.diretorias.join(','); vb=b.diretorias.join(','); }
     else if(sk==='divergencias'){ va=a.divergencias.length; vb=b.divergencias.length; }
     else { va = a[sk]; vb = b[sk]; }
-    const cmp = typeof va==='number' ? (va-vb) : String(va).localeCompare(String(vb),'pt-BR',{numeric:true});
+    const cmp = typeof va==='number' ? (va-vb) : COLLATE_NUM.compare(String(va),String(vb));
     return sd==='asc' ? cmp : -cmp;
   });
 
@@ -2030,7 +2032,7 @@ function renderSemSMPanel(){
   const vagas = SQUADS_SEM_SM.filter(s=> isVagaAberta(s.sm_proposto));
   const semProposta = SQUADS_SEM_SM.filter(s=> !isVagaAberta(s.sm_proposto));
   const tableHtml = '<table class="mini-table"><thead><tr><th>Squad</th><th>Diretoria</th><th>Diretor</th><th>Situação</th></tr></thead><tbody>' +
-    SQUADS_SEM_SM.slice().sort((a,b)=>a.squad.localeCompare(b.squad,'pt-BR')).map(s=>
+    SQUADS_SEM_SM.slice().sort((a,b)=>COLLATE.compare(a.squad,b.squad)).map(s=>
       '<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+esc(s.diretor||'—')+'</td><td>'+
       (isVagaAberta(s.sm_proposto) ? '<span class="badge pend">'+esc(s.sm_proposto)+'</span>' : '<span class="badge miss">Sem proposta</span>')+
       '</td></tr>'
@@ -2120,10 +2122,17 @@ function renderMultiSelect(field, containerId, values, onChange, stateObj){
   const countEl = document.getElementById(containerId+'Count');
   if(!panel) return;
   const sel = state[field];
-  [...sel].forEach(v=>{ if(!values.includes(v)) sel.delete(v); });
-  panel.innerHTML =
-    '<div class="msel-actions"><button type="button" data-act="all">Marcar todos</button><button type="button" data-act="none">Limpar</button></div>' +
-    values.map(v=> '<label><input type="checkbox" data-val="'+esc(v)+'" '+(sel.has(v)?'checked':'')+'> '+esc(v)+'</label>').join('');
+  const valueSet = new Set(values);
+  [...sel].forEach(v=>{ if(!valueSet.has(v)) sel.delete(v); });
+  const sig = values.join('\u0001');
+  if(panel._sig === sig){
+    panel.querySelectorAll('input[type="checkbox"]').forEach(cb=>{ cb.checked = sel.has(cb.getAttribute('data-val')); });
+  } else {
+    panel._sig = sig;
+    panel.innerHTML =
+      '<div class="msel-actions"><button type="button" data-act="all">Marcar todos</button><button type="button" data-act="none">Limpar</button></div>' +
+      values.map(v=> '<label><input type="checkbox" data-val="'+esc(v)+'" '+(sel.has(v)?'checked':'')+'> '+esc(v)+'</label>').join('');
+  }
   countEl.style.display = sel.size ? 'inline-block' : 'none';
   countEl.textContent = sel.size;
 }
@@ -2170,8 +2179,8 @@ function kpiCard(id, val, lbl, cls){
 }
 
 function squadRowDetail(s){
-  const recRows = s.recursos.slice().sort((a,b)=> a.colaborador.localeCompare(b.colaborador,'pt-BR'));
-  const boardRows = s.boards.slice().sort((a,b)=> a.board.localeCompare(b.board,'pt-BR'));
+  const recRows = s.recursos.slice().sort((a,b)=> COLLATE.compare(a.colaborador,b.colaborador));
+  const boardRows = s.boards.slice().sort((a,b)=> COLLATE.compare(a.board,b.board));
 
   const fieldsHtml = [
     ['Diretoria', s.diretoria], ['Diretor', s.diretor], ['Gerente', s.gerente],
@@ -2251,7 +2260,7 @@ function renderSquadsTab(){
     else if(sk==='boards'){ va=a.boards.length; vb=b.boards.length; }
     else if(sk==='levantamento_sm'){ va=currentSMName(a).toLowerCase(); vb=currentSMName(b).toLowerCase(); }
     else { va=String(a[sk]||'').toLowerCase(); vb=String(b[sk]||'').toLowerCase(); }
-    const cmp = typeof va==='number' ? (va-vb) : va.localeCompare(vb,'pt-BR',{numeric:true});
+    const cmp = typeof va==='number' ? (va-vb) : COLLATE_NUM.compare(va,vb);
     return sd==='asc' ? cmp : -cmp;
   });
 
@@ -2259,7 +2268,6 @@ function renderSquadsTab(){
   LAST_SQUAD_ROWS_FILTERED = rows;
 
   const total = UNIFIED.length;
-  const totalHandover = UNIFIED.filter(s=>s.source==='handover').length;
   const totalSoLevantamento = UNIFIED.filter(s=>s.source==='levantamento_only').length;
   const comSM = UNIFIED.filter(s=>s.temSM).length;
   const comRecursos = UNIFIED.filter(s=>s.temRecursos).length;
@@ -2430,7 +2438,7 @@ function renderBoardsTab(){
     let va, vb;
     if(sk==='ativo'){ va = a.ativo?1:0; vb = b.ativo?1:0; }
     else { va = String(a[sk]||'').toLowerCase(); vb = String(b[sk]||'').toLowerCase(); }
-    const cmp = typeof va==='number' ? (va-vb) : va.localeCompare(vb,'pt-BR',{numeric:true});
+    const cmp = typeof va==='number' ? (va-vb) : COLLATE_NUM.compare(va,vb);
     return sd==='asc' ? cmp : -cmp;
   });
 
@@ -2765,7 +2773,7 @@ function renderChartsTab(){
 
   const semRecursoEl = document.getElementById('listaSquadsSemRecurso');
   if(semRecursoEl){
-    const semRecurso = squadsF.filter(s=>!s.temRecursos).sort((a,b)=>a.squad.localeCompare(b.squad,'pt-BR'));
+    const semRecurso = squadsF.filter(s=>!s.temRecursos).sort((a,b)=>COLLATE.compare(a.squad,b.squad));
     semRecursoEl.innerHTML = semRecurso.length ?
       '<table class="mini-table"><thead><tr><th>Squad</th><th>SM</th><th>Boards</th></tr></thead><tbody>' +
       semRecurso.map(s=> '<tr><td>'+esc(s.squad)+'</td><td>'+(squadHasSM(s)?esc(currentSMName(s)):'<span class="badge miss">sem SM</span>')+'</td><td>'+s.boards.length+'</td></tr>').join('') +
@@ -2799,12 +2807,10 @@ function renderRecursosTab(){
   const resourceRows = resourceViewRows();
   document.getElementById('recursosTotalRawCount').textContent = '— ' + resourceRows.length + ' vínculos únicos na base mensal';
 
-  renderMultiSelect('squad', 'mselRecSquad', uniqueSorted(resourceRows.map(r=>r.squad)), renderRecursosTab, resourcesMultiState);
-  wireMultiSelect('squad', 'mselRecSquad', renderRecursosTab, resourcesMultiState);
-  renderMultiSelect('diretoria', 'mselRecDiretoria', uniqueSorted(resourceRows.map(r=>r.diretoria)), renderRecursosTab, resourcesMultiState);
-  wireMultiSelect('diretoria', 'mselRecDiretoria', renderRecursosTab, resourcesMultiState);
-  renderMultiSelect('funcao', 'mselRecFuncao', uniqueSorted(resourceRows.map(r=>r.funcao)), renderRecursosTab, resourcesMultiState);
-  wireMultiSelect('funcao', 'mselRecFuncao', renderRecursosTab, resourcesMultiState);
+  [['squad','mselRecSquad'], ['diretoria','mselRecDiretoria'], ['funcao','mselRecFuncao']].forEach(([field, id])=>{
+    renderMultiSelect(field, id, uniqueSorted(resourceRows.map(r=>r[field])), renderRecursosTab, resourcesMultiState);
+    wireMultiSelect(field, id, renderRecursosTab, resourcesMultiState);
+  });
 
   const q = (document.getElementById('recursosSearch').value||'').trim().toLowerCase();
   const compFilter = document.getElementById('recCompartilhado').value;
@@ -2819,15 +2825,17 @@ function renderRecursosTab(){
   );
 
   if(RESOURCES_SORT.key){
-    const sk = RESOURCES_SORT.key, sd = RESOURCES_SORT.dir;
-    rows = rows.slice().sort((a,b)=>{
-      const va = String(a[sk]||'').toLowerCase(), vb = String(b[sk]||'').toLowerCase();
-      const cmp = va.localeCompare(vb, 'pt-BR', {numeric:true});
-      return sd==='asc' ? cmp : -cmp;
-    });
+    const sk = RESOURCES_SORT.key, sign = RESOURCES_SORT.dir==='asc' ? 1 : -1;
+    rows = rows.map(r=>({ r, k: String(r[sk]||'').toLowerCase() }))
+      .sort((a,b)=> sign * COLLATE_NUM.compare(a.k, b.k))
+      .map(x=>x.r);
   }
 
-  document.getElementById('recursosCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+resourceRows.length+'</b> vínculos encontrados';
+  /* o DOM só recebe uma página por vez; mudar filtro, busca ou ordenação volta para a primeira */
+  const sig = JSON.stringify([q, compFilter, [...msSquad], [...msDir], [...msFunc], RESOURCES_SORT.key, RESOURCES_SORT.dir]);
+  if(sig !== _recursosSig){ _recursosSig = sig; _recursosLimit = RECURSOS_PAGE; }
+  const shown = rows.slice(0, _recursosLimit);
+  document.getElementById('recursosCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+resourceRows.length+'</b> vínculos encontrados'+(shown.length<rows.length ? ' · mostrando <b>'+shown.length+'</b>' : '');
 
   const totalColab = resourceRows.length;
   const totalSquadsComRecurso = new Set(resourceRows.map(r=>r.squad)).size;
@@ -2840,11 +2848,12 @@ function renderRecursosTab(){
   kpiRow.appendChild(kpiCard('kpiRecCompart', pctCompart+'%', 'Recursos compartilhados entre squads', pctCompart>30?'warn':undefined));
 
   const tbody = document.getElementById('recursosBody');
-  tbody.innerHTML = rows.length ? rows.map(r=>
+  tbody.innerHTML = (rows.length ? shown.map(r=>
     '<tr><td>'+esc(r.squad)+'</td><td>'+esc(r.colaborador)+'</td><td>'+esc(r.funcao)+'</td>'+
     '<td>'+(r.compartilhado==='Sim' ? '<span class="badge pend">Sim</span>' : 'Não')+'</td>'+
     '<td>'+esc(r.gerente_ti)+'</td><td>'+esc(r.diretor)+'</td><td>'+esc(r.diretoria)+'</td></tr>'
-  ).join('') : '<tr><td colspan="7" class="noresults">Nenhum colaborador encontrado com esses filtros.</td></tr>';
+  ).join('') : '<tr><td colspan="7" class="noresults">Nenhum colaborador encontrado com esses filtros.</td></tr>') +
+  (shown.length<rows.length ? '<tr><td colspan="7" class="noresults"><button type="button" class="btn" data-act="more">Mostrar mais '+Math.min(RECURSOS_PAGE, rows.length-shown.length)+'</button> <button type="button" class="btn" data-act="all">Mostrar todos ('+(rows.length-shown.length)+' restantes)</button></td></tr>' : '');
 
   document.querySelectorAll('#tab-recursos table.datatable thead th[data-sort]').forEach(th=>{
     if(th.dataset.wired) return;
@@ -2863,7 +2872,17 @@ function renderRecursosTab(){
     });
   });
 }
-document.getElementById('recursosSearch').addEventListener('input', renderRecursosTab);
+const RECURSOS_PAGE = 200;
+let _recursosSig = '', _recursosLimit = RECURSOS_PAGE;
+function debounce(fn, ms){ let t; return function(){ clearTimeout(t); t = setTimeout(fn, ms); }; }
+document.getElementById('recursosBody').addEventListener('click', e=>{
+  const act = e.target.getAttribute && e.target.getAttribute('data-act');
+  if(act==='more') _recursosLimit += RECURSOS_PAGE;
+  else if(act==='all') _recursosLimit = Infinity;
+  else return;
+  renderRecursosTab();
+});
+document.getElementById('recursosSearch').addEventListener('input', debounce(renderRecursosTab, 150));
 document.getElementById('recCompartilhado').addEventListener('change', renderRecursosTab);
 document.getElementById('btnClearRecursos').addEventListener('click', ()=>{
   ['squad','diretoria','funcao'].forEach(f=> resourcesMultiState[f].clear());
@@ -3122,7 +3141,7 @@ document.getElementById('editModalDelete').addEventListener('click', ()=>{
 
 document.getElementById('btnRestaurarOverrides').addEventListener('click', ()=>{
   if(!confirm('Isso apaga todas as edições manuais salvas neste navegador (renomear/excluir squad ou SM) e volta pro que veio dos arquivos importados. Confirmar?')) return;
-  MANUAL_OVERRIDES = { squads:{}, deletedSquadIds:[], smRenames:{}, deletedSMKeys:[], boards:{}, deletedBoardKeys:[], resources:{}, deletedResourceIds:[], dismissedDivergences:[] };
+  MANUAL_OVERRIDES = emptyOverrides();
   saveOverrides();
   rebuildAndRender();
 });
