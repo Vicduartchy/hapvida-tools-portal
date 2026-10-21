@@ -356,6 +356,17 @@
     background:#FFF; border:1px solid #E4E7EF; border-radius:10px; padding:16px;
   }
   .chart-card.full{ grid-column:1 / -1; }
+  .chart-card{ min-width:0; }
+  #smHeatmap td:first-child{ white-space:nowrap; }
+  #smHeatmap th, #smHeatmap td{ padding:4px 5px; font-size:11px; }
+  #smHeatmap th{ white-space:normal; line-height:1.2; }
+  .globalfilter{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 16px; background:#EEF2FF; border:1px solid #C9D3F5; border-radius:10px; padding:8px 14px; margin:0 0 12px; font-size:12px; }
+  .globalfilter .gf-title{ font-weight:700; color:var(--azul); }
+  .globalfilter label{ display:flex; align-items:center; gap:6px; color:var(--cinza-texto); font-weight:600; }
+  .globalfilter select{ padding:5px 8px; border:1px solid #C9D3F5; border-radius:6px; background:#FFF; font-size:12px; max-width:260px; }
+  .globalfilter .gf-status{ margin-left:auto; color:var(--cinza-texto); }
+  .globalfilter.active{ background:#FFF4E5; border-color:#F7C98B; }
+  .globalfilter.active .gf-status{ color:#B35A00; font-weight:700; }
   .insight-cards{ display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:10px; }
   .insight-card{ background:#FFF; border:1px solid #E4E7EF; border-left:4px solid var(--azul); border-radius:6px; padding:10px 12px; font-size:12.5px; line-height:1.55; }
   .insight-card.alert{ border-left-color:var(--vermelho); }
@@ -445,6 +456,14 @@
     Divisão SM × squad: <b>Levantamentos_SMs.xlsx</b>. Nomes/diretor/gerente: conferidos contra De-Para Azure (Jun/24). <b>📥 Importar as três bases</b> recalcula o cruzamento por squad, SM, LECOM e qualidade dos dados. <b>✏️ Editar</b> e <b>🗑️ Excluir</b> continuam salvos neste navegador.
   </div>
 
+  <div class="globalfilter" id="globalFilterBar">
+    <span class="gf-title">🎯 Filtro global</span>
+    <label>Diretoria <select id="gfDiretoria"></select></label>
+    <label>SM <select id="gfSm"></select></label>
+    <button class="clearbtn" id="gfClear" type="button">Limpar</button>
+    <span class="gf-status" id="gfStatus">Todas as squads</span>
+  </div>
+
   <div class="tabbar" id="tabBar">
     <button class="tab active" data-tab="executive">📌 Visão Executiva</button>
     <button class="tab" data-tab="pendencias">⚠️ Pendências</button>
@@ -452,7 +471,6 @@
     <button class="tab" data-tab="sms">👤 SMs</button>
     <button class="tab" data-tab="squads">🧩 Squads</button>
     <button class="tab" data-tab="boards">🗂️ Boards Azure</button>
-    <button class="tab" data-tab="charts">📊 Gráficos</button>
     <button class="tab" data-tab="recursos">👥 Recursos das Squads</button>
   </div>
 
@@ -478,6 +496,20 @@
           <h4>Pessoas × demanda por squad <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— linhas tracejadas = mediana</span></h4>
           <div class="chart-wrap" style="height:600px;"><canvas id="chartExecPessoasDemanda"></canvas></div>
           <div class="chart-note">Canto superior esquerdo: muita demanda para poucas pessoas. Canto inferior direito: muitas pessoas com pouca entrega rodando. Vermelho = squad sem SM.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight-section">
+      <h3>Cobertura por diretoria</h3>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h4>Situação das squads ativas por diretoria</h4>
+          <div class="chart-wrap" id="chartDirSituacaoWrap"><canvas id="chartDirSituacao"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Cobertura de SM e pessoas</h4>
+          <div class="tablewrap"><table class="squadtable"><thead><tr><th>Diretoria</th><th>Squads ativas</th><th>Com SM</th><th>Sem SM</th><th>% com SM</th><th>Pessoas</th><th>SMs atuando</th></tr></thead><tbody id="diretoriaBody"></tbody></table></div>
         </div>
       </div>
     </div>
@@ -509,6 +541,13 @@
   <div class="tab-content hidden" id="tab-pendencias">
     <div class="data-kpi-grid" id="pendKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));"></div>
     <div id="pendBanner" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
+    <div class="insight-section">
+      <h3>Panorama</h3>
+      <div class="charts-grid">
+        <div class="chart-card"><h4>Situação das squads ativas</h4><div class="chart-wrap"><canvas id="chartPendSituacao"></canvas></div></div>
+        <div class="chart-card"><h4>Pendências abertas por responsável</h4><div class="chart-wrap"><canvas id="chartPendResponsavel"></canvas></div></div>
+      </div>
+    </div>
     <div class="insight-section"><h3>Decisões e informações que faltam</h3><div class="resultcount">Cada linha é calculada com os dados atuais do Hub: quando o dado muda (ex.: a squad ganha SM ou pessoas), a pendência passa para "Resolvida" sozinha.</div><div class="tablewrap"><table class="squadtable"><thead><tr><th>Status</th><th>Pendência</th><th>Situação hoje</th><th>Quem resolve</th><th>O que destrava</th></tr></thead><tbody id="pendBody"></tbody></table></div></div>
     <div class="insight-section"><h3>SMs acima do limite de <span class="pendIdeal"></span> squads</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>SM</th><th>Squads</th><th>Excesso</th><th>Squads (com board ativo)</th></tr></thead><tbody id="pendOverBody"></tbody></table></div></div>
     <div class="insight-section"><h3>Squads ativas sem SM</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>Diretoria</th><th>Pessoas</th><th>Projetos</th><th>Melhorias</th></tr></thead><tbody id="pendNoSmBody"></tbody></table></div></div>
@@ -520,6 +559,13 @@
   <div class="tab-content hidden" id="tab-quality">
     <div class="data-kpi-grid" id="qualityKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));"></div>
     <div id="qualityMessages" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
+    <div class="insight-section">
+      <h3>Qualidade do cadastro</h3>
+      <div class="charts-grid">
+        <div class="chart-card"><h4>Completude das squads ativas <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— verde ≥ 90%, amarelo ≥ 70%</span></h4><div class="chart-wrap"><canvas id="chartQualCompletude"></canvas></div></div>
+        <div class="chart-card"><h4>Origem das squads</h4><div class="chart-wrap"><canvas id="chartQualOrigem"></canvas></div></div>
+      </div>
+    </div>
     <div class="insight-section"><h3>Indicadores por fonte</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Indicador</th><th>Projetos</th><th>Melhorias</th><th>Como ler</th></tr></thead><tbody id="qualityBody"></tbody></table></div></div>
     <div class="insight-section"><h3>Nomes sem board no Azure (fora do dashboard)</h3><div class="resultcount" id="qualityOrphanNote"></div><div class="tablewrap"><table class="squadtable"><thead><tr><th>Nome</th><th>Aparece em</th><th>Pessoas</th><th>SM declarado</th><th>Ação</th></tr></thead><tbody id="qualityOrphanBody"></tbody></table></div></div>
     <div class="insight-section"><h3>Nomes de squad sem vínculo no dashboard</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Nome na fonte</th><th>Projetos</th><th>Melhorias</th><th>Ação</th></tr></thead><tbody id="qualityUnmappedBody"></tbody></table></div></div>
@@ -531,6 +577,20 @@
   <div class="tab-content hidden" id="tab-sms">
 
     <div class="kpis" id="smKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));"></div>
+
+    <div class="insight-section">
+      <h3>Carga de squads por SM</h3>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h4>Squads por SM <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— linha tracejada = ideal (3 squads)</span></h4>
+          <div class="chart-wrap" id="chartSmSquadsWrap"><canvas id="chartSmSquads"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>SM × diretoria <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— nº de squads; várias diretorias = troca de contexto</span></h4>
+          <div class="tablewrap" id="smHeatmap" style="max-height:640px; overflow:auto;"></div>
+        </div>
+      </div>
+    </div>
 
     <div id="semSmPanel" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
     <div id="conflitosSmPanel" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
@@ -575,6 +635,21 @@
 
     <div class="kpis" id="squadKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));"></div>
 
+    <div class="insight-section">
+      <h3>Saúde das squads ativas</h3>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h4>Semáforo por diretoria</h4>
+          <div class="chart-wrap" id="chartSqSaudeWrap"><canvas id="chartSqSaude"></canvas></div>
+          <div class="chart-note"><b>Vermelho</b>: sem SM ou sem pessoas cadastradas. <b>Amarelo</b>: boards parados há mais de 180 dias ou, com as bases importadas, sem demanda no trimestre. <b>Verde</b>: sem alertas. Passe o mouse sobre a etiqueta da tabela para ver os motivos.</div>
+        </div>
+        <div class="chart-card">
+          <h4>Squads por faixa de pessoas</h4>
+          <div class="chart-wrap"><canvas id="chartSqPessoas"></canvas></div>
+        </div>
+      </div>
+    </div>
+
     <div id="unmatchedSummary" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
 
     <div class="filterbar">
@@ -611,6 +686,15 @@
           <option value="desativadas">Só (DESATIVADO)</option>
         </select>
       </div>
+      <div class="field">
+        <label>Saúde</label>
+        <select id="sqSaudeFilter">
+          <option value="">Todas</option>
+          <option value="vermelho">Vermelho</option>
+          <option value="amarelo">Amarelo</option>
+          <option value="verde">Verde</option>
+        </select>
+      </div>
       <button class="clearbtn" id="btnClearSquad">Limpar filtros</button>
       <button class="btn btn-outline btn-sm" id="btnExpandAll">Expandir tudo</button>
       <button class="btn btn-outline btn-sm" id="btnCollapseAll">Recolher tudo</button>
@@ -629,6 +713,7 @@
           <th data-sort="levantamento_sm">SM <span class="sort-arrow">↕</span></th>
           <th data-sort="recursos">Recursos <span class="sort-arrow">↕</span></th>
           <th data-sort="boards">Boards <span class="sort-arrow">↕</span></th>
+          <th>Saúde</th>
         </tr></thead>
         <tbody id="squadBody"></tbody>
       </table>
@@ -650,6 +735,10 @@
         <div class="chart-card">
           <h4>Squads ativas com todos os boards parados há mais de 180 dias</h4>
           <div class="tablewrap" style="max-height:280px; overflow:auto;"><table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Última atualização</th><th>Dias</th></tr></thead><tbody id="boardHealthBody"></tbody></table></div>
+        </div>
+      <div class="chart-card" style="grid-column:auto;">
+          <h4>Boards por situação</h4>
+          <div class="chart-wrap"><canvas id="chartBoardsStatus"></canvas></div>
         </div>
       </div>
       <div class="chart-note">A data é a de atualização do projeto no Azure DevOps e a referência é a atualização mais recente da base de boards, não o dia de hoje. Ela indica abandono provável, mas não prova falta de atividade nos work items.</div>
@@ -706,115 +795,15 @@
 
   </div>
 
-  <div class="tab-content hidden" id="tab-charts">
-
-    <div class="filterbar">
-      <div class="field">
-        <label>Diretoria</label>
-        <div class="msel" id="mselChDiretoria"><button type="button" class="msel-btn" id="mselChDiretoriaBtn">Diretoria <span class="count" id="mselChDiretoriaCount" style="display:none;">0</span></button><div class="msel-panel" id="mselChDiretoriaPanel"></div></div>
-      </div>
-      <div class="field">
-        <label>SM</label>
-        <div class="msel" id="mselChSm"><button type="button" class="msel-btn" id="mselChSmBtn">SM <span class="count" id="mselChSmCount" style="display:none;">0</span></button><div class="msel-panel" id="mselChSmPanel"></div></div>
-      </div>
-      <div class="field">
-        <label>Cobertura de SM</label>
-        <select id="chFilterCobertura">
-          <option value="">Com e sem SM</option>
-          <option value="com">Só com SM</option>
-          <option value="sem">Só sem SM</option>
-        </select>
-      </div>
-      <div class="field">
-        <label>Origem da squad</label>
-        <select id="chFilterOrigem">
-          <option value="">Catálogo e novas</option>
-          <option value="catalogo">Só catálogo oficial</option>
-          <option value="novas">Só novas (levantamento)</option>
-        </select>
-      </div>
-      <button class="clearbtn" id="btnClearCharts">Limpar filtros</button>
-    </div>
-    <div class="resultcount" id="chartsFilterCount"></div>
-
-    <div class="kpis" id="chartsKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));"></div>
-
-    <div class="charts-grid">
-      <div class="chart-card full">
-        <h4>Squads por SM <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— linha pontilhada marca o ideal (3 squads/SM)</span></h4>
-        <div class="chart-wrap chart-tall"><canvas id="chartSquadsPorSm"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Cobertura de SM</h4>
-        <div class="chart-wrap"><canvas id="chartCoberturaSm"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Pendência por squad</h4>
-        <div class="chart-wrap"><canvas id="chartPendencia"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Boards Azure</h4>
-        <div class="chart-wrap"><canvas id="chartBoardsStatus"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Recursos por função <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— top 12</span></h4>
-        <div class="chart-wrap"><canvas id="chartRecursosPorFuncao"></canvas></div>
-      </div>
-    </div>
-
-    <h3 style="margin:28px 0 14px; color:var(--azul); font-size:15px; border-top:1px solid #E4E7EF; padding-top:22px;">Por diretoria</h3>
-
-    <div class="tablewrap">
-      <table class="squadtable" id="diretoriaTable">
-        <thead><tr>
-          <th>Diretoria</th>
-          <th>Squads</th>
-          <th>Com SM</th>
-          <th>Sem SM</th>
-          <th>% cobertura</th>
-          <th>Recursos</th>
-          <th>Boards</th>
-          <th>SMs distintos atuando</th>
-        </tr></thead>
-        <tbody id="diretoriaBody"></tbody>
-      </table>
-    </div>
-
-    <div class="charts-grid" style="margin-top:16px;">
-      <div class="chart-card">
-        <h4>Squads por diretoria</h4>
-        <div class="chart-wrap"><canvas id="chartSquadsPorDiretoria"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Recursos por diretoria</h4>
-        <div class="chart-wrap"><canvas id="chartRecursosPorDiretoria"></canvas></div>
-      </div>
-    </div>
-
-    <h3 style="margin:28px 0 14px; color:var(--azul); font-size:15px; border-top:1px solid #E4E7EF; padding-top:22px;">Por squad</h3>
-
-    <div class="charts-grid">
-      <div class="chart-card">
-        <h4>Top 15 squads por headcount</h4>
-        <div class="chart-wrap chart-tall"><canvas id="chartTopSquadsHeadcount"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Top 15 squads por boards vinculados</h4>
-        <div class="chart-wrap chart-tall"><canvas id="chartTopSquadsBoards"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Squads por origem</h4>
-        <div class="chart-wrap"><canvas id="chartSquadsPorOrigem"></canvas></div>
-      </div>
-      <div class="chart-card">
-        <h4>Squads sem recurso <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— nenhum colaborador mapeado ainda</span></h4>
-        <div class="mini-table-wrap" id="listaSquadsSemRecurso" style="max-height:280px; overflow-y:auto;"></div>
-      </div>
-    </div>
-
-  </div>
-
   <div class="tab-content hidden" id="tab-recursos">
+    <div class="insight-section">
+      <h3>Função, diretoria e compartilhamento</h3>
+      <div class="charts-grid">
+        <div class="chart-card"><h4>Vínculos por função <span style="font-weight:400; font-size:11px; color:var(--cinza-texto);">— top 12</span></h4><div class="chart-wrap chart-tall"><canvas id="chartRecFuncao"></canvas></div></div>
+        <div class="chart-card"><h4>Vínculos por diretoria</h4><div class="chart-wrap chart-tall"><canvas id="chartRecDiretoria"></canvas></div></div>
+        <div class="chart-card"><h4>Pessoas em mais de uma squad</h4><div class="chart-wrap"><canvas id="chartRecMulti"></canvas></div><div class="chart-note" id="recMultiNote"></div></div>
+      </div>
+    </div>
     <div class="panel">
       <div class="sub" style="font-weight:700;color:var(--azul);margin-bottom:10px;">Colaboradores por squad (base bruta de recursos) <span id="recursosTotalRawCount" style="font-weight:400;color:var(--cinza-texto);"></span></div>
       <div class="filterbar">
@@ -1406,7 +1395,13 @@ function buildQuarterlyModel(){
   const projectLecom = new Map(), improvementLecom = new Map();
   const quality = { semSquad:{p:0,m:0}, semMotivo:{p:0,m:0}, encerradoSemData:0, finalizadaSemData:0 };
 
+  const filtering = globalFilterActive();
   function add(row, type){
+    if(filtering){
+      const r0 = qText(row.squad || row.squadAzure);
+      const f0 = r0 ? qFindSquad(row, index) : { squad:null };
+      if(!f0.squad || !squadPassesFilter(f0.squad)) return;
+    }
     const raw = qText(row.squad || row.squadAzure);
     if(!raw) quality.semSquad[type==='p'?'p':'m'] += 1;
     const found = raw ? qFindSquad(row, index) : { squad:null, inferred:null };
@@ -1444,7 +1439,7 @@ function buildQuarterlyModel(){
   const sumM = k => squads.reduce((t,a)=>t+a.m[k],0);
 
   /* capacidade por SM — inclui SMs sem nenhuma demanda no trimestre */
-  const smRows = SM_VIEW.map(sm=>{
+  const smRows = filteredSMs().map(sm=>{
     const mine = mapped.filter(a=>a.sm && boardKey(a.sm)===sm.id);
     return {
       nome: sm.nome, squadCount: sm.squadCount, squadsComDemanda: mine.filter(a=>a.p.total+a.m.total>0).length,
@@ -1470,7 +1465,7 @@ function buildQuarterlyModel(){
   const commonLecom = [...projectLecom.keys()].filter(k=>improvementLecom.has(k)).map(k=>({ lecom:projectLecom.get(k).lecom, project:projectLecom.get(k), improvement:improvementLecom.get(k) }));
   const pMeta = HACQuarterlyImport.getMeta('portfolio'), iMeta = HACQuarterlyImport.getMeta('improvements');
   const metrics = {
-    projects: projects.length, improvements: improvements.length,
+    projects: filtering ? sumP('total') : projects.length, improvements: filtering ? sumM('total') : improvements.length,
     pAndamento: sumP('andamento'), pPlanejamento: sumP('planejamento'), pEncerrado: sumP('encerrado'), pFora: sumP('fora'),
     mFinalizada: sumM('finalizada'), mCurso: sumM('curso'), mFora: sumM('fora'),
     rodando: squads.reduce((t,a)=>t+a.rodando,0), horas: squads.reduce((t,a)=>t+a.horas,0),
@@ -1479,7 +1474,7 @@ function buildQuarterlyModel(){
     semSmSquads: semSmComDemanda.length,
     semSmProjetos: semSmComDemanda.reduce((t,a)=>t+a.p.total,0), semSmMelhorias: semSmComDemanda.reduce((t,a)=>t+a.m.total,0),
     semSmRodando: semSmComDemanda.reduce((t,a)=>t+a.rodando,0),
-    squadsAtivasSemSm: SQUADS_SEM_SM.filter(s=>s.squadAtiva !== false).length,
+    squadsAtivasSemSm: SQUADS_SEM_SM.filter(s=>s.squadAtiva !== false && (!filtering || squadPassesFilter(s))).length,
     smAcima: smRows.filter(r=>r.folga<0).length, smNoLimite: smRows.filter(r=>r.folga===0).length, smComFolga: smRows.filter(r=>r.folga>0).length,
     folgaTotal, excessoTotal,
     deficitSMs: Math.ceil(semSmComDemanda.length / SM_IDEAL_SQUADS),
@@ -1545,6 +1540,8 @@ function renderExecutiveTab(){
   if(!model) return;
   const m = model.metrics;
   const empty = !m.projects && !m.improvements;
+  const ativasCob = filteredSquads().filter(s=>s.squadAtiva), comSmCob = ativasCob.filter(s=>currentSMName(s)).length;
+  const covText = ativasCob.length ? Math.round(comSmCob / ativasCob.length * 100)+'% ('+comSmCob+'/'+ativasCob.length+')' : '—';
   kpi.innerHTML = qKpi('execKpiProjects', qFormatNumber(m.projects), 'Projetos no trimestre') +
     qKpi('execKpiProjectsRun', qFormatNumber(m.pAndamento), 'Projetos em andamento') +
     qKpi('execKpiImprovements', qFormatNumber(m.improvements), 'Melhorias no trimestre') +
@@ -1552,7 +1549,8 @@ function renderExecutiveTab(){
     qKpi('execKpiRunning', qFormatNumber(m.rodando), 'Rodando agora (projetos em andamento + melhorias em curso)') +
     qKpi('execKpiHours', qFormatHours(m.horas), 'Horas estimadas do que está rodando') +
     qKpi('execKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda e sem SM', m.semSmSquads ? 'alert' : '') +
-    qKpi('execKpiOver', qFormatNumber(m.smAcima), 'SMs acima de '+SM_IDEAL_SQUADS+' squads', m.smAcima ? 'warn' : '');
+    qKpi('execKpiOver', qFormatNumber(m.smAcima), 'SMs acima de '+SM_IDEAL_SQUADS+' squads', m.smAcima ? 'warn' : '') +
+    qKpi('execKpiCoverage', covText, 'Squads ativas com SM', comSmCob < ativasCob.length ? 'warn' : '');
   document.getElementById('executiveSummary').innerHTML = empty
     ? 'Importe o <b>Portfólio</b> e as <b>Melhorias</b> para ver a demanda por squad e a capacidade dos SMs.'
     : '<b>'+qFormatNumber(m.squadsComDemanda)+'</b> squads com demanda · <b>'+qFormatNumber(m.lecomsDistintos)+'</b> LECOMs distintos · as <b>'+qFormatNumber(m.semSmSquads)+'</b> squads sem SM concentram <b>'+qFormatNumber(m.semSmProjetos)+'</b> projetos e <b>'+qFormatNumber(m.semSmMelhorias)+'</b> melhorias ('+qFormatNumber(m.semSmRodando)+' rodando).';
@@ -1574,7 +1572,7 @@ function renderExecutiveTab(){
   document.getElementById('execDirBody').innerHTML = dirRows.length ? dirRows.map(r=>'<tr><td><b>'+esc(r.nome)+'</b></td><td>'+qNum(r.squads)+'</td><td>'+(r.semSm ? '<span class="badge miss">'+r.semSm+'</span>' : '<span class="badge ok">0</span>')+'</td><td>'+qNum(r.sms.size)+'</td><td>'+qNum(r.p)+'</td><td>'+qNum(r.pAnd)+'</td><td>'+qNum(r.m)+'</td><td>'+qNum(r.mFin)+'</td><td>'+qNum(r.mCur)+'</td><td>'+qFormatHours(r.horas)+'</td></tr>').join('') : qEmptyRow(10, 'Sem demanda importada.');
 
   renderExecSquadTable(model);
-  try{ renderExecInsights(model, !empty); renderExecCharts(model, !empty); }catch(err){ console.error('Execução dos insights/gráficos', err); }
+  try{ renderExecInsights(model, !empty); renderExecCharts(model, !empty); renderDiretoriaCoverage(); }catch(err){ console.error('Execução dos insights/gráficos', err); }
 }
 function renderExecSquadTable(model){
   model = model || QUARTERLY_MODEL;
@@ -1604,7 +1602,7 @@ function renderQualityTab(){
   const m = model.metrics, q = model.quality;
   const warnIf = (n, tone) => n ? (tone || 'warn') : '';
   document.getElementById('qualityKpiRow').innerHTML =
-    qKpi('qualityKpiOrphan', qFormatNumber(ORPHAN_SQUADS.length), 'Nomes sem board no Azure', warnIf(ORPHAN_SQUADS.length)) +
+    qKpi('qualityKpiOrphan', qFormatNumber(globalFilterActive() ? 0 : ORPHAN_SQUADS.length), 'Nomes sem board no Azure', warnIf(globalFilterActive() ? 0 : ORPHAN_SQUADS.length)) +
     qKpi('qualityKpiUnmapped', qFormatNumber(m.unmappedSquads), 'Nomes de squad sem vínculo no dashboard', warnIf(m.unmappedSquads, 'alert')) +
     qKpi('qualityKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda sem SM', warnIf(m.semSmSquads, 'alert')) +
     qKpi('qualityKpiDiverg', qFormatNumber(m.divergencias), 'Squads com SM diferente no Portfólio', warnIf(m.divergencias)) +
@@ -1627,7 +1625,7 @@ function renderQualityTab(){
   document.getElementById('qualityInferredBody').innerHTML = model.inferred.length ? model.inferred.map(r=>'<tr><td>'+esc(r.fonte)+'</td><td>'+esc(r.alvo)+'</td><td>'+qFormatNumber(r.projects)+'</td><td>'+qFormatNumber(r.improvements)+'</td><td>'+esc(r.motivo)+'</td></tr>').join('') : qEmptyRow(5, 'Nenhuma ligação por inferência.');
   document.getElementById('qualityDivergBody').innerHTML = model.divergencias.length ? model.divergencias.sort((a,b)=>COLLATE.compare(a.squad,b.squad)).map(r=>'<tr><td>'+esc(r.squad)+'</td><td>'+(r.sm==='Sem SM no dashboard' ? '<span class="badge miss">Sem SM</span>' : esc(r.sm))+'</td><td>'+esc(r.portfolio)+'</td></tr>').join('') : qEmptyRow(3, 'O SM do dashboard bate com o SM/PMO do Portfólio em todas as squads.');
   document.getElementById('qualityOverlapBody').innerHTML = model.commonLecom.length ? model.commonLecom.map(r=>'<tr><td>'+esc(r.lecom)+'</td><td>'+esc(r.project.titulo)+'</td><td>'+esc(r.improvement.titulo)+'</td></tr>').join('') : qEmptyRow(3, 'Nenhum LECOM aparece nas duas fontes.');
-  const orph = ORPHAN_SQUADS.slice().sort((a,b)=>b.recursos.length-a.recursos.length || COLLATE.compare(a.squad,b.squad));
+  const orph = (globalFilterActive() ? [] : ORPHAN_SQUADS).slice().sort((a,b)=>b.recursos.length-a.recursos.length || COLLATE.compare(a.squad,b.squad));
   const origem = s => s.source==='levantamento_only' ? 'Levantamento dos SMs' : (s.source==='handover' ? 'Cadastro-base' : 'Base de recursos');
   const orphPeople = new Set(); orph.forEach(s=>s.recursos.forEach(r=>orphPeople.add(boardKey(r.colaborador))));
   document.getElementById('qualityOrphanNote').innerHTML = 'Squad = projeto no Azure. O dashboard tem <b>'+UNIFIED.length+'</b> squads ('+UNIFIED.filter(s=>s.squadAtiva).length+' com board ativo) para <b>'+ALL_BOARDS.length+'</b> boards; squads renomeadas têm 2 boards (o antigo, desativado, e o atual). Abaixo, <b>'+orph.length+'</b> nomes que existem só nas outras bases, com <b>'+orphPeople.size+'</b> pessoas, e por isso não contam como squad.';
@@ -1645,10 +1643,10 @@ function renderPendenciasTab(){
   const body = document.getElementById('pendBody'); if(!body) return;
   const model = QUARTERLY_MODEL || buildQuarterlyModel();
   const hasQ = !!(model && (model.metrics.projects || model.metrics.improvements));
-  const find = re => UNIFIED.filter(s=>re.test(s.squad));
+  const find = re => filteredSquads().filter(s=>re.test(s.squad));
   const nPes = list => list.reduce((t,s)=>t+s.recursos.length,0);
   const smOf = s => currentSMName(s) || '';
-  const ativas = UNIFIED.filter(s=>s.squadAtiva);
+  const ativas = filteredSquads().filter(s=>s.squadAtiva);
   const aggOf = new Map(); if(model) model.squads.forEach(a=>{ if(a.squad) aggOf.set(a.squad.id, a); });
   const dem = s => { const a = aggOf.get(s.id); return a ? {p:a.p.total, m:a.m.total} : {p:0, m:0}; };
   const st = ok => ok ? '<span class="badge ok">Resolvida</span>' : '<span class="badge pend">Aberta</span>';
@@ -1660,7 +1658,8 @@ function renderPendenciasTab(){
     'Fluxo de Vendas: <b>'+(fv?fv.recursos.length:0)+'</b> pessoas · Relacionamento Comercial: <b>'+(rc?rc.recursos.length:0)+'</b> pessoas. Todas vieram de "Digital - Salesforce".',
     'Vic / Alexandre (SM)', 'Lista de quem vai para cada squad; só então o capacity de cada uma fica correto.');
 
-  const ft = ORPHAN_SQUADS.filter(s=>/fast track/i.test(s.squad));
+  const orphansAll = globalFilterActive() ? [] : ORPHAN_SQUADS;
+  const ft = orphansAll.filter(s=>/fast track/i.test(s.squad));
   add(!ft.length, 'Digital - Fast Track: definir o destino',
     ft.length ? '<b>'+nPes(ft)+'</b> pessoas sem squad no Azure. Possível destino a confirmar: Comercial - Back Office - Fast Track (SM Vanessa).' : 'Sem pessoas pendentes.',
     'Vic / Daniella', 'Ligar o nome antigo à squad certa ou desligá-lo da base de recursos.');
@@ -1693,13 +1692,13 @@ function renderPendenciasTab(){
     'Vic', 'Definir qual fonte prevalece e corrigir a outra.');
 
   const nomesPort = {}; if(model) model.squads.forEach(a=>Object.entries(a.smPortfolio).forEach(([n,c])=>n.split('/').forEach(part=>{ part = part.trim(); if(part) nomesPort[part] = (nomesPort[part]||0)+c; })));
-  const foraHub = Object.entries(nomesPort).filter(([n])=>!SM_VIEW.some(sm=>namesLikelyMatch(sm.nome, n))).sort((a,b)=>b[1]-a[1]);
+  const foraHub = Object.entries(nomesPort).filter(([n])=>!filteredSMs().some(sm=>namesLikelyMatch(sm.nome, n))).sort((a,b)=>b[1]-a[1]);
   const desl = foraHub.filter(([n])=>SM_DESLIGADOS.some(d=>boardKey(n).indexOf(d)>=0));
   add(hasQ && !desl.length, 'SMs desligados ainda aparecem como SM/PMO no Portfólio',
     hasQ ? (desl.length ? desl.map(([n,c])=>esc(n)+' ('+c+' projetos)').join(', ') : 'Nenhum.') : 'Importe o Portfólio para calcular.',
     'Dono do Portfólio', 'Corrigir na base de origem ou informar o substituto.');
 
-  const orph = ORPHAN_SQUADS.filter(s=>!/fast track/i.test(s.squad));
+  const orph = orphansAll.filter(s=>!/fast track/i.test(s.squad));
   add(!orph.length, 'Nomes sem board no Azure que não são renomeações',
     orph.length ? orph.map(s=>esc(s.squad)+' ('+s.recursos.length+')').join(', ') : 'Nenhum.',
     'Vic', 'Dizer se são squads reais (criar o board), agrupadores ou erro de cadastro.');
@@ -1707,6 +1706,7 @@ function renderPendenciasTab(){
   const semPes = ativas.filter(s=>!s.recursos.length);
   add(!semPes.length, 'Squads ativas sem pessoas cadastradas', '<b>'+semPes.length+'</b> squads (lista abaixo).', 'SMs', 'Preencher a base de recursos.');
 
+  PEND_ROWS = rows;
   body.innerHTML = rows.map(r=>'<tr><td>'+st(r.ok)+'</td><td><b>'+r.tema+'</b></td><td>'+r.situacao+'</td><td>'+r.quem+'</td><td>'+r.destrava+'</td></tr>').join('');
   const abertas = rows.filter(r=>!r.ok).length;
   document.getElementById('pendKpiRow').innerHTML =
@@ -1715,12 +1715,12 @@ function renderPendenciasTab(){
     qKpi('pendKpiNoSm', qFormatNumber(ativas.filter(s=>!smOf(s)).length), 'Squads ativas sem SM', 'warn') +
     qKpi('pendKpiOver', qFormatNumber(acima.length), 'SMs acima do limite', acima.length ? 'warn' : '') +
     qKpi('pendKpiNoPeople', qFormatNumber(semPes.length), 'Squads ativas sem pessoas', semPes.length ? 'warn' : '') +
-    qKpi('pendKpiOrph', qFormatNumber(ORPHAN_SQUADS.length), 'Nomes sem board', ORPHAN_SQUADS.length ? 'warn' : '');
+    qKpi('pendKpiOrph', qFormatNumber(orphansAll.length), 'Nomes sem board', orphansAll.length ? 'warn' : '');
   document.querySelectorAll('.pendIdeal').forEach(el=>el.textContent = SM_IDEAL_SQUADS);
   const ban = document.getElementById('pendBanner');
   if(!hasQ){ ban.style.display='block'; ban.innerHTML='<b>Bases do trimestre não importadas.</b> As pendências que dependem de projetos e melhorias ficam sem número até a importação (Visão Executiva).'; } else ban.style.display='none';
 
-  document.getElementById('pendOverBody').innerHTML = acima.length ? acima.map(r=>{ const sm = SM_VIEW.find(x=>x.nome===r.nome); return '<tr><td>'+esc(r.nome)+'</td><td>'+r.squadCount+'</td><td>+'+(-r.folga)+'</td><td>'+(sm?sm.squads.filter(s=>s.squadAtiva).map(s=>esc(s.squad)).join('; '):'')+'</td></tr>'; }).join('') : qEmptyRow(4, 'Nenhum SM acima do limite.');
+  document.getElementById('pendOverBody').innerHTML = acima.length ? acima.map(r=>{ const sm = filteredSMs().find(x=>x.nome===r.nome); return '<tr><td>'+esc(r.nome)+'</td><td>'+r.squadCount+'</td><td>+'+(-r.folga)+'</td><td>'+(sm?sm.squads.filter(s=>s.squadAtiva).map(s=>esc(s.squad)).join('; '):'')+'</td></tr>'; }).join('') : qEmptyRow(4, 'Nenhum SM acima do limite.');
   const semSmList = ativas.filter(s=>!smOf(s)).sort((a,b)=>(dem(b).p+dem(b).m)-(dem(a).p+dem(a).m) || COLLATE.compare(a.squad,b.squad));
   document.getElementById('pendNoSmBody').innerHTML = semSmList.length ? semSmList.map(s=>{ const d = dem(s); return '<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+s.recursos.length+'</td><td>'+(hasQ?d.p:'—')+'</td><td>'+(hasQ?d.m:'—')+'</td></tr>'; }).join('') : qEmptyRow(5, 'Todas as squads ativas têm SM.');
   document.getElementById('pendNoPeopleBody').innerHTML = semPes.length ? semPes.map(s=>'<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+(smOf(s)?esc(smOf(s)):'<span class="badge nok">Sem SM</span>')+'</td></tr>').join('') : qEmptyRow(3, 'Todas as squads ativas têm pessoas.');
@@ -1787,7 +1787,7 @@ function renderExecInsights(model, hasQ){
   const cards = [];
   const add = (tone, html) => cards.push({ tone, html });
   const top = (arr, n, fmt) => arr.slice(0, n).map(fmt).join(', ');
-  const ativas = UNIFIED.filter(s=>s.squadAtiva);
+  const ativas = filteredSquads().filter(s=>s.squadAtiva);
   const m = model.metrics;
 
   if(hasQ && model.semSmComDemanda.length){
@@ -1838,7 +1838,7 @@ function renderExecCharts(model, hasQ){
       scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } }
   });
   const aggOf = new Map(); model.squads.forEach(a=>{ if(a.squad) aggOf.set(a.squad.id, a); });
-  const pts = UNIFIED.filter(s=>s.squadAtiva).map(s=>{ const a = aggOf.get(s.id); return { x:s.recursos.length, y:a ? a.rodando : 0, squad:s.squad, sm:currentSMName(s) || '' }; })
+  const pts = filteredSquads().filter(s=>s.squadAtiva).map(s=>{ const a = aggOf.get(s.id); return { x:s.recursos.length, y:a ? a.rodando : 0, squad:s.squad, sm:currentSMName(s) || '' }; })
     .filter(p=>p.x > 0 || p.y > 0);
   const medX = median(pts.filter(p=>p.x > 0).map(p=>p.x)), medY = median(pts.filter(p=>p.y > 0).map(p=>p.y));
   const medianLines = { id:'medianLines', afterDatasetsDraw(chart){
@@ -1858,7 +1858,78 @@ function renderExecCharts(model, hasQ){
     plugins:[medianLines]
   });
 }
+
+/* ===== Filtro global (diretoria + SM): vale para todas as abas ===== */
+const GLOBAL_FILTER = { diretoria:'', sm:'' };
+const SEM_SM_OPTION = '__sem_sm__';
+function globalFilterActive(){ return !!(GLOBAL_FILTER.diretoria || GLOBAL_FILTER.sm); }
+function squadPassesFilter(s){
+  if(GLOBAL_FILTER.diretoria && s.diretoria !== GLOBAL_FILTER.diretoria) return false;
+  if(GLOBAL_FILTER.sm){
+    const sm = currentSMName(s);
+    if(GLOBAL_FILTER.sm === SEM_SM_OPTION) return !sm;
+    return !!sm && boardKey(sm) === boardKey(GLOBAL_FILTER.sm);
+  }
+  return true;
+}
+function filteredSquads(){ return globalFilterActive() ? UNIFIED.filter(squadPassesFilter) : UNIFIED; }
+function filteredSMs(){
+  if(!globalFilterActive()) return SM_VIEW;
+  const ids = new Set(filteredSquads().map(s=>s.id));
+  return SM_VIEW.filter(sm=>sm.squads.some(s=>ids.has(s.id)));
+}
+function filteredBoards(){
+  if(!globalFilterActive()) return ALL_BOARDS;
+  const ids = new Set(filteredSquads().map(s=>s.id));
+  return ALL_BOARDS.filter(b=>b.squadId && ids.has(b.squadId));
+}
+function resourcePassesFilter(r){
+  if(GLOBAL_FILTER.diretoria && r.diretoria !== GLOBAL_FILTER.diretoria) return false;
+  if(GLOBAL_FILTER.sm){
+    if(GLOBAL_FILTER.sm === SEM_SM_OPTION) return !r._sm;
+    return !!r._sm && boardKey(r._sm) === boardKey(GLOBAL_FILTER.sm);
+  }
+  return true;
+}
+function renderGlobalFilterBar(){
+  const selD = document.getElementById('gfDiretoria'), selS = document.getElementById('gfSm');
+  if(!selD || !selS) return;
+  const dirs = uniqueSorted(UNIFIED.map(s=>s.diretoria));
+  const sms = uniqueSorted(SM_VIEW.map(sm=>sm.nome));
+  if(GLOBAL_FILTER.diretoria && dirs.indexOf(GLOBAL_FILTER.diretoria) < 0) GLOBAL_FILTER.diretoria = '';
+  if(GLOBAL_FILTER.sm && GLOBAL_FILTER.sm !== SEM_SM_OPTION && sms.indexOf(GLOBAL_FILTER.sm) < 0) GLOBAL_FILTER.sm = '';
+  selD.innerHTML = '<option value="">Todas as diretorias</option>' + dirs.map(d=>'<option value="'+esc(d)+'"'+(d===GLOBAL_FILTER.diretoria?' selected':'')+'>'+esc(d)+'</option>').join('');
+  selS.innerHTML = '<option value="">Todos os SMs</option><option value="'+SEM_SM_OPTION+'"'+(GLOBAL_FILTER.sm===SEM_SM_OPTION?' selected':'')+'>(Sem SM)</option>' + sms.map(n=>'<option value="'+esc(n)+'"'+(n===GLOBAL_FILTER.sm?' selected':'')+'>'+esc(n)+'</option>').join('');
+  const bar = document.getElementById('globalFilterBar'), st = document.getElementById('gfStatus');
+  bar.classList.toggle('active', globalFilterActive());
+  st.textContent = globalFilterActive() ? 'Filtro ativo: '+filteredSquads().length+' de '+UNIFIED.length+' squads' : 'Todas as squads';
+}
+function applyGlobalFilter(){
+  renderGlobalFilterBar();
+  QUARTERLY_MODEL = buildQuarterlyModel();
+  const active = document.querySelector('#tabBar .tab.active');
+  renderTabByName(active ? active.getAttribute('data-tab') : 'executive');
+}
+function wireGlobalFilter(){
+  const reset = () => { SQUAD_PAGE = 1; SM_PAGE = 1; BOARDS_PAGE = 1; applyGlobalFilter(); };
+  document.getElementById('gfDiretoria').addEventListener('change', e=>{ GLOBAL_FILTER.diretoria = e.target.value; reset(); });
+  document.getElementById('gfSm').addEventListener('change', e=>{ GLOBAL_FILTER.sm = e.target.value; reset(); });
+  document.getElementById('gfClear').addEventListener('click', ()=>{ GLOBAL_FILTER.diretoria = ''; GLOBAL_FILTER.sm = ''; reset(); });
+}
+function renderTabByName(t){
+  try{
+    if(t==='executive') renderExecutiveTab();
+    else if(t==='pendencias'){ renderPendenciasTab(); renderPendCharts(PEND_ROWS); }
+    else if(t==='quality'){ renderQualityTab(); renderQualityCharts(); }
+    else if(t==='sms'){ renderSMsTab(); renderSmCharts(); }
+    else if(t==='squads'){ renderSquadsTab(); renderSquadCharts(); }
+    else if(t==='boards'){ renderBoardsTab(); renderBoardHealth(); renderBoardStatusChart(); }
+    else if(t==='recursos'){ renderRecursosTab(); renderRecursosCharts(); }
+  }catch(err){ console.error('Erro ao abrir a aba '+t, err); }
+}
+let PEND_ROWS = [];
 function refreshQuarterlyViews(){
+  renderGlobalFilterBar();
   QUARTERLY_MODEL = buildQuarterlyModel();
   renderQuarterlySources();
   renderExecutiveTab();
@@ -2095,7 +2166,7 @@ function renderSMsTab(){
   if(!document.getElementById('smBody')) return;
   wireSmSort();
 
-  const allDiretorias = uniqueSorted(SM_VIEW.flatMap(sm=>sm.diretorias));
+  const allDiretorias = uniqueSorted(filteredSMs().flatMap(sm=>sm.diretorias));
   renderMultiSelect('diretoria', 'mselSmDiretoria', allDiretorias, renderSMsTab, smMultiState);
   wireMultiSelect('diretoria', 'mselSmDiretoria', ()=>{ SM_PAGE=1; renderSMsTab(); }, smMultiState);
 
@@ -2104,7 +2175,7 @@ function renderSMsTab(){
   const divergOnly = document.getElementById('smDivergOnly').checked;
   const msDir = smMultiState.diretoria;
 
-  let rows = SM_VIEW.filter(sm=>
+  let rows = filteredSMs().filter(sm=>
     (!msDir.size || sm.diretorias.some(d=>msDir.has(d))) &&
     (!overloadOnly || sm.overload) &&
     (!divergOnly || sm.divergencias.length>0) &&
@@ -2122,7 +2193,7 @@ function renderSMsTab(){
     return sd==='asc' ? cmp : -cmp;
   });
 
-  document.getElementById('smCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+SM_VIEW.length+'</b> SMs encontrados';
+  document.getElementById('smCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+filteredSMs().length+'</b> SMs encontrados';
   LAST_SM_ROWS_FILTERED = rows;
 
   const maxPageSm = Math.max(1, Math.ceil(rows.length/PAGE_SIZE));
@@ -2130,12 +2201,12 @@ function renderSMsTab(){
   if(SM_PAGE < 1) SM_PAGE = 1;
   const pageRows = rows.slice((SM_PAGE-1)*PAGE_SIZE, SM_PAGE*PAGE_SIZE);
 
-  const totalSMs = SM_VIEW.length;
-  const mediaSquads = totalSMs ? (SM_VIEW.reduce((a,sm)=>a+sm.squadCount,0)/totalSMs).toFixed(1) : '0';
-  const acimaIdeal = SM_VIEW.filter(sm=>sm.overload).length;
-  const multiDir = SM_VIEW.filter(sm=>sm.multiDiretoria).length;
-  const comDiverg = SM_VIEW.filter(sm=>sm.divergencias.length>0).length;
-  const totalNovasSquads = SM_VIEW.reduce((a,sm)=>a+sm.novasSquads.length,0);
+  const totalSMs = filteredSMs().length;
+  const mediaSquads = totalSMs ? (filteredSMs().reduce((a,sm)=>a+sm.squadCount,0)/totalSMs).toFixed(1) : '0';
+  const acimaIdeal = filteredSMs().filter(sm=>sm.overload).length;
+  const multiDir = filteredSMs().filter(sm=>sm.multiDiretoria).length;
+  const comDiverg = filteredSMs().filter(sm=>sm.divergencias.length>0).length;
+  const totalNovasSquads = filteredSMs().reduce((a,sm)=>a+sm.novasSquads.length,0);
   const kpiRow = document.getElementById('smKpiRow');
   kpiRow.innerHTML = '';
   kpiRow.appendChild(kpiCard('kpiSmTotal', totalSMs, 'SMs distintos (segundo o levantamento)'));
@@ -2255,7 +2326,7 @@ document.getElementById('btnExportSmXlsx').addEventListener('click', ()=>{
    TROCA DE ABAS
    ============================================================ */
 function showTab(name){
-  ['executive','quality','sms','squads','boards','charts','recursos'].forEach(k=>{
+  ['executive','pendencias','quality','sms','squads','boards','recursos'].forEach(k=>{
     const el = document.getElementById('tab-'+k);
     if(el) el.classList.toggle('hidden', k!==name);
   });
@@ -2269,14 +2340,7 @@ document.querySelectorAll('#tabBar .tab').forEach(btn=>{
     try{
       const t = btn.getAttribute('data-tab');
       showTab(t);
-      if(t==='sms') renderSMsTab();
-      if(t==='squads') renderSquadsTab();
-      if(t==='boards'){ renderBoardsTab(); renderBoardHealth(); }
-      if(t==='charts') renderChartsTab();
-      if(t==='recursos') renderRecursosTab();
-      if(t==='executive') renderExecutiveTab();
-      if(t==='quality') renderQualityTab();
-      if(t==='pendencias') renderPendenciasTab();
+      renderTabByName(t);
     }catch(err){
       console.error('Erro ao trocar de aba:', err);
       alert('Erro ao abrir a aba: ' + err.message);
@@ -2407,16 +2471,18 @@ function renderSquadsTab(){
   if(!document.getElementById('squadBody')) return;
   wireSquadSort();
 
-  renderMultiSelect('diretoria', 'mselSqDiretoria', uniqueSorted(UNIFIED.map(s=>s.diretoria)), renderSquadsTab, squadMultiState);
+  renderMultiSelect('diretoria', 'mselSqDiretoria', uniqueSorted(filteredSquads().map(s=>s.diretoria)), renderSquadsTab, squadMultiState);
   wireMultiSelect('diretoria', 'mselSqDiretoria', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); }, squadMultiState);
 
   const q = (document.getElementById('squadSearch').value||'').trim().toLowerCase();
   const smFilter = document.getElementById('sqSmFilter').value;
   const pendFilter = document.getElementById('sqPendFilter').value;
   const ativoFilter = document.getElementById('sqAtivoFilter').value;
+  const saudeFilter = document.getElementById('sqSaudeFilter').value;
+  const health = buildHealthMap();
   const msDir = squadMultiState.diretoria;
 
-  let rows = UNIFIED.filter(s=>
+  let rows = filteredSquads().filter(s=>
     (!msDir.size || msDir.has(s.diretoria)) &&
     (!smFilter || (smFilter==='com' ? s.temSM : !s.temSM)) &&
     (!pendFilter || (
@@ -2425,6 +2491,7 @@ function renderSquadsTab(){
       pendFilter==='sem_ambos' ? (!s.temRecursos && !s.temBoards) : true
     )) &&
     (!ativoFilter || (ativoFilter==='ativas' ? s.squadAtiva : !s.squadAtiva)) &&
+    (!saudeFilter || ((health.get(s.id) || {}).nivel === saudeFilter)) &&
     (!q || s.squad.toLowerCase().includes(q) || (s.diretor||'').toLowerCase().includes(q) || currentSMName(s).toLowerCase().includes(q) || (s.gerente||'').toLowerCase().includes(q))
   );
 
@@ -2439,15 +2506,15 @@ function renderSquadsTab(){
     return sd==='asc' ? cmp : -cmp;
   });
 
-  document.getElementById('squadCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+UNIFIED.length+'</b> squads encontradas';
+  document.getElementById('squadCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+filteredSquads().length+'</b> squads encontradas';
   LAST_SQUAD_ROWS_FILTERED = rows;
 
-  const total = UNIFIED.length;
-  const totalSoLevantamento = UNIFIED.filter(s=>s.source==='levantamento_only').length;
-  const comSM = UNIFIED.filter(s=>s.temSM).length;
-  const comRecursos = UNIFIED.filter(s=>s.temRecursos).length;
-  const comBoards = UNIFIED.filter(s=>s.temBoards).length;
-  const pendAmbos = UNIFIED.filter(s=>!s.temRecursos && !s.temBoards).length;
+  const total = filteredSquads().length;
+  const totalSoLevantamento = filteredSquads().filter(s=>s.source==='levantamento_only').length;
+  const comSM = filteredSquads().filter(s=>s.temSM).length;
+  const comRecursos = filteredSquads().filter(s=>s.temRecursos).length;
+  const comBoards = filteredSquads().filter(s=>s.temBoards).length;
+  const pendAmbos = filteredSquads().filter(s=>!s.temRecursos && !s.temBoards).length;
   const kpiRow = document.getElementById('squadKpiRow');
   kpiRow.innerHTML = '';
   kpiRow.appendChild(kpiCard('kpiSqTotal', total, 'Squads no total ('+totalSoLevantamento+' novas, fora do catálogo)'));
@@ -2455,6 +2522,10 @@ function renderSquadsTab(){
   kpiRow.appendChild(kpiCard('kpiSqRec', comRecursos+' / '+total, 'Com recursos mapeados', comRecursos<total?'warn':undefined));
   kpiRow.appendChild(kpiCard('kpiSqBoards', comBoards+' / '+total, 'Com board Azure vinculado', comBoards<total?'warn':undefined));
   kpiRow.appendChild(kpiCard('kpiSqPend', pendAmbos, 'Sem recurso e sem board (pendência total)', pendAmbos>0?'alert':undefined));
+  const niv = filteredSquads().filter(s=>s.squadAtiva).map(s=>(health.get(s.id) || {}).nivel);
+  kpiRow.appendChild(kpiCard('kpiSqVermelho', niv.filter(n=>n==='vermelho').length, 'Squads ativas em vermelho', niv.some(n=>n==='vermelho') ? 'alert' : undefined));
+  kpiRow.appendChild(kpiCard('kpiSqAmarelo', niv.filter(n=>n==='amarelo').length, 'Squads ativas em amarelo', niv.some(n=>n==='amarelo') ? 'warn' : undefined));
+  kpiRow.appendChild(kpiCard('kpiSqVerde', niv.filter(n=>n==='verde').length, 'Squads ativas em verde'));
   kpiRow.appendChild(kpiCard('kpiSqUnmatched', UNMATCHED_RESOURCES.length+' / '+UNMATCHED_BOARDS.length, 'Grupos de recursos / boards não vinculados', 'warn'));
 
   const tbody = document.getElementById('squadBody');
@@ -2462,7 +2533,7 @@ function renderSquadsTab(){
   if(SQUAD_PAGE > maxPageSq) SQUAD_PAGE = maxPageSq;
   if(SQUAD_PAGE < 1) SQUAD_PAGE = 1;
   if(rows.length===0){
-    tbody.innerHTML = '<tr><td colspan="7" class="noresults">Nenhuma squad encontrada com esses filtros.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" class="noresults">Nenhuma squad encontrada com esses filtros.</td></tr>';
     renderPaginationControls('squadPagination', 0, 1, PAGE_SIZE, ()=>{});
     return;
   }
@@ -2477,8 +2548,9 @@ function renderSquadsTab(){
       '<td>'+(squadHasSM(s)? esc(currentSMName(s)) : '<span class="badge miss">Sem SM</span>')+'</td>' +
       '<td>'+(s.temRecursos? '<span class="badge ok">'+s.recursos.length+'</span>' : '<span class="badge pend">0</span>')+'</td>' +
       '<td>'+(s.temBoards? '<span class="badge ok">'+s.boards.length+'</span>' : '<span class="badge pend">0</span>')+'</td>' +
+      '<td>'+healthBadge(health.get(s.id))+'</td>' +
       '</tr>' +
-      '<tr class="squad-detail-row'+(isOpen?' open':'')+'" data-detail-id="'+esc(s.id)+'"><td colspan="7">'+(isOpen ? squadRowDetail(s) : '')+'</td></tr>';
+      '<tr class="squad-detail-row'+(isOpen?' open':'')+'" data-detail-id="'+esc(s.id)+'"><td colspan="8">'+(isOpen ? squadRowDetail(s) : '')+'</td></tr>';
   }).join('');
 
   tbody.querySelectorAll('.squad-row').forEach(tr=>{
@@ -2526,12 +2598,14 @@ document.getElementById('squadSearch').addEventListener('input', ()=>{ SQUAD_PAG
 document.getElementById('sqSmFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
 document.getElementById('sqPendFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
 document.getElementById('sqAtivoFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
+document.getElementById('sqSaudeFilter').addEventListener('change', ()=>{ SQUAD_PAGE=1; renderSquadsTab(); });
 document.getElementById('btnClearSquad').addEventListener('click', ()=>{
   squadMultiState.diretoria.clear();
   document.getElementById('squadSearch').value = '';
   document.getElementById('sqSmFilter').value = '';
   document.getElementById('sqPendFilter').value = '';
   document.getElementById('sqAtivoFilter').value = '';
+  document.getElementById('sqSaudeFilter').value = '';
   SQUAD_PAGE = 1;
   renderSquadsTab();
 });
@@ -2592,7 +2666,7 @@ function renderBoardsTab(){
   wireBoardsSort();
   renderSquadDatalist();
 
-  const allDiretorias = uniqueSorted(ALL_BOARDS.map(b=>b.diretoria));
+  const allDiretorias = uniqueSorted(filteredBoards().map(b=>b.diretoria));
   renderMultiSelect('diretoria', 'mselBoardsDiretoria', allDiretorias, renderBoardsTab, boardsMultiState);
   wireMultiSelect('diretoria', 'mselBoardsDiretoria', ()=>{ BOARDS_PAGE=1; renderBoardsTab(); }, boardsMultiState);
 
@@ -2601,7 +2675,7 @@ function renderBoardsTab(){
   const vinculoFilter = document.getElementById('boardsVinculoFilter').value;
   const msDir = boardsMultiState.diretoria;
 
-  let rows = ALL_BOARDS.filter(b=>
+  let rows = filteredBoards().filter(b=>
     (!msDir.size || msDir.has(b.diretoria)) &&
     (!statusFilter || (statusFilter==='ativo' ? b.ativo : !b.ativo)) &&
     (!vinculoFilter || (vinculoFilter==='com' ? !!b.squadId : !b.squadId)) &&
@@ -2617,13 +2691,13 @@ function renderBoardsTab(){
     return sd==='asc' ? cmp : -cmp;
   });
 
-  document.getElementById('boardsCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+ALL_BOARDS.length+'</b> boards encontrados';
+  document.getElementById('boardsCount').innerHTML = '<b>'+rows.length+'</b> de <b>'+filteredBoards().length+'</b> boards encontrados';
 
-  const total = ALL_BOARDS.length;
-  const ativos = ALL_BOARDS.filter(b=>b.ativo).length;
-  const vinculados = ALL_BOARDS.filter(b=>b.squadId).length;
+  const total = filteredBoards().length;
+  const ativos = filteredBoards().filter(b=>b.ativo).length;
+  const vinculados = filteredBoards().filter(b=>b.squadId).length;
   const semSquad = total - vinculados;
-  const semDono = ALL_BOARDS.filter(b=>!b.temOwner && !b.diretor).length;
+  const semDono = filteredBoards().filter(b=>!b.temOwner && !b.diretor).length;
   const kpiRow = document.getElementById('boardsKpiRow');
   kpiRow.innerHTML = '';
   kpiRow.appendChild(kpiCard('kpiBAtotal', total, 'Boards no Azure (Jun/24)'));
@@ -2672,290 +2746,228 @@ document.getElementById('btnClearBoards').addEventListener('click', ()=>{
   renderBoardsTab();
 });
 
-document.getElementById('chFilterCobertura').addEventListener('change', renderChartsTab);
-document.getElementById('chFilterOrigem').addEventListener('change', renderChartsTab);
-document.getElementById('btnClearCharts').addEventListener('click', ()=>{
-  chartsMultiState.diretoria.clear();
-  chartsMultiState.sm.clear();
-  document.getElementById('chFilterCobertura').value = '';
-  document.getElementById('chFilterOrigem').value = '';
-  renderChartsTab();
-});
-
 /* ============================================================
-   RENDER — ABA GRÁFICOS
+   GRÁFICOS POR ABA (a aba Gráficos foi desfeita: cada gráfico mora onde gera decisão)
    ============================================================ */
 const CHART_COLORS = { azul:'#1A3DAA', vermelho:'#E8272A', laranja:'#F47920', amarelo:'#FFC20E', verde:'#2E9E44', cinza:'#B9C1D9' };
 let CHARTS = {};
 function destroyChart(key){ if(CHARTS[key]){ CHARTS[key].destroy(); delete CHARTS[key]; } }
-const chartsMultiState = { diretoria: new Set(), sm: new Set() };
+function makeChart(key, canvasId, config){
+  destroyChart(key);
+  const el = document.getElementById(canvasId); if(!el) return;
+  CHARTS[key] = new Chart(el, config);
+}
+const barLabel = (align) => ({ display:true, anchor:'end', align: align || 'right', color:'#333', font:{ size:10 } });
 
-function getFilteredSquads(){
-  const msDir = chartsMultiState.diretoria;
-  const msSm = chartsMultiState.sm;
-  const cobertura = document.getElementById('chFilterCobertura').value;
-  const origem = document.getElementById('chFilterOrigem').value;
-  return UNIFIED.filter(s=>
-    (!msDir.size || msDir.has(s.diretoria)) &&
-    (!msSm.size || (squadHasSM(s) && msSm.has(currentSMName(s)))) &&
-    (!cobertura || (cobertura==='com' ? s.temSM : !s.temSM)) &&
-    (!origem || (origem==='catalogo' ? s.source==='handover' : s.source!=='handover'))
-  );
+/* situação de cada squad ativa: base das rosquinhas e barras empilhadas */
+function squadSituacao(s){
+  const sm = !!currentSMName(s), pes = s.recursos.length > 0;
+  if(sm && pes) return 'Completa (SM + pessoas)';
+  if(!sm && pes) return 'Sem SM';
+  if(sm && !pes) return 'Sem pessoas';
+  return 'Sem SM e sem pessoas';
+}
+const SITUACAO_ORDEM = [
+  ['Completa (SM + pessoas)', CHART_COLORS.verde], ['Sem SM', CHART_COLORS.amarelo],
+  ['Sem pessoas', CHART_COLORS.laranja], ['Sem SM e sem pessoas', CHART_COLORS.vermelho]
+];
+function stackedByDiretoria(squads){
+  const dirs = {};
+  squads.forEach(s=>{ const d = isBlank(s.diretoria) ? '(sem diretoria)' : s.diretoria; (dirs[d] = dirs[d] || []).push(s); });
+  const labels = Object.keys(dirs).sort((a,b)=>dirs[b].length - dirs[a].length);
+  return { labels, dirs };
 }
 
-function renderChartsTab(){
-  if(!document.getElementById('chartSquadsPorSm')) return;
-
-  renderMultiSelect('diretoria', 'mselChDiretoria', uniqueSorted(UNIFIED.map(s=>s.diretoria)), renderChartsTab, chartsMultiState);
-  wireMultiSelect('diretoria', 'mselChDiretoria', renderChartsTab, chartsMultiState);
-  renderMultiSelect('sm', 'mselChSm', uniqueSorted(SM_VIEW.map(s=>s.nome)), renderChartsTab, chartsMultiState);
-  wireMultiSelect('sm', 'mselChSm', renderChartsTab, chartsMultiState);
-
-  const squadsF = getFilteredSquads();
-  document.getElementById('chartsFilterCount').innerHTML = '<b>'+squadsF.length+'</b> de <b>'+UNIFIED.length+'</b> squads nos gráficos abaixo';
-
-  const totalSquads = squadsF.length;
-  const comSM = squadsF.filter(s=>s.temSM).length;
-  const comRecurso = squadsF.filter(s=>s.temRecursos).length;
-  const smsFiltrados = new Set(squadsF.filter(s=>squadHasSM(s)).map(s=>boardKey(currentSMName(s)))).size;
-  const recursosF = squadsF.reduce((a,s)=>a+s.recursos.length,0);
-  const kpiRow = document.getElementById('chartsKpiRow');
-  kpiRow.innerHTML = '';
-  kpiRow.appendChild(kpiCard('kpiChSMs', smsFiltrados, 'SMs distintos'));
-  kpiRow.appendChild(kpiCard('kpiChSquads', totalSquads, 'Squads no total'));
-  kpiRow.appendChild(kpiCard('kpiChComSM', comSM+' / '+totalSquads, 'Squads com SM'));
-  kpiRow.appendChild(kpiCard('kpiChComRec', comRecurso+' / '+totalSquads, 'Squads com recurso'));
-  kpiRow.appendChild(kpiCard('kpiChRecursos', recursosF, 'Recursos mapeados'));
-
-  /* 1) Squads por SM — barra horizontal, cor muda acima do ideal (3) */
-  destroyChart('squadsPorSm');
-  const smGroupsF = {};
-  squadsF.forEach(s=>{
-    if(!squadHasSM(s)) return;
-    const key = boardKey(currentSMName(s));
-    if(!smGroupsF[key]) smGroupsF[key] = { nome: currentSMName(s), squadCount: 0 };
-    smGroupsF[key].squadCount++;
+/* ---- semáforo de saúde por squad ---- */
+function buildHealthMap(){
+  const model = QUARTERLY_MODEL;
+  const hasQ = !!(model && (model.metrics.projects || model.metrics.improvements));
+  const aggOf = new Map(); if(model) model.squads.forEach(a=>{ if(a.squad) aggOf.set(a.squad.id, a); });
+  const paradas = new Set(boardHealth().paradas.map(x=>x.squad.id));
+  const map = new Map();
+  UNIFIED.forEach(s=>{
+    if(!s.squadAtiva){ map.set(s.id, { nivel:'inativa', motivos:['Squad desativada'] }); return; }
+    const vermelho = [], amarelo = [];
+    if(!currentSMName(s)) vermelho.push('Sem SM');
+    if(!s.recursos.length) vermelho.push('Sem pessoas cadastradas');
+    if(paradas.has(s.id)) amarelo.push('Boards parados há mais de 180 dias');
+    if(hasQ){ const a = aggOf.get(s.id); if(!a || (a.p.total + a.m.total) === 0) amarelo.push('Sem demanda no trimestre'); }
+    map.set(s.id, vermelho.length ? { nivel:'vermelho', motivos:vermelho.concat(amarelo) } : amarelo.length ? { nivel:'amarelo', motivos:amarelo } : { nivel:'verde', motivos:['Sem alertas'] });
   });
-  const smOrdenado = Object.values(smGroupsF).sort((a,b)=> b.squadCount - a.squadCount);
-  CHARTS.squadsPorSm = new Chart(document.getElementById('chartSquadsPorSm'), {
-    type: 'bar',
-    data: {
-      labels: smOrdenado.map(s=>s.nome),
-      datasets: [{
-        label: 'Squads',
-        data: smOrdenado.map(s=>s.squadCount),
-        backgroundColor: smOrdenado.map(s=> s.squadCount>3 ? CHART_COLORS.vermelho : CHART_COLORS.azul),
-        borderRadius: 3
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display:false },
-        tooltip: { callbacks: { label: (ctx)=> ctx.parsed.x+' squad(s)'+(ctx.parsed.x>3?' — acima do ideal':'') } },
-        datalabels: { display:true, anchor:'end', align:'right', color:'#333', font:{ size:10 } }
-      },
-      scales: { x: { beginAtZero:true, ticks:{ precision:0 } } }
-    }
-  });
-
-  /* 2) Cobertura de SM — rosca */
-  destroyChart('coberturaSm');
-  CHARTS.coberturaSm = new Chart(document.getElementById('chartCoberturaSm'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Com SM', 'Sem SM'],
-      datasets: [{ data: [comSM, totalSquads-comSM], backgroundColor: [CHART_COLORS.azul, CHART_COLORS.vermelho] }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ position:'bottom' }, datalabels:{ display:true, color:'#fff', font:{weight:'bold'} } }
-    }
-  });
-
-  /* 3) Pendência por squad — sem recurso / sem board / sem os dois / completa */
-  destroyChart('pendencia');
-  const semAmbos = squadsF.filter(s=>!s.temRecursos && !s.temBoards).length;
-  const soSemRecurso = squadsF.filter(s=>!s.temRecursos && s.temBoards).length;
-  const soSemBoard = squadsF.filter(s=>s.temRecursos && !s.temBoards).length;
-  const completa = squadsF.filter(s=>s.temRecursos && s.temBoards).length;
-  CHARTS.pendencia = new Chart(document.getElementById('chartPendencia'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Completa (recurso+board)', 'Só sem board', 'Só sem recurso', 'Sem os dois'],
-      datasets: [{ data: [completa, soSemBoard, soSemRecurso, semAmbos], backgroundColor: [CHART_COLORS.verde, CHART_COLORS.amarelo, CHART_COLORS.laranja, CHART_COLORS.vermelho] }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ position:'bottom', labels:{ boxWidth:11, font:{size:10.5} } }, datalabels:{ display:true, color:'#fff', font:{weight:'bold'} } }
-    }
-  });
-
-  /* 4) Boards Azure — vinculado x sem squad (ativos), respeitando os filtros */
-  destroyChart('boardsStatus');
-  const squadIdsF = new Set(squadsF.map(s=>s.id));
-  const temFiltroSm = chartsMultiState.sm.size>0 || document.getElementById('chFilterCobertura').value || document.getElementById('chFilterOrigem').value;
-  const boardsF = ALL_BOARDS.filter(b=> b.squadId ? squadIdsF.has(b.squadId) : (!temFiltroSm && (!chartsMultiState.diretoria.size || chartsMultiState.diretoria.has(b.diretoria))));
-  const boardsAtivos = boardsF.filter(b=>b.ativo);
-  const vinc = boardsAtivos.filter(b=>b.squadId).length;
-  const semVinc = boardsAtivos.length - vinc;
-  const desativados = boardsF.length - boardsAtivos.length;
-  CHARTS.boardsStatus = new Chart(document.getElementById('chartBoardsStatus'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Ativo · vinculado a squad', 'Ativo · sem squad', 'Desativado'],
-      datasets: [{ data: [vinc, semVinc, desativados], backgroundColor: [CHART_COLORS.verde, CHART_COLORS.laranja, CHART_COLORS.cinza] }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ position:'bottom', labels:{ boxWidth:11, font:{size:10.5} } }, datalabels:{ display:true, color:'#333', font:{weight:'bold'} } }
-    }
-  });
-
-  /* 5) Recursos por função — top 12 */
-  destroyChart('recursosPorFuncao');
-  const funcaoCount = {};
-  squadsF.forEach(s=> s.recursos.forEach(r=>{
-    let f = (r.funcao||'').trim();
-    if(!f) f = '(sem função informada)';
-    f = f.charAt(0).toUpperCase() + f.slice(1).toLowerCase();
-    funcaoCount[f] = (funcaoCount[f]||0) + 1;
-  }));
-  const top12 = Object.entries(funcaoCount).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  CHARTS.recursosPorFuncao = new Chart(document.getElementById('chartRecursosPorFuncao'), {
-    type: 'bar',
-    data: {
-      labels: top12.map(x=>x[0]),
-      datasets: [{ label:'Pessoas', data: top12.map(x=>x[1]), backgroundColor: CHART_COLORS.azul, borderRadius:3 }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ display:false }, datalabels:{ display:true, anchor:'end', align:'right', color:'#333', font:{size:10} } },
-      scales: { x: { beginAtZero:true, ticks:{ precision:0 } } }
-    }
-  });
-
-  /* ===== POR DIRETORIA ===== */
-  const porDiretoria = {};
-  squadsF.forEach(s=>{
-    const dir = isBlank(s.diretoria) ? '(sem diretoria)' : s.diretoria;
-    if(!porDiretoria[dir]) porDiretoria[dir] = { squads:[], smsSet:new Set() };
-    porDiretoria[dir].squads.push(s);
-    if(squadHasSM(s)) porDiretoria[dir].smsSet.add(boardKey(currentSMName(s)));
-  });
-  const diretoriasOrdenadas = Object.keys(porDiretoria).sort((a,b)=> porDiretoria[b].squads.length - porDiretoria[a].squads.length);
-
-  const tbodyDir = document.getElementById('diretoriaBody');
-  if(tbodyDir){
-    tbodyDir.innerHTML = diretoriasOrdenadas.map(dir=>{
-      const g = porDiretoria[dir];
-      const total = g.squads.length;
-      const comSMd = g.squads.filter(s=>s.temSM).length;
-      const semSMd = total - comSMd;
-      const pct = total ? Math.round(comSMd/total*100) : 0;
-      const recursosD = g.squads.reduce((a,s)=>a+s.recursos.length,0);
-      const boardsD = g.squads.reduce((a,s)=>a+s.boards.length,0);
-      return '<tr>' +
-        '<td><b>'+esc(dir)+'</b></td>' +
-        '<td>'+total+'</td>' +
-        '<td>'+comSMd+'</td>' +
-        '<td>'+(semSMd>0 ? '<span class="badge miss">'+semSMd+'</span>' : '0')+'</td>' +
-        '<td>'+pct+'%</td>' +
-        '<td>'+recursosD+'</td>' +
-        '<td>'+boardsD+'</td>' +
-        '<td>'+g.smsSet.size+'</td>' +
-        '</tr>';
-    }).join('');
-  }
-
-  destroyChart('squadsPorDiretoria');
-  CHARTS.squadsPorDiretoria = new Chart(document.getElementById('chartSquadsPorDiretoria'), {
-    type: 'bar',
-    data: {
-      labels: diretoriasOrdenadas,
-      datasets: [{ label:'Squads', data: diretoriasOrdenadas.map(d=>porDiretoria[d].squads.length), backgroundColor: CHART_COLORS.azul, borderRadius:3 }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ display:false }, datalabels:{ display:true, anchor:'end', align:'top', color:'#333', font:{size:10} } },
-      scales: { y: { beginAtZero:true, ticks:{ precision:0 } }, x:{ ticks:{ font:{size:10} } } }
-    }
-  });
-
-  destroyChart('recursosPorDiretoria');
-  CHARTS.recursosPorDiretoria = new Chart(document.getElementById('chartRecursosPorDiretoria'), {
-    type: 'bar',
-    data: {
-      labels: diretoriasOrdenadas,
-      datasets: [{ label:'Recursos', data: diretoriasOrdenadas.map(d=>porDiretoria[d].squads.reduce((a,s)=>a+s.recursos.length,0)), backgroundColor: CHART_COLORS.laranja, borderRadius:3 }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ display:false }, datalabels:{ display:true, anchor:'end', align:'top', color:'#333', font:{size:10} } },
-      scales: { y: { beginAtZero:true, ticks:{ precision:0 } }, x:{ ticks:{ font:{size:10} } } }
-    }
-  });
-
-  /* ===== POR SQUAD ===== */
-  destroyChart('topSquadsHeadcount');
-  const topHeadcount = squadsF.slice().sort((a,b)=> b.recursos.length - a.recursos.length).slice(0,15).filter(s=>s.recursos.length>0);
-  CHARTS.topSquadsHeadcount = new Chart(document.getElementById('chartTopSquadsHeadcount'), {
-    type: 'bar',
-    data: {
-      labels: topHeadcount.map(s=>s.squad),
-      datasets: [{ label:'Pessoas', data: topHeadcount.map(s=>s.recursos.length), backgroundColor: CHART_COLORS.azul, borderRadius:3 }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ display:false }, datalabels:{ display:true, anchor:'end', align:'right', color:'#333', font:{size:10} } },
-      scales: { x: { beginAtZero:true, ticks:{ precision:0 } } }
-    }
-  });
-
-  destroyChart('topSquadsBoards');
-  const topBoards = squadsF.slice().sort((a,b)=> b.boards.length - a.boards.length).slice(0,15).filter(s=>s.boards.length>0);
-  CHARTS.topSquadsBoards = new Chart(document.getElementById('chartTopSquadsBoards'), {
-    type: 'bar',
-    data: {
-      labels: topBoards.map(s=>s.squad),
-      datasets: [{ label:'Boards', data: topBoards.map(s=>s.boards.length), backgroundColor: CHART_COLORS.laranja, borderRadius:3 }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ display:false }, datalabels:{ display:true, anchor:'end', align:'right', color:'#333', font:{size:10} } },
-      scales: { x: { beginAtZero:true, ticks:{ precision:0 } } }
-    }
-  });
-
-  destroyChart('squadsPorOrigem');
-  const doCatalogo = squadsF.filter(s=>s.source==='handover').length;
-  const novas = squadsF.length - doCatalogo;
-  CHARTS.squadsPorOrigem = new Chart(document.getElementById('chartSquadsPorOrigem'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Do catálogo oficial', 'Novas (só no levantamento)'],
-      datasets: [{ data: [doCatalogo, novas], backgroundColor: [CHART_COLORS.azul, CHART_COLORS.amarelo] }]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins: { legend:{ position:'bottom' }, datalabels:{ display:true, color:'#333', font:{weight:'bold'} } }
-    }
-  });
-
-  const semRecursoEl = document.getElementById('listaSquadsSemRecurso');
-  if(semRecursoEl){
-    const semRecurso = squadsF.filter(s=>!s.temRecursos).sort((a,b)=>COLLATE.compare(a.squad,b.squad));
-    semRecursoEl.innerHTML = semRecurso.length ?
-      '<table class="mini-table"><thead><tr><th>Squad</th><th>SM</th><th>Boards</th></tr></thead><tbody>' +
-      semRecurso.map(s=> '<tr><td>'+esc(s.squad)+'</td><td>'+(squadHasSM(s)?esc(currentSMName(s)):'<span class="badge miss">sem SM</span>')+'</td><td>'+s.boards.length+'</td></tr>').join('') +
-      '</tbody></table>' :
-      '<div class="mini-empty">Todas as squads têm pelo menos 1 recurso mapeado.</div>';
-  }
+  return map;
 }
+function healthBadge(info){
+  if(!info || info.nivel === 'inativa') return '<span class="badge na">—</span>';
+  const cls = info.nivel === 'verde' ? 'ok' : info.nivel === 'amarelo' ? 'pend' : 'nok';
+  const label = info.nivel === 'verde' ? 'Verde' : info.nivel === 'amarelo' ? 'Amarelo' : 'Vermelho';
+  return '<span class="badge '+cls+'" title="'+esc(info.motivos.join(' · '))+'">'+label+'</span>';
+}
+
+/* ---- SMs: squads por SM com limite + mapa de calor SM x diretoria ---- */
+function renderSmCharts(){
+  if(!document.getElementById('chartSmSquads')) return;
+  const sms = filteredSMs().slice().sort((a,b)=>b.squadCount - a.squadCount || COLLATE.compare(a.nome, b.nome));
+  const limitLine = { id:'limitLine', afterDatasetsDraw(chart){
+    const { ctx, chartArea, scales } = chart; const x = scales.x.getPixelForValue(SM_IDEAL_SQUADS);
+    ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle = CHART_COLORS.vermelho; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x, chartArea.top); ctx.lineTo(x, chartArea.bottom); ctx.stroke(); ctx.restore();
+  } };
+  document.getElementById('chartSmSquadsWrap').style.height = Math.max(260, sms.length * 22 + 70) + 'px';
+  makeChart('smSquads', 'chartSmSquads', {
+    type:'bar',
+    data:{ labels: sms.map(s=>s.nome), datasets:[{ label:'Squads', data: sms.map(s=>s.squadCount), backgroundColor: sms.map(s=>s.squadCount > SM_IDEAL_SQUADS ? CHART_COLORS.vermelho : CHART_COLORS.azul), borderRadius:3 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:ctx=>ctx.parsed.x+' squad(s)'+(ctx.parsed.x > SM_IDEAL_SQUADS ? ' — acima do ideal' : '') } }, datalabels:barLabel('right') },
+      scales:{ x:{ beginAtZero:true, grace:'12%', ticks:{ precision:0 } }, y:{ ticks:{ autoSkip:false, font:{ size:10 } } } } },
+    plugins:[limitLine]
+  });
+  /* mapa de calor: quantas squads cada SM tem em cada diretoria */
+  const ids = new Set(filteredSquads().map(s=>s.id));
+  const dirs = uniqueSorted(sms.flatMap(sm=>sm.squads.filter(s=>ids.has(s.id)).map(s=>s.diretoria)));
+  let max = 1;
+  const rows = sms.map(sm=>{
+    const cells = dirs.map(d=>sm.squads.filter(s=>ids.has(s.id) && s.diretoria === d).length);
+    cells.forEach(n=>{ if(n > max) max = n; });
+    return { sm, cells };
+  });
+  const el = document.getElementById('smHeatmap'); if(!el) return;
+  el.innerHTML = rows.length && dirs.length
+    ? '<table class="squadtable"><thead><tr><th>SM</th>'+dirs.map(d=>'<th title="'+esc(d)+'" style="font-size:10.5px;">'+esc(d)+'</th>').join('')+'<th>Diretorias</th></tr></thead><tbody>' +
+      rows.map(r=>{ const used = r.cells.filter(n=>n>0).length; return '<tr><td><b>'+esc(r.sm.nome)+'</b></td>'+r.cells.map(n=>'<td style="text-align:center;'+(n ? 'background:rgba(26,61,170,'+(0.12 + 0.6*n/max).toFixed(2)+');color:'+(n/max > 0.5 ? '#fff' : '#1A2B66')+';font-weight:700;' : 'color:#B9C1D9;')+'">'+(n || '·')+'</td>').join('')+'<td style="text-align:center;">'+(used > 1 ? '<span class="badge pend">'+used+'</span>' : used)+'</td></tr>'; }).join('') + '</tbody></table>'
+    : '<div class="mini-empty">Sem SMs no filtro atual.</div>';
+}
+
+/* ---- Squads: semáforo e pessoas por squad ---- */
+function renderSquadCharts(){
+  if(!document.getElementById('chartSqSaude')) return;
+  const ativas = filteredSquads().filter(s=>s.squadAtiva);
+  const health = buildHealthMap();
+  const { labels, dirs } = stackedByDiretoria(ativas);
+  const niveis = [['verde','Verde',CHART_COLORS.verde],['amarelo','Amarelo',CHART_COLORS.amarelo],['vermelho','Vermelho',CHART_COLORS.vermelho]];
+  document.getElementById('chartSqSaudeWrap').style.height = Math.max(240, labels.length * 34 + 90) + 'px';
+  makeChart('sqSaude', 'chartSqSaude', {
+    type:'bar',
+    data:{ labels, datasets: niveis.map(([k,nome,cor])=>({ label:nome, backgroundColor:cor, data: labels.map(d=>dirs[d].filter(s=>(health.get(s.id)||{}).nivel === k).length) })) },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom' }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:ctx=>ctx.datasetIndex === 1 ? '#333' : '#fff', font:{ size:10, weight:'bold' } } },
+      scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } }
+  });
+  const bins = [['0',0,0],['1–5',1,5],['6–10',6,10],['11–20',11,20],['21+',21,Infinity]];
+  const counts = bins.map(([,lo,hi])=>ativas.filter(s=>s.recursos.length >= lo && s.recursos.length <= hi).length);
+  makeChart('sqPessoas', 'chartSqPessoas', {
+    type:'bar',
+    data:{ labels: bins.map(b=>b[0]+' pessoas'), datasets:[{ data:counts, backgroundColor:[CHART_COLORS.vermelho, CHART_COLORS.laranja, CHART_COLORS.azul, CHART_COLORS.azul, CHART_COLORS.azul], borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:barLabel('top') }, scales:{ y:{ beginAtZero:true, grace:'12%', ticks:{ precision:0 } } } }
+  });
+}
+
+/* ---- Pendências: situação das squads e pendências por responsável ---- */
+function renderPendCharts(rows){
+  if(!document.getElementById('chartPendSituacao')) return;
+  const ativas = filteredSquads().filter(s=>s.squadAtiva);
+  const counts = SITUACAO_ORDEM.map(([nome])=>ativas.filter(s=>squadSituacao(s) === nome).length);
+  makeChart('pendSituacao', 'chartPendSituacao', {
+    type:'doughnut',
+    data:{ labels: SITUACAO_ORDEM.map(x=>x[0]), datasets:[{ data:counts, backgroundColor: SITUACAO_ORDEM.map(x=>x[1]) }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, font:{ size:10.5 } } }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:'#333', font:{ weight:'bold' } } } }
+  });
+  const abertas = {}; (rows || []).filter(r=>!r.ok).forEach(r=>{ abertas[r.quem] = (abertas[r.quem] || 0) + 1; });
+  const list = Object.entries(abertas).sort((a,b)=>b[1]-a[1]);
+  makeChart('pendResp', 'chartPendResponsavel', {
+    type:'bar',
+    data:{ labels:list.map(x=>x[0]), datasets:[{ label:'Pendências abertas', data:list.map(x=>x[1]), backgroundColor:CHART_COLORS.laranja, borderRadius:3 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:barLabel('right') }, scales:{ x:{ beginAtZero:true, grace:'12%', ticks:{ precision:0 } }, y:{ ticks:{ autoSkip:false, font:{ size:10 } } } } }
+  });
+}
+
+/* ---- Qualidade: completude do cadastro e origem das squads ---- */
+function renderQualityCharts(){
+  if(!document.getElementById('chartQualCompletude')) return;
+  const ativas = filteredSquads().filter(s=>s.squadAtiva);
+  const paradas = new Set(boardHealth().paradas.map(x=>x.squad.id));
+  const total = ativas.length || 1;
+  const itens = [
+    ['Diretoria', s=>!isBlank(s.diretoria)], ['Diretor', s=>!isBlank(s.diretor)], ['Gerente', s=>!isBlank(s.gerente)],
+    ['SM', s=>!!currentSMName(s)], ['Pessoas cadastradas', s=>s.recursos.length > 0], ['Board atualizado (≤180 dias)', s=>!paradas.has(s.id)]
+  ].map(([nome, f])=>[nome, Math.round(ativas.filter(f).length / total * 100)]);
+  makeChart('qualCompletude', 'chartQualCompletude', {
+    type:'bar',
+    data:{ labels:itens.map(x=>x[0]), datasets:[{ data:itens.map(x=>x[1]), backgroundColor:itens.map(x=>x[1] >= 90 ? CHART_COLORS.verde : x[1] >= 70 ? CHART_COLORS.amarelo : CHART_COLORS.vermelho), borderRadius:3 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false }, tooltip:{ callbacks:{ label:ctx=>ctx.parsed.x+'% das squads ativas' } }, datalabels:{ display:true, anchor:'end', align:'right', color:'#333', font:{ size:10 }, formatter:v=>v+'%' } },
+      scales:{ x:{ beginAtZero:true, max:110, ticks:{ callback:v=>v <= 100 ? v+'%' : '' } } } }
+  });
+  const doCatalogo = filteredSquads().filter(s=>s.source === 'handover').length, novas = filteredSquads().length - doCatalogo;
+  makeChart('qualOrigem', 'chartQualOrigem', {
+    type:'doughnut',
+    data:{ labels:['Do catálogo oficial','Novas (só no levantamento ou no Azure)'], datasets:[{ data:[doCatalogo, novas], backgroundColor:[CHART_COLORS.azul, CHART_COLORS.amarelo] }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom' }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:'#333', font:{ weight:'bold' } } } }
+  });
+}
+
+/* ---- Boards: ativos x desativados ---- */
+function renderBoardStatusChart(){
+  if(!document.getElementById('chartBoardsStatus')) return;
+  const boards = filteredBoards();
+  const ativos = boards.filter(b=>b.ativo);
+  const vinc = ativos.filter(b=>b.squadId).length;
+  makeChart('boardsStatus', 'chartBoardsStatus', {
+    type:'doughnut',
+    data:{ labels:['Ativo · vinculado a squad','Ativo · sem squad','Desativado'], datasets:[{ data:[vinc, ativos.length - vinc, boards.length - ativos.length], backgroundColor:[CHART_COLORS.verde, CHART_COLORS.laranja, CHART_COLORS.cinza] }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, font:{ size:10.5 } } }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:'#333', font:{ weight:'bold' } } } }
+  });
+}
+
+/* ---- Recursos: função, diretoria e pessoas em várias squads ---- */
+function renderRecursosCharts(){
+  if(!document.getElementById('chartRecFuncao')) return;
+  const rows = resourceViewRows().filter(resourcePassesFilter);
+  const funcao = {};
+  rows.forEach(r=>{ let f = (r.funcao || '').trim() || '(sem função informada)'; f = f.charAt(0).toUpperCase() + f.slice(1).toLowerCase(); funcao[f] = (funcao[f] || 0) + 1; });
+  const top = Object.entries(funcao).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  makeChart('recFuncao', 'chartRecFuncao', {
+    type:'bar', data:{ labels:top.map(x=>x[0]), datasets:[{ label:'Vínculos', data:top.map(x=>x[1]), backgroundColor:CHART_COLORS.azul, borderRadius:3 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:barLabel('right') }, scales:{ x:{ beginAtZero:true, ticks:{ precision:0 } }, y:{ ticks:{ autoSkip:false, font:{ size:10 } } } } }
+  });
+  const dir = {}; rows.forEach(r=>{ const d = isBlank(r.diretoria) ? '(sem diretoria)' : r.diretoria; dir[d] = (dir[d] || 0) + 1; });
+  const dl = Object.entries(dir).sort((a,b)=>b[1]-a[1]);
+  makeChart('recDiretoria', 'chartRecDiretoria', {
+    type:'bar', data:{ labels:dl.map(x=>x[0]), datasets:[{ label:'Vínculos', data:dl.map(x=>x[1]), backgroundColor:CHART_COLORS.laranja, borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:barLabel('top') }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } }, x:{ ticks:{ font:{ size:10 } } } } }
+  });
+  const porPessoa = {};
+  rows.forEach(r=>{ const k = boardKey(r.colaborador); if(!k) return; (porPessoa[k] = porPessoa[k] || new Set()).add(boardKey(r.squad)); });
+  const dist = [0,0,0,0]; let maxN = 0;
+  Object.values(porPessoa).forEach(set=>{ const n = set.size; dist[Math.min(n,4) - 1] += 1; if(n > maxN) maxN = n; });
+  makeChart('recMulti', 'chartRecMulti', {
+    type:'bar', data:{ labels:['1 squad','2 squads','3 squads','4 ou mais'], datasets:[{ label:'Pessoas', data:dist, backgroundColor:[CHART_COLORS.azul, CHART_COLORS.amarelo, CHART_COLORS.laranja, CHART_COLORS.vermelho], borderRadius:3 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ display:false }, datalabels:barLabel('top'), tooltip:{ callbacks:{ label:ctx=>ctx.parsed.y+' pessoas' } } }, scales:{ y:{ beginAtZero:true, ticks:{ precision:0 } } } }
+  });
+  const note = document.getElementById('recMultiNote');
+  if(note) note.textContent = Object.keys(porPessoa).length+' pessoas únicas'+(maxN > 1 ? '; a mais compartilhada atua em '+maxN+' squads.' : '.');
+}
+
+/* ---- Executiva: situação por diretoria e tabela de cobertura ---- */
+function renderDiretoriaCoverage(){
+  if(!document.getElementById('chartDirSituacao')) return;
+  const ativas = filteredSquads().filter(s=>s.squadAtiva);
+  const { labels, dirs } = stackedByDiretoria(ativas);
+  document.getElementById('chartDirSituacaoWrap').style.height = Math.max(240, labels.length * 34 + 90) + 'px';
+  makeChart('dirSituacao', 'chartDirSituacao', {
+    type:'bar',
+    data:{ labels, datasets: SITUACAO_ORDEM.map(([nome, cor])=>({ label:nome, backgroundColor:cor, data: labels.map(d=>dirs[d].filter(s=>squadSituacao(s) === nome).length) })) },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'bottom', labels:{ boxWidth:11, font:{ size:10.5 } } }, datalabels:{ display:ctx=>ctx.dataset.data[ctx.dataIndex] > 0, color:ctx=>ctx.datasetIndex === 1 ? '#333' : '#fff', font:{ size:10, weight:'bold' } } },
+      scales:{ x:{ stacked:true, beginAtZero:true, ticks:{ precision:0 } }, y:{ stacked:true, ticks:{ autoSkip:false, font:{ size:10 } } } } }
+  });
+  const body = document.getElementById('diretoriaBody'); if(!body) return;
+  body.innerHTML = labels.length ? labels.map(d=>{
+    const g = dirs[d], total = g.length, comSm = g.filter(s=>currentSMName(s)).length, semSm = total - comSm;
+    const sms = new Set(g.filter(s=>currentSMName(s)).map(s=>boardKey(currentSMName(s))));
+    return '<tr><td><b>'+esc(d)+'</b></td><td>'+total+'</td><td>'+comSm+'</td><td>'+(semSm ? '<span class="badge miss">'+semSm+'</span>' : '0')+'</td><td>'+Math.round(comSm/total*100)+'%</td><td>'+g.reduce((t,s)=>t+s.recursos.length,0)+'</td><td>'+sms.size+'</td></tr>';
+  }).join('') : qEmptyRow(7, 'Nenhuma squad ativa no filtro atual.');
+}
+
 
 /* ============================================================
    ABA RECURSOS — colaboradores por squad (base bruta RESOURCES_RAW)
@@ -2973,13 +2985,14 @@ function resourceViewRows(){
     return Object.assign({}, base, {
       gerente_ti: base.gerente_ti || (sq && sq.gerente) || '',
       diretor: base.diretor || (sq && sq.diretor) || '',
-      diretoria: base.diretoria || (sq && sq.diretoria) || ''
+      diretoria: base.diretoria || (sq && sq.diretoria) || '',
+      _sm: (sq && currentSMName(sq)) || ''
     });
   });
 }
 function renderRecursosTab(){
   if(!document.getElementById('recursosBody')) return;
-  const resourceRows = resourceViewRows();
+  const resourceRows = resourceViewRows().filter(resourcePassesFilter);
   document.getElementById('recursosTotalRawCount').textContent = '— ' + resourceRows.length + ' vínculos únicos na base mensal';
 
   [['squad','mselRecSquad'], ['diretoria','mselRecDiretoria'], ['funcao','mselRecFuncao']].forEach(([field, id])=>{
@@ -3327,14 +3340,7 @@ function rebuildAndRender(){
   refreshQuarterlyViews();
   const activeTab = document.querySelector('#tabBar .tab.active');
   const t = activeTab ? activeTab.getAttribute('data-tab') : 'executive';
-  if(t==='executive') renderExecutiveTab();
-  else if(t==='quality') renderQualityTab();
-  else if(t==='pendencias') renderPendenciasTab();
-  else if(t==='sms') renderSMsTab();
-  else if(t==='boards'){ renderBoardsTab(); renderBoardHealth(); }
-  else if(t==='charts') renderChartsTab();
-  else if(t==='recursos') renderRecursosTab();
-  else renderSquadsTab();
+  renderTabByName(t);
 }
 
 /* ============================================================
@@ -3343,6 +3349,7 @@ function rebuildAndRender(){
 loadOverrides();
 if(window.HACResourcesImport) HACResourcesImport.loadPersisted();
 if(window.HACQuarterlyImport){ HACQuarterlyImport.loadPersisted(); HACQuarterlyImport.bindUI(); }
+wireGlobalFilter();
 buildUnified();
 buildSMView();
 refreshQuarterlyViews();
