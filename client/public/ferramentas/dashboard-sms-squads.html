@@ -452,32 +452,41 @@
 
   <div class="tab-content" id="tab-executive">
     <div id="quarterlyStatusBanner" class="importbanner" style="display:none; font-size:12px; line-height:1.6;"></div>
-    <div class="data-kpi-grid" id="executiveKpiRow"></div>
+    <div class="data-kpi-grid" id="executiveKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));"></div>
     <div class="resultcount" id="executiveSummary"></div>
-    <div class="charts-grid">
-      <div class="chart-card full">
-        <h4>Squads com maior demanda combinada</h4>
-        <div class="tablewrap">
-          <table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Recursos</th><th>Projetos</th><th>Melhorias</th><th>Total</th><th>Pressão</th></tr></thead><tbody id="execSquadBody"></tbody></table>
-        </div>
+
+    <div class="insight-section">
+      <h3>Capacidade dos SMs</h3>
+      <div class="resultcount" id="execCapacityNote"></div>
+      <div class="tablewrap"><table class="squadtable"><thead><tr><th>SM</th><th>Squads</th><th>Capacidade</th><th>Squads com demanda</th><th>Pessoas</th><th>Boards ativos</th><th>Projetos em andamento</th><th>Melhorias em curso</th><th>Melhorias finalizadas</th><th>Horas estimadas (rodando)</th><th>Rodando</th></tr></thead><tbody id="execSmBody"></tbody></table></div>
+    </div>
+
+    <div class="insight-section">
+      <h3>Por diretoria</h3>
+      <div class="tablewrap"><table class="squadtable"><thead><tr><th>Diretoria</th><th>Squads com demanda</th><th>Sem SM</th><th>SMs</th><th>Projetos</th><th>Em andamento</th><th>Melhorias</th><th>Finalizadas</th><th>Em curso</th><th>Horas estimadas (rodando)</th></tr></thead><tbody id="execDirBody"></tbody></table></div>
+    </div>
+
+    <div class="insight-section">
+      <h3>Projetos e melhorias por squad</h3>
+      <div class="filterbar">
+        <div class="field"><label for="execSmFilter">SM</label><select id="execSmFilter"><option value="">Todos os SMs</option></select></div>
+        <div class="field"><label for="execSquadSearch">Buscar</label><input type="text" id="execSquadSearch" placeholder="Squad, SM ou diretoria"></div>
+        <div class="field"><label for="execSort">Ordenar por</label><select id="execSort"><option value="rodando">Rodando agora</option><option value="total">Total no trimestre</option><option value="projetos">Projetos em andamento</option><option value="melhorias">Melhorias finalizadas</option><option value="horas">Horas estimadas</option></select></div>
       </div>
-      <div class="chart-card">
-        <h4>Projetos por status</h4>
-        <div class="tablewrap"><table class="squadtable"><thead><tr><th>Status</th><th>Quantidade</th></tr></thead><tbody id="execProjectStatusBody"></tbody></table></div>
-      </div>
-      <div class="chart-card">
-        <h4>Melhorias por status</h4>
-        <div class="tablewrap"><table class="squadtable"><thead><tr><th>Status</th><th>Quantidade</th></tr></thead><tbody id="execImprovementStatusBody"></tbody></table></div>
-      </div>
+      <div class="resultcount" id="execSquadCount"></div>
+      <div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Boards ativos</th><th>Projetos</th><th>Proj. em andamento</th><th>Proj. planej./solic.</th><th>Proj. encerrados</th><th>Proj. fora</th><th>Melhorias</th><th>Melh. finalizadas</th><th>Melh. em curso</th><th>Melh. fora</th><th>Rodando</th></tr></thead><tbody id="execSquadBody"></tbody></table></div>
+      <div style="margin-top:8px;font-size:10.5px;color:var(--cinza-texto);line-height:1.6;"><b>Como ler.</b> Projeto <i>fora</i> = despriorizado, cancelado ou suspenso; <i>em andamento</i> = execução, piloto, expansão e monitoramento. Melhoria <i>fora</i> = despriorizada ou cancelada; <i>em curso</i> = não iniciada até aguardando publicação. <i>Rodando</i> = projetos em andamento + melhorias em curso. Squad e SM vêm do Squad Azure e do levantamento de outubro.</div>
     </div>
   </div>
 
   <div class="tab-content hidden" id="tab-quality">
-    <div class="data-kpi-grid" id="qualityKpiRow"></div>
+    <div class="data-kpi-grid" id="qualityKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));"></div>
     <div id="qualityMessages" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
-    <div class="insight-section"><h3>Indicadores de qualidade por fonte</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Indicador</th><th>Portfólio</th><th>Melhorias</th><th>Interpretação</th></tr></thead><tbody id="qualityBody"></tbody></table></div></div>
-    <div class="insight-section"><h3>Squads sem correspondência com a base de recursos</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Nome na fonte</th><th>Tipo</th><th>Registros</th><th>Ação</th></tr></thead><tbody id="qualityUnmappedBody"></tbody></table></div></div>
-    <div class="insight-section"><h3>LECOMs presentes nas duas fontes</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>LECOM</th><th>Título do projeto</th><th>Título da melhoria</th><th>Situação</th></tr></thead><tbody id="qualityOverlapBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>Indicadores por fonte</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Indicador</th><th>Projetos</th><th>Melhorias</th><th>Como ler</th></tr></thead><tbody id="qualityBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>Nomes de squad sem vínculo no dashboard</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Nome na fonte</th><th>Projetos</th><th>Melhorias</th><th>Ação</th></tr></thead><tbody id="qualityUnmappedBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>Ligações por inferência (conferir)</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Nome na fonte</th><th>Ligado a</th><th>Projetos</th><th>Melhorias</th><th>Motivo</th></tr></thead><tbody id="qualityInferredBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>SM do dashboard × SM/PMO do Portfólio</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>SM no dashboard</th><th>SM/PMO no Portfólio (nº de projetos)</th></tr></thead><tbody id="qualityDivergBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>LECOM em projeto e em melhoria (risco de contar duas vezes)</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>LECOM</th><th>Título do projeto</th><th>Título da melhoria</th></tr></thead><tbody id="qualityOverlapBody"></tbody></table></div></div>
   </div>
 
   <div class="tab-content hidden" id="tab-sms">
@@ -1259,12 +1268,21 @@ function squadHasSM(s){
    ============================================================ */
 let QUARTERLY_MODEL = null;
 
+/* Razão ideal de governança: 3 squads por SM. Squads compartilhadas entre diretorias não
+   contam como cobertura de nenhum grupo — por isso a capacidade é medida por SM, não por pessoa. */
+const SM_IDEAL_SQUADS = 3;
+/* Nomes de board/squad da fonte que não existem 1:1 no dashboard — ligação por inferência,
+   sempre listada em "Qualidade dos Dados" pra ser conferida. */
+const Q_INFERRED = {
+  'assistencial protocolos internacao': { alvo:'Assistencial - Protocolos - Internação (modelador)', motivo:'Um board no Azure; no dashboard a squad está dividida em viewer e modelador (mesmo SM).' },
+  'ti engenharia': { alvo:'TI - Engenharia e Qualidade', motivo:'Ligação por semelhança de nome.' }
+};
+
 function qKey(value){ return boardKey(value || ''); }
 function qText(value){ return String(value == null ? '' : value).replace(/\s+/g, ' ').trim(); }
 function qNumber(value){
-  const text = qText(value).replace(/\./g, '').replace(',', '.');
-  const number = Number(text);
-  return Number.isFinite(number) ? number : 0;
+  const n = typeof value === 'number' ? value : Number(qText(value).replace(/\./g, '').replace(',', '.'));
+  return Number.isFinite(n) ? n : 0;
 }
 function qFormatNumber(value){ return Number(value || 0).toLocaleString('pt-BR'); }
 function qFormatHours(value){ return Math.round(Number(value || 0)).toLocaleString('pt-BR')+' h'; }
@@ -1273,135 +1291,151 @@ function qDate(value){
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('pt-BR');
 }
-function qUniqueRows(rows){
+
+/* índice nome/apelido -> squad (exato; a aproximação por substring já enganou o dashboard antes).
+   Em colisão (ex.: board desativado com o mesmo nome) prevalece a squad com SM. */
+function qSquadIndex(){
   const map = new Map();
-  (rows || []).forEach(row=>{
-    const identity = qKey(row.lecom || row.id || ((row.titulo || '')+'|'+(row.squad || '')));
-    if(!identity) return;
-    if(!map.has(identity)) map.set(identity, row);
+  UNIFIED.forEach(s=>{
+    [s.squad].concat(Array.isArray(s.aliases) ? s.aliases : []).forEach(name=>{
+      const k = qKey(name);
+      if(!k) return;
+      const cur = map.get(k);
+      if(!cur || (!squadHasSM(cur) && squadHasSM(s))) map.set(k, s);
+    });
   });
-  return [...map.values()];
+  return map;
 }
 function qFindSquad(row, index){
-  const candidates = [row.squad, row.squadAzure].map(qText).filter(Boolean);
-  for(const candidate of candidates){
-    const direct = matchSquad(candidate, index);
-    if(direct) return direct;
+  for(const candidate of [row.squad, row.squadAzure].map(qText).filter(Boolean)){
+    const k = qKey(candidate);
+    if(index.has(k)) return { squad:index.get(k), inferred:null };
+    const inf = Q_INFERRED[k];
+    if(inf && index.has(qKey(inf.alvo))) return { squad:index.get(qKey(inf.alvo)), inferred:{ fonte:candidate, alvo:inf.alvo, motivo:inf.motivo } };
   }
-  return null;
+  return { squad:null, inferred:null };
 }
-function qIsProjectRisk(row){ return /(atrasado|em risco|cancelado|suspenso)/i.test(qText(row.statusResumo || row.status)); }
-function qIsImprovementRisk(row){ return /cancelado|não iniciado/i.test(qText(row.status)); }
-function qStatus(row, type){
-  return qText(type === 'project' ? (row.statusResumo || row.status) : row.status) || 'Sem status';
+
+/* Projeto: fora = despriorizado, cancelado ou suspenso; encerrado; planejamento = ainda não começou;
+   andamento = execução, piloto, expansão e monitoramento. */
+function qProjectClass(row){
+  if(!isBlank(row.despriorizacao)) return 'fora';
+  const st = qText(row.statusResumo || row.status);
+  if(/^(cancelado|suspenso)/i.test(st)) return 'fora';
+  const fase = qKey(row.fase);
+  if(fase === 'encerrado') return 'encerrado';
+  if(fase === 'planejamento' || fase === 'solicitado') return 'planejamento';
+  return 'andamento';
 }
-function qSquadPressure(aggregate){
-  const score = (aggregate.projects + aggregate.improvements) + (aggregate.risk * 2) + (aggregate.hours / 400);
-  aggregate.pressureScore = Math.round(score * 10) / 10;
-  aggregate.pressure = score >= 25 ? 'Alta' : (score >= 12 ? 'Média' : 'Baixa');
-  return aggregate;
+/* Melhoria: fora = despriorizada ou 07.Cancelado; finalizada = 06; em curso = 01 a 05. */
+function qImprovementClass(row){
+  if(!isBlank(row.despriorizacao)) return 'fora';
+  const st = qText(row.status);
+  if(/^07/.test(st) || /cancelad/i.test(st)) return 'fora';
+  if(/^06/.test(st) || /finalizad/i.test(st)) return 'finalizada';
+  return 'curso';
 }
-function qNewAggregate(label, squad){
-  return {
-    label: label || '(Sem identificação)', squad: squad || null, squads: new Set(), resourceKeys: new Set(),
-    projectIds: new Set(), improvementIds: new Set(), projects: 0, improvements: 0, hours: 0, risk: 0,
-    missingSm: false, pressure: 'Baixa', pressureScore: 0
-  };
-}
-function qResolveItem(row, type, index){
-  const squad = qFindSquad(row, index);
-  const rawSquad = qText(row.squad || row.squadAzure) || '(Sem squad informada)';
-  const label = squad ? squad.squad : rawSquad;
-  const smFromSquad = squad ? currentSMName(squad) : '';
-  const smFromSource = type === 'project' ? qText(row.smPmo) : '';
-  const sm = !isBlank(smFromSquad) ? smFromSquad : (smFromSource || '(Sem SM confirmado)');
-  return { squad, label, rawSquad, sm, squadKey: squad ? 'id:'+squad.id : 'raw:'+qKey(rawSquad) };
-}
-function qAddItem(aggregate, row, type, resolution){
-  const itemId = qKey(row.lecom || row.id || row.titulo);
-  if(type === 'project'){
-    aggregate.projectIds.add(itemId);
-    aggregate.projects = aggregate.projectIds.size;
-  } else {
-    aggregate.improvementIds.add(itemId);
-    aggregate.improvements = aggregate.improvementIds.size;
-  }
-  aggregate.hours += qNumber(row.horas);
-  if(type === 'project' ? qIsProjectRisk(row) : qIsImprovementRisk(row)) aggregate.risk += 1;
-  if(resolution.squad){
-    const unifiedSquad = (typeof UNIFIED !== 'undefined' && Array.isArray(UNIFIED)) ? UNIFIED.find(item=>item.id===resolution.squad.id) : null;
-    const resources = unifiedSquad ? unifiedSquad.recursos : (resolution.squad.recursos || []);
-    resources.forEach(resource=>aggregate.resourceKeys.add(qKey(resource.colaborador)));
-  }
-  if(resolution.sm === '(Sem SM confirmado)') aggregate.missingSm = true;
+function qNewSquadAgg(key, label, squad){
+  return { key, label, squad, sm: squad ? (currentSMName(squad) || '') : '', diretoria: squad ? (squad.diretoria || '') : '',
+    p:{ total:0, andamento:0, planejamento:0, encerrado:0, fora:0 }, m:{ total:0, finalizada:0, curso:0, fora:0 },
+    horas:0, rodando:0, lecoms:new Set(), smPortfolio:{} };
 }
 function buildQuarterlyModel(){
   if(!window.HACQuarterlyImport) return null;
-  const portfolio = qUniqueRows(HACQuarterlyImport.getRows('portfolio'));
-  const improvements = qUniqueRows(HACQuarterlyImport.getRows('improvements'));
-  const index = buildSquadIndexFrom(REGISTRY);
-  const bySquad = {};
-  const bySm = {};
+  const projects = HACQuarterlyImport.getRows('portfolio');
+  const improvements = HACQuarterlyImport.getRows('improvements');
+  const index = qSquadIndex();
+  const bySquad = new Map();
   const unmapped = {};
-  const projectStatus = {};
-  const improvementStatus = {};
-  const projectMap = new Map();
-  const improvementMap = new Map();
-  const items = [];
+  const inferred = {};
+  const projectLecom = new Map(), improvementLecom = new Map();
+  const quality = { semSquad:{p:0,m:0}, semMotivo:{p:0,m:0}, encerradoSemData:0, finalizadaSemData:0 };
 
-  function addSourceRows(rows, type){
-    rows.forEach(row=>{
-      const resolution = qResolveItem(row, type, index);
-      const squadAggregate = bySquad[resolution.squadKey] || (bySquad[resolution.squadKey] = qNewAggregate(resolution.label, resolution.squad));
-      squadAggregate.squads.add(resolution.squadKey);
-      qAddItem(squadAggregate, row, type, resolution);
-      const smAggregate = bySm[resolution.sm] || (bySm[resolution.sm] = qNewAggregate(resolution.sm, null));
-      smAggregate.squads.add(resolution.squadKey);
-      qAddItem(smAggregate, row, type, resolution);
-      if(type === 'project') projectStatus[qStatus(row, type)] = (projectStatus[qStatus(row, type)] || 0) + 1;
-      else improvementStatus[qStatus(row, type)] = (improvementStatus[qStatus(row, type)] || 0) + 1;
-      if(!resolution.squad){
-        const key = qKey(resolution.rawSquad) || '(sem squad informada)';
-        if(!unmapped[key]) unmapped[key] = { label: resolution.rawSquad, projects: 0, improvements: 0 };
-        unmapped[key][type === 'project' ? 'projects' : 'improvements'] += 1;
-      }
-      const item = Object.assign({}, row, { _type:type, _resolution:resolution });
-      items.push(item);
-      const lecom = qKey(row.lecom);
-      if(lecom){
-        if(type === 'project') projectMap.set(lecom, item);
-        else improvementMap.set(lecom, item);
-      }
-    });
+  function add(row, type){
+    const raw = qText(row.squad || row.squadAzure);
+    if(!raw) quality.semSquad[type==='p'?'p':'m'] += 1;
+    const found = raw ? qFindSquad(row, index) : { squad:null, inferred:null };
+    const squad = found.squad;
+    const key = squad ? 'id:'+squad.id : 'raw:'+(qKey(raw) || 'sem-squad');
+    let agg = bySquad.get(key);
+    if(!agg){ agg = qNewSquadAgg(key, squad ? squad.squad : (raw || '(Sem squad informada)'), squad); bySquad.set(key, agg); }
+    if(found.inferred){
+      const fk = qKey(found.inferred.fonte);
+      if(!inferred[fk]) inferred[fk] = Object.assign({ projects:0, improvements:0 }, found.inferred);
+      inferred[fk][type==='p'?'projects':'improvements'] += 1;
+    }
+    if(!squad){
+      const uk = qKey(raw) || '(sem squad informada)';
+      if(!unmapped[uk]) unmapped[uk] = { label: raw || '(Sem squad informada)', projects:0, improvements:0 };
+      unmapped[uk][type==='p'?'projects':'improvements'] += 1;
+    }
+    const cls = type==='p' ? qProjectClass(row) : qImprovementClass(row);
+    const bucket = type==='p' ? agg.p : agg.m;
+    bucket.total += 1; bucket[cls] += 1;
+    if((type==='p' && cls==='andamento') || (type==='m' && cls==='curso')){ agg.rodando += 1; agg.horas += qNumber(row.horas); }
+    const lk = qKey(row.lecom);
+    if(lk){ agg.lecoms.add(lk); (type==='p' ? projectLecom : improvementLecom).set(lk, row); }
+    if(type==='p' && qText(row.smPmo)){ const sk = qText(row.smPmo); agg.smPortfolio[sk] = (agg.smPortfolio[sk]||0)+1; }
+    if(!isBlank(row.despriorizacao) && isBlank(row.motivoDespriorizacao)) quality.semMotivo[type==='p'?'p':'m'] += 1;
+    if(type==='p' && qKey(row.fase)==='encerrado' && isBlank(row.fimReal)) quality.encerradoSemData += 1;
+    if(type==='m' && cls==='finalizada' && isBlank(row.realizada)) quality.finalizadaSemData += 1;
   }
-  addSourceRows(portfolio, 'project');
-  addSourceRows(improvements, 'improvement');
+  projects.forEach(r=>add(r,'p'));
+  improvements.forEach(r=>add(r,'m'));
 
-  Object.values(bySquad).forEach(qSquadPressure);
-  Object.values(bySm).forEach(qSquadPressure);
-  const commonLecom = [...projectMap.keys()].filter(key=>improvementMap.has(key)).map(key=>({
-    lecom: projectMap.get(key).lecom,
-    project: projectMap.get(key),
-    improvement: improvementMap.get(key),
-    situation: qKey(projectMap.get(key).titulo) === qKey(improvementMap.get(key).titulo) ? 'Provável correspondência' : 'Revisar relação'
-  }));
+  const squads = [...bySquad.values()];
+  const mapped = squads.filter(a=>a.squad);
+  const sumP = k => squads.reduce((t,a)=>t+a.p[k],0);
+  const sumM = k => squads.reduce((t,a)=>t+a.m[k],0);
+
+  /* capacidade por SM — inclui SMs sem nenhuma demanda no trimestre */
+  const smRows = SM_VIEW.map(sm=>{
+    const mine = mapped.filter(a=>a.sm && boardKey(a.sm)===sm.id);
+    return {
+      nome: sm.nome, squadCount: sm.squadCount, squadsComDemanda: mine.filter(a=>a.p.total+a.m.total>0).length,
+      pessoas: sm.pessoasUnicas, boardsAtivos: sm.squads.reduce((t,s)=>t+s.boards.filter(b=>b.ativo).length,0),
+      pAndamento: mine.reduce((t,a)=>t+a.p.andamento,0), mCurso: mine.reduce((t,a)=>t+a.m.curso,0),
+      mFinalizada: mine.reduce((t,a)=>t+a.m.finalizada,0), horas: mine.reduce((t,a)=>t+a.horas,0),
+      rodando: mine.reduce((t,a)=>t+a.rodando,0), total: mine.reduce((t,a)=>t+a.p.total+a.m.total,0),
+      folga: SM_IDEAL_SQUADS - sm.squadCount
+    };
+  }).sort((a,b)=> b.squadCount-a.squadCount || b.rodando-a.rodando || a.nome.localeCompare(b.nome,'pt-BR'));
+
+  const semSm = mapped.filter(a=>!a.sm);
+  const semSmComDemanda = semSm.filter(a=>a.p.total+a.m.total>0);
+  const folgaTotal = smRows.reduce((t,r)=>t+Math.max(0, r.folga),0);
+  const excessoTotal = smRows.reduce((t,r)=>t+Math.max(0, -r.folga),0);
+
+  /* SM do Portfólio x SM do dashboard (só projetos trazem SM/PMO) */
+  const divergencias = mapped.filter(a=>Object.keys(a.smPortfolio).length).filter(a=>{
+    if(!a.sm) return true;
+    return !Object.keys(a.smPortfolio).some(name=>name.split('/').some(part=>namesLikelyMatch(a.sm, part)));
+  }).map(a=>({ squad:a.label, sm:a.sm || 'Sem SM no dashboard', portfolio:Object.entries(a.smPortfolio).sort((x,y)=>y[1]-x[1]).map(e=>e[0]+' ('+e[1]+')').join(', ') }));
+
+  const commonLecom = [...projectLecom.keys()].filter(k=>improvementLecom.has(k)).map(k=>({ lecom:projectLecom.get(k).lecom, project:projectLecom.get(k), improvement:improvementLecom.get(k) }));
+  const pMeta = HACQuarterlyImport.getMeta('portfolio'), iMeta = HACQuarterlyImport.getMeta('improvements');
   const metrics = {
-    projects: portfolio.length,
-    improvements: improvements.length,
-    commonLecom: commonLecom.length,
-    initiatives: new Set([...projectMap.keys(), ...improvementMap.keys()]).size,
-    hours: [...Object.values(bySquad)].reduce((total, row)=>total+row.hours, 0),
-    risk: [...Object.values(bySquad)].reduce((total, row)=>total+row.risk, 0),
-    missingRealized: improvements.filter(row=>/finalizado/i.test(row.status) && isBlank(row.realizada)).length,
-    missingSquadProjects: portfolio.filter(row=>isBlank(row.squad) && isBlank(row.squadAzure)).length,
-    missingSquadImprovements: improvements.filter(row=>isBlank(row.squad) && isBlank(row.squadAzure)).length,
-    duplicateProjects: HACQuarterlyImport.getMeta('portfolio').duplicateRows || 0,
-    duplicateImprovements: HACQuarterlyImport.getMeta('improvements').duplicateRows || 0,
-    unmappedSquads: Object.keys(unmapped).length,
-    missingSm: items.filter(item=>item._resolution.sm === '(Sem SM confirmado)').length
+    projects: projects.length, improvements: improvements.length,
+    pAndamento: sumP('andamento'), pPlanejamento: sumP('planejamento'), pEncerrado: sumP('encerrado'), pFora: sumP('fora'),
+    mFinalizada: sumM('finalizada'), mCurso: sumM('curso'), mFora: sumM('fora'),
+    rodando: squads.reduce((t,a)=>t+a.rodando,0), horas: squads.reduce((t,a)=>t+a.horas,0),
+    lecomsDistintos: new Set([...projectLecom.keys(), ...improvementLecom.keys()]).size,
+    squadsComDemanda: squads.filter(a=>a.p.total+a.m.total>0).length,
+    semSmSquads: semSmComDemanda.length,
+    semSmProjetos: semSmComDemanda.reduce((t,a)=>t+a.p.total,0), semSmMelhorias: semSmComDemanda.reduce((t,a)=>t+a.m.total,0),
+    semSmRodando: semSmComDemanda.reduce((t,a)=>t+a.rodando,0),
+    squadsAtivasSemSm: SQUADS_SEM_SM.filter(s=>s.squadAtiva !== false).length,
+    smAcima: smRows.filter(r=>r.folga<0).length, smNoLimite: smRows.filter(r=>r.folga===0).length, smComFolga: smRows.filter(r=>r.folga>0).length,
+    folgaTotal, excessoTotal,
+    deficitSMs: Math.ceil(semSmComDemanda.length / SM_IDEAL_SQUADS),
+    rawProjects: pMeta.rawRows || 0, rawImprovements: iMeta.rawRows || 0,
+    duplicateProjects: pMeta.duplicateRows || 0, duplicateImprovements: iMeta.duplicateRows || 0,
+    unmappedSquads: Object.keys(unmapped).length, inferredLinks: Object.keys(inferred).length,
+    divergencias: divergencias.length, commonLecom: commonLecom.length
   };
-  return { portfolio, improvements, items, bySquad, bySm, unmapped:Object.values(unmapped), commonLecom, projectStatus, improvementStatus, metrics };
+  return { squads, smRows, semSmComDemanda, unmapped:Object.values(unmapped), inferred:Object.values(inferred), divergencias, commonLecom, quality, metrics };
 }
+
 function qKpi(id, value, label, tone){
   return '<div class="data-kpi-card '+(tone || '')+'"><div class="value" id="'+id+'">'+esc(value)+'</div><div class="label">'+esc(label)+'</div></div>';
 }
@@ -1440,48 +1474,107 @@ function renderQuarterlySources(){
     banner.innerHTML = '<b>Três fontes carregadas.</b> O cruzamento está usando recursos, squads, projetos e melhorias salvos neste navegador.';
   }
 }
+function qCapacityBadge(row){
+  if(row.folga < 0) return '<span class="badge miss">Acima (+'+(-row.folga)+')</span>';
+  if(row.folga === 0) return '<span class="badge pend">No limite</span>';
+  return '<span class="badge ok">Folga ('+row.folga+')</span>';
+}
+function qNum(n, tone){
+  const v = qFormatNumber(n);
+  return (n === 0) ? '<span style="color:#9AA1B2;">'+v+'</span>' : (tone ? '<b>'+v+'</b>' : v);
+}
 function renderExecutiveTab(){
   const kpi = document.getElementById('executiveKpiRow');
   if(!kpi) return;
   const model = QUARTERLY_MODEL || buildQuarterlyModel();
   if(!model) return;
   const m = model.metrics;
-  kpi.innerHTML = qKpi('execKpiProjects', qFormatNumber(m.projects), 'Projetos únicos') +
-    qKpi('execKpiImprovements', qFormatNumber(m.improvements), 'Melhorias únicas') +
-    qKpi('execKpiInitiatives', qFormatNumber(m.initiatives), 'Iniciativas sem duplicar LECOM') +
-    qKpi('execKpiHours', qFormatHours(m.hours), 'Horas estimadas') +
-    qKpi('execKpiRisk', qFormatNumber(m.risk), 'Itens com sinal de risco', m.risk ? 'alert' : '') +
-    qKpi('execKpiUnmapped', qFormatNumber(m.unmappedSquads), 'Squads sem mapeamento', m.unmappedSquads ? 'warn' : '');
-  document.getElementById('executiveSummary').innerHTML = '<b>'+qFormatNumber(Object.keys(model.bySquad).length)+'</b> grupos de squad na demanda consolidada · <b>'+qFormatNumber(m.commonLecom)+'</b> LECOMs presentes nas duas fontes.';
-  const top = Object.values(model.bySquad).filter(row=>row.projects || row.improvements).sort((a,b)=>b.pressureScore-a.pressureScore).slice(0,15);
-  document.getElementById('execSquadBody').innerHTML = top.length ? top.map(row=>'<tr><td><b>'+esc(row.label)+'</b></td><td>'+esc(row.squad ? (currentSMName(row.squad) || 'Sem SM') : 'Sem SM')+'</td><td>'+qFormatNumber(row.resourceKeys.size)+'</td><td>'+qFormatNumber(row.projects)+'</td><td>'+qFormatNumber(row.improvements)+'</td><td>'+qFormatNumber(row.projects+row.improvements)+'</td><td><span class="badge '+(row.pressure==='Alta'?'miss':(row.pressure==='Média'?'pend':'ok'))+'">'+row.pressure+'</span></td></tr>').join('') : qEmptyRow(7, 'Importe as bases de portfólio e melhorias para iniciar o cruzamento.');
-  const projectStatus = Object.entries(model.projectStatus).sort((a,b)=>b[1]-a[1]);
-  const improvementStatus = Object.entries(model.improvementStatus).sort((a,b)=>b[1]-a[1]);
-  document.getElementById('execProjectStatusBody').innerHTML = projectStatus.length ? projectStatus.map(row=>'<tr><td>'+esc(row[0])+'</td><td>'+qFormatNumber(row[1])+'</td></tr>').join('') : qEmptyRow(2, 'Sem portfólio importado.');
-  document.getElementById('execImprovementStatusBody').innerHTML = improvementStatus.length ? improvementStatus.map(row=>'<tr><td>'+esc(row[0])+'</td><td>'+qFormatNumber(row[1])+'</td></tr>').join('') : qEmptyRow(2, 'Sem melhorias importadas.');
+  const empty = !m.projects && !m.improvements;
+  kpi.innerHTML = qKpi('execKpiProjects', qFormatNumber(m.projects), 'Projetos no trimestre') +
+    qKpi('execKpiProjectsRun', qFormatNumber(m.pAndamento), 'Projetos em andamento') +
+    qKpi('execKpiImprovements', qFormatNumber(m.improvements), 'Melhorias no trimestre') +
+    qKpi('execKpiImprovementsDone', qFormatNumber(m.mFinalizada), 'Melhorias finalizadas') +
+    qKpi('execKpiRunning', qFormatNumber(m.rodando), 'Rodando agora (projetos em andamento + melhorias em curso)') +
+    qKpi('execKpiHours', qFormatHours(m.horas), 'Horas estimadas do que está rodando') +
+    qKpi('execKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda e sem SM', m.semSmSquads ? 'alert' : '') +
+    qKpi('execKpiOver', qFormatNumber(m.smAcima), 'SMs acima de '+SM_IDEAL_SQUADS+' squads', m.smAcima ? 'warn' : '');
+  document.getElementById('executiveSummary').innerHTML = empty
+    ? 'Importe o <b>Portfólio</b> e as <b>Melhorias</b> para ver a demanda por squad e a capacidade dos SMs.'
+    : '<b>'+qFormatNumber(m.squadsComDemanda)+'</b> squads com demanda · <b>'+qFormatNumber(m.lecomsDistintos)+'</b> LECOMs distintos · as <b>'+qFormatNumber(m.semSmSquads)+'</b> squads sem SM concentram <b>'+qFormatNumber(m.semSmProjetos)+'</b> projetos e <b>'+qFormatNumber(m.semSmMelhorias)+'</b> melhorias ('+qFormatNumber(m.semSmRodando)+' rodando).';
+
+  /* capacidade dos SMs */
+  const gap = document.getElementById('execCapacityNote');
+  if(gap) gap.innerHTML = 'Capacidade = <b>'+SM_IDEAL_SQUADS+' squads por SM</b>. Hoje: <b>'+m.smAcima+'</b> SMs acima, <b>'+m.smNoLimite+'</b> no limite e <b>'+m.smComFolga+'</b> com folga (<b>'+m.folgaTotal+'</b> vagas de squad livres, <b>'+m.excessoTotal+'</b> squads acima do ideal). As <b>'+m.semSmSquads+'</b> squads com demanda sem SM equivalem a <b>'+m.deficitSMs+'</b> SMs na razão ideal; no total, o dashboard tem <b>'+m.squadsAtivasSemSm+'</b> squads ativas sem SM (inclui as sem demanda no trimestre).';
+  document.getElementById('execSmBody').innerHTML = model.smRows.length ? model.smRows.map(r=>'<tr><td><b>'+esc(r.nome)+'</b></td><td>'+qNum(r.squadCount,1)+'</td><td>'+qCapacityBadge(r)+'</td><td>'+qNum(r.squadsComDemanda)+'</td><td>'+qNum(r.pessoas)+'</td><td>'+qNum(r.boardsAtivos)+'</td><td>'+qNum(r.pAndamento)+'</td><td>'+qNum(r.mCurso)+'</td><td>'+qNum(r.mFinalizada)+'</td><td>'+(r.horas ? qFormatHours(r.horas) : '<span style="color:#9AA1B2;">0 h</span>')+'</td><td>'+qNum(r.rodando,1)+'</td></tr>').join('') : qEmptyRow(11, 'Sem SMs carregados.');
+
+  /* por diretoria */
+  const dirs = {};
+  model.squads.filter(a=>a.p.total+a.m.total>0).forEach(a=>{
+    const d = a.diretoria || '(Sem diretoria)';
+    const r = dirs[d] || (dirs[d] = { nome:d, squads:0, semSm:0, sms:new Set(), pAnd:0, mCur:0, mFin:0, p:0, m:0, horas:0 });
+    r.squads += 1; if(!a.sm) r.semSm += 1; else r.sms.add(a.sm);
+    r.pAnd += a.p.andamento; r.mCur += a.m.curso; r.mFin += a.m.finalizada; r.p += a.p.total; r.m += a.m.total; r.horas += a.horas;
+  });
+  const dirRows = Object.values(dirs).sort((a,b)=>(b.pAnd+b.mCur)-(a.pAnd+a.mCur));
+  document.getElementById('execDirBody').innerHTML = dirRows.length ? dirRows.map(r=>'<tr><td><b>'+esc(r.nome)+'</b></td><td>'+qNum(r.squads)+'</td><td>'+(r.semSm ? '<span class="badge miss">'+r.semSm+'</span>' : '<span class="badge ok">0</span>')+'</td><td>'+qNum(r.sms.size)+'</td><td>'+qNum(r.p)+'</td><td>'+qNum(r.pAnd)+'</td><td>'+qNum(r.m)+'</td><td>'+qNum(r.mFin)+'</td><td>'+qNum(r.mCur)+'</td><td>'+qFormatHours(r.horas)+'</td></tr>').join('') : qEmptyRow(10, 'Sem demanda importada.');
+
+  renderExecSquadTable(model);
+}
+function renderExecSquadTable(model){
+  model = model || QUARTERLY_MODEL;
+  const body = document.getElementById('execSquadBody');
+  if(!body || !model) return;
+  const smSel = document.getElementById('execSmFilter');
+  const smOptions = ['<option value="">Todos os SMs</option><option value="__none__">Sem SM</option>'].concat(model.smRows.map(r=>'<option value="'+esc(r.nome)+'">'+esc(r.nome)+'</option>')).join('');
+  if(smSel && smSel.getAttribute('data-built') !== String(model.smRows.length)){
+    const keep = smSel.value; smSel.innerHTML = smOptions; smSel.value = keep; smSel.setAttribute('data-built', String(model.smRows.length));
+  }
+  const smVal = smSel ? smSel.value : '';
+  const term = qKey((document.getElementById('execSquadSearch') || {}).value || '');
+  const sortBy = (document.getElementById('execSort') || {}).value || 'rodando';
+  let rows = model.squads.filter(a=>a.p.total+a.m.total>0);
+  if(smVal === '__none__') rows = rows.filter(a=>!a.sm);
+  else if(smVal) rows = rows.filter(a=>a.sm === smVal);
+  if(term) rows = rows.filter(a=>qKey(a.label+' '+a.sm+' '+a.diretoria).indexOf(term) >= 0);
+  const val = { rodando:a=>a.rodando, total:a=>a.p.total+a.m.total, projetos:a=>a.p.andamento, melhorias:a=>a.m.finalizada, horas:a=>a.horas }[sortBy] || (a=>a.rodando);
+  rows = rows.sort((a,b)=> val(b)-val(a) || (b.p.total+b.m.total)-(a.p.total+a.m.total) || a.label.localeCompare(b.label,'pt-BR'));
+  const cnt = document.getElementById('execSquadCount');
+  if(cnt) cnt.innerHTML = '<b>'+rows.length+'</b> de <b>'+model.squads.filter(a=>a.p.total+a.m.total>0).length+'</b> squads com demanda';
+  body.innerHTML = rows.length ? rows.map(a=>'<tr><td><b>'+esc(a.label)+'</b>'+(a.squad ? '' : ' <span class="badge miss">sem vínculo</span>')+'</td><td>'+(a.sm ? esc(a.sm) : '<span class="badge miss">Sem SM</span>')+'</td><td>'+esc(a.diretoria || '—')+'</td><td>'+(a.squad ? qNum(a.squad.boards.filter(b=>b.ativo).length) : '—')+'</td><td>'+qNum(a.p.total)+'</td><td>'+qNum(a.p.andamento,1)+'</td><td>'+qNum(a.p.planejamento)+'</td><td>'+qNum(a.p.encerrado)+'</td><td>'+qNum(a.p.fora)+'</td><td>'+qNum(a.m.total)+'</td><td>'+qNum(a.m.finalizada)+'</td><td>'+qNum(a.m.curso,1)+'</td><td>'+qNum(a.m.fora)+'</td><td>'+qNum(a.rodando,1)+'</td></tr>').join('') : qEmptyRow(14, 'Nenhuma squad encontrada com esses filtros.');
 }
 function renderQualityTab(){
   const model = QUARTERLY_MODEL || buildQuarterlyModel();
   if(!model || !document.getElementById('qualityBody')) return;
-  const m = model.metrics;
-  document.getElementById('qualityKpiRow').innerHTML = qKpi('qualityKpiDupProjects', qFormatNumber(m.duplicateProjects), 'Duplicidades no portfólio', m.duplicateProjects ? 'warn' : '') + qKpi('qualityKpiDupImprovements', qFormatNumber(m.duplicateImprovements), 'Duplicidades em melhorias', m.duplicateImprovements ? 'warn' : '') + qKpi('qualityKpiUnmapped', qFormatNumber(m.unmappedSquads), 'Squads sem mapeamento', m.unmappedSquads ? 'alert' : '') + qKpi('qualityKpiOverlap', qFormatNumber(m.commonLecom), 'LECOMs nas duas bases') + qKpi('qualityKpiDates', qFormatNumber(m.missingRealized), 'Finalizadas sem data realizada', m.missingRealized ? 'warn' : '') + qKpi('qualityKpiSm', qFormatNumber(m.missingSm), 'Itens sem SM confirmado', m.missingSm ? 'alert' : '');
-  const pMeta = HACQuarterlyImport.getMeta('portfolio'); const iMeta = HACQuarterlyImport.getMeta('improvements');
-  const qualityRows = [
-    ['Linhas brutas importadas', pMeta.rawRows || 0, iMeta.rawRows || 0, 'Volume de registros lidos na aba operacional.'],
-    ['Itens únicos por LECOM', model.portfolio.length, model.improvements.length, 'KPI recomendado para não duplicar itens repetidos.'],
-    ['Duplicidades removidas', m.duplicateProjects, m.duplicateImprovements, 'Registros repetidos pelo mesmo LECOM.'],
-    ['Squad não informada', m.missingSquadProjects, m.missingSquadImprovements, 'A linha não possui squad nem Squad Azure.'],
-    ['Squad sem correspondência', model.unmapped.filter(row=>row.projects).length, model.unmapped.filter(row=>row.improvements).length, 'Precisa de revisão no De-Para de squads.'],
-    ['Sem SM confirmado', model.items.filter(row=>row._type==='project' && row._resolution.sm==='(Sem SM confirmado)').length, model.items.filter(row=>row._type==='improvement' && row._resolution.sm==='(Sem SM confirmado)').length, 'Não foi possível chegar a um SM efetivo.']
+  const m = model.metrics, q = model.quality;
+  const warnIf = (n, tone) => n ? (tone || 'warn') : '';
+  document.getElementById('qualityKpiRow').innerHTML =
+    qKpi('qualityKpiUnmapped', qFormatNumber(m.unmappedSquads), 'Nomes de squad sem vínculo no dashboard', warnIf(m.unmappedSquads, 'alert')) +
+    qKpi('qualityKpiNoSm', qFormatNumber(m.semSmSquads), 'Squads com demanda sem SM', warnIf(m.semSmSquads, 'alert')) +
+    qKpi('qualityKpiDiverg', qFormatNumber(m.divergencias), 'Squads com SM diferente no Portfólio', warnIf(m.divergencias)) +
+    qKpi('qualityKpiInferred', qFormatNumber(m.inferredLinks), 'Ligações por inferência', warnIf(m.inferredLinks)) +
+    qKpi('qualityKpiNoReason', qFormatNumber(q.semMotivo.p + q.semMotivo.m), 'Despriorizados sem motivo', warnIf(q.semMotivo.p + q.semMotivo.m)) +
+    qKpi('qualityKpiNoDate', qFormatNumber(q.encerradoSemData + q.finalizadaSemData), 'Encerrados/finalizados sem data realizada', warnIf(q.encerradoSemData + q.finalizadaSemData)) +
+    qKpi('qualityKpiDup', qFormatNumber(m.duplicateProjects + m.duplicateImprovements), 'Duplicatas removidas na importação', warnIf(m.duplicateProjects + m.duplicateImprovements));
+  const rows = [
+    ['Linhas lidas na aba operacional', m.rawProjects, m.rawImprovements, 'Antes de remover duplicatas.'],
+    ['Itens usados', m.projects, m.improvements, 'Chave: LECOM + título + squad. O mesmo LECOM pode ter vários itens (ex.: Release 01..04).'],
+    ['Duplicatas removidas', m.duplicateProjects, m.duplicateImprovements, 'Mesmo LECOM, título e squad repetidos.'],
+    ['Sem squad informada', q.semSquad.p, q.semSquad.m, 'A linha não traz squad nem Squad Azure.'],
+    ['Squad sem vínculo no dashboard', model.unmapped.reduce((t,r)=>t+r.projects,0), model.unmapped.reduce((t,r)=>t+r.improvements,0), 'Itens cujo nome de squad não existe (nem como apelido) no dashboard.'],
+    ['Em squad sem SM', model.semSmComDemanda.reduce((t,a)=>t+a.p.total,0), model.semSmComDemanda.reduce((t,a)=>t+a.m.total,0), 'Demanda sem SM efetivo no levantamento de outubro.'],
+    ['Despriorizado sem motivo', q.semMotivo.p, q.semMotivo.m, 'DESPRIORIZAÇÃO preenchida e MOTIVO vazio.'],
+    ['Encerrado/finalizado sem data', q.encerradoSemData, q.finalizadaSemData, 'Projeto encerrado sem término real; melhoria finalizada sem P. REALIZADA.']
   ];
-  document.getElementById('qualityBody').innerHTML = qualityRows.map(row=>'<tr><td><b>'+esc(row[0])+'</b></td><td>'+qFormatNumber(row[1])+'</td><td>'+qFormatNumber(row[2])+'</td><td>'+esc(row[3])+'</td></tr>').join('');
-  document.getElementById('qualityUnmappedBody').innerHTML = model.unmapped.length ? model.unmapped.sort((a,b)=>(b.projects+b.improvements)-(a.projects+a.improvements)).slice(0,80).map(row=>'<tr><td>'+esc(row.label)+'</td><td>'+((row.projects && row.improvements) ? 'Projetos + melhorias' : (row.projects ? 'Projetos' : 'Melhorias'))+'</td><td>'+qFormatNumber(row.projects+row.improvements)+'</td><td><span class="badge miss">Criar De–Para</span></td></tr>').join('') : qEmptyRow(4, 'Todas as squads foram encontradas na base de recursos.');
-  document.getElementById('qualityOverlapBody').innerHTML = model.commonLecom.length ? model.commonLecom.slice(0,80).map(row=>'<tr><td>'+esc(row.lecom)+'</td><td>'+esc(row.project.titulo)+'</td><td>'+esc(row.improvement.titulo)+'</td><td><span class="badge '+(row.situation==='Provável correspondência'?'ok':'pend')+'">'+row.situation+'</span></td></tr>').join('') : qEmptyRow(4, 'Nenhum LECOM aparece nas duas bases carregadas.');
+  document.getElementById('qualityBody').innerHTML = rows.map(r=>'<tr><td><b>'+esc(r[0])+'</b></td><td>'+qFormatNumber(r[1])+'</td><td>'+qFormatNumber(r[2])+'</td><td>'+esc(r[3])+'</td></tr>').join('');
+  document.getElementById('qualityUnmappedBody').innerHTML = model.unmapped.length ? model.unmapped.sort((a,b)=>(b.projects+b.improvements)-(a.projects+a.improvements)).map(r=>'<tr><td>'+esc(r.label)+'</td><td>'+qFormatNumber(r.projects)+'</td><td>'+qFormatNumber(r.improvements)+'</td><td>Criar o apelido da squad no De-Para ou corrigir o nome na fonte.</td></tr>').join('') : qEmptyRow(4, 'Todos os nomes de squad têm vínculo no dashboard.');
+  document.getElementById('qualityInferredBody').innerHTML = model.inferred.length ? model.inferred.map(r=>'<tr><td>'+esc(r.fonte)+'</td><td>'+esc(r.alvo)+'</td><td>'+qFormatNumber(r.projects)+'</td><td>'+qFormatNumber(r.improvements)+'</td><td>'+esc(r.motivo)+'</td></tr>').join('') : qEmptyRow(5, 'Nenhuma ligação por inferência.');
+  document.getElementById('qualityDivergBody').innerHTML = model.divergencias.length ? model.divergencias.sort((a,b)=>a.squad.localeCompare(b.squad,'pt-BR')).map(r=>'<tr><td>'+esc(r.squad)+'</td><td>'+(r.sm==='Sem SM no dashboard' ? '<span class="badge miss">Sem SM</span>' : esc(r.sm))+'</td><td>'+esc(r.portfolio)+'</td></tr>').join('') : qEmptyRow(3, 'O SM do dashboard bate com o SM/PMO do Portfólio em todas as squads.');
+  document.getElementById('qualityOverlapBody').innerHTML = model.commonLecom.length ? model.commonLecom.map(r=>'<tr><td>'+esc(r.lecom)+'</td><td>'+esc(r.project.titulo)+'</td><td>'+esc(r.improvement.titulo)+'</td></tr>').join('') : qEmptyRow(3, 'Nenhum LECOM aparece nas duas fontes.');
   const messages = document.getElementById('qualityMessages');
-  if(m.missingRealized || m.unmappedSquads || m.missingSm){
-    messages.style.display='block';
-    messages.innerHTML = '<b>Revisões recomendadas:</b> '+qFormatNumber(m.unmappedSquads)+' grupos de squad sem correspondência, '+qFormatNumber(m.missingSm)+' itens sem SM confirmado e '+qFormatNumber(m.missingRealized)+' melhorias finalizadas sem data realizada.';
-  } else messages.style.display='none';
+  if(!m.projects && !m.improvements){
+    messages.className = 'importbanner warn'; messages.style.display = 'block';
+    messages.innerHTML = '<b>Sem bases de projetos e melhorias.</b> Importe o Portfólio e as Melhorias para ver os indicadores.';
+  } else messages.style.display = 'none';
 }
 function refreshQuarterlyViews(){
   QUARTERLY_MODEL = buildQuarterlyModel();
@@ -1489,6 +1582,8 @@ function refreshQuarterlyViews(){
   renderExecutiveTab();
   renderQualityTab();
 }
+['execSmFilter','execSort'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change', ()=>renderExecSquadTable()); });
+{ const el=document.getElementById('execSquadSearch'); if(el) el.addEventListener('input', ()=>renderExecSquadTable()); }
 window.addEventListener('hac-quarterly-change', refreshQuarterlyViews);
 window.addEventListener('hac-quarterly-error', event=>{
   const detail = event.detail || {};

@@ -72,8 +72,14 @@
     const aliases = {
       lecom: ['lecom', 'id lecom'],
       title: ['titulo', 'título', 'nome da melhoria', 'nome do projeto'],
-      squad: ['squad atualizada', 'nome squad azure', 'squad azure', 'squad'],
+      /* a chave é o nome da squad no Azure: a coluna "squad atualizada" ainda traz nomes antigos
+         (ex.: Digital - Acesso) e só entra como último recurso */
+      squad: ['nome squad azure', 'squad azure', 'squad', 'squad atualizada'],
       squadAzure: ['squad azure', 'nome squad azure', 'squad'],
+      squadAtualizada: ['squad atualizada'],
+      uuid: ['uuid'],
+      despriorizacao: ['despriorizacao', 'despriorização'],
+      motivoDespriorizacao: ['motivo despriorizacao', 'motivo despriorização'],
       squadId: ['id squad azure', 'id squad azdo'],
       smPmo: ['sm pmo', 'sm/pmo'],
       status: ['status do projeto', 'status'],
@@ -111,6 +117,10 @@
       titulo: clean(valueFor(raw, 'title')),
       squad: clean(valueFor(raw, 'squad')),
       squadAzure: clean(valueFor(raw, 'squadAzure')),
+      squadAtualizada: clean(valueFor(raw, 'squadAtualizada')),
+      uuid: clean(valueFor(raw, 'uuid')),
+      despriorizacao: clean(valueFor(raw, 'despriorizacao')),
+      motivoDespriorizacao: clean(valueFor(raw, 'motivoDespriorizacao')),
       squadId: clean(valueFor(raw, 'squadId')),
       smPmo: clean(valueFor(raw, 'smPmo')),
       status: clean(valueFor(raw, 'status')),
@@ -138,6 +148,10 @@
       titulo: clean(valueFor(raw, 'title')),
       squad: clean(valueFor(raw, 'squad')),
       squadAzure: clean(valueFor(raw, 'squadAzure')),
+      squadAtualizada: clean(valueFor(raw, 'squadAtualizada')),
+      uuid: clean(valueFor(raw, 'uuid')),
+      despriorizacao: clean(valueFor(raw, 'despriorizacao')),
+      motivoDespriorizacao: clean(valueFor(raw, 'motivoDespriorizacao')),
       squadId: clean(valueFor(raw, 'squadId')),
       gerenteTI: clean(valueFor(raw, 'gerenteTI')),
       diretoriaTI: clean(valueFor(raw, 'diretoriaTI')),
@@ -161,7 +175,10 @@
     const byKey = new Map();
     let duplicateRows = 0;
     for (const row of rows) {
-      const identity = key(row.lecom) || key(row.titulo + '|' + row.squad);
+      /* um mesmo LECOM pode ter vários itens legítimos (ex.: Release 01..04); duplicata é o mesmo
+         LECOM + título + squad. */
+      const identity = [row.lecom, row.titulo, row.squad].map(key).join('|');
+      if (!key(row.lecom) && !key(row.titulo)) continue;
       if (!identity) continue;
       const previous = byKey.get(identity);
       if (!previous) {
@@ -176,7 +193,12 @@
 
   function parseWorkbook(arrayBuffer, type) {
     if (!global.XLSX) throw new Error('O leitor de planilhas não foi carregado.');
-    const workbook = global.XLSX.read(arrayBuffer, { type: 'array', cellDates: false });
+    const wanted = type === 'portfolio' ? ['Portfólio', 'Portfolio'] : ['Melhorias 3T2026', 'Melhorias'];
+    /* lê só a aba operacional (as planilhas têm abas ocultas de vários MB); se não achar, lê tudo */
+    let workbook = global.XLSX.read(arrayBuffer, { type: 'array', cellDates: false, sheets: wanted });
+    if (!wanted.some((name) => workbook.Sheets && workbook.Sheets[name])) {
+      workbook = global.XLSX.read(arrayBuffer, { type: 'array', cellDates: false });
+    }
     const candidates = type === 'portfolio'
       ? [['Portfólio', ['INICIATIVA', 'LECOM', 'TÍTULO']], ['Portfolio', ['INICIATIVA', 'LECOM', 'TÍTULO']]]
       : [['Melhorias 3T2026', ['LECOM', 'TÍTULO', 'STATUS']], ['Melhorias', ['LECOM', 'TÍTULO', 'STATUS']]];

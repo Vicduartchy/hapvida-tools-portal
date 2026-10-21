@@ -21,14 +21,15 @@ function createImporter() {
 }
 
 describe("quarterly import contract", () => {
-  it("reads the operational portfolio sheet and deduplicates by LECOM", () => {
+  it("reads the operational portfolio sheet and deduplicates by LECOM + title + squad", () => {
     const { importer, sheets } = createImporter();
     sheets.Portfólio = {
       rows: [
         ["Relatório semanal"],
         ["INICIATIVA", "LECOM", "TÍTULO", "SQUAD ATUALIZADA", "HORAS"],
         ["Projeto", "1001", "Projeto A", "Squad A", "120"],
-        ["Projeto", "1001", "Projeto A duplicado", "Squad A", "240"],
+        ["Projeto", "1001", "Projeto A", "Squad A", "240"],
+        ["Projeto", "1001", "Projeto A - Release 02", "Squad A", "60"],
         ["Projeto", "1002", "Projeto B", "Squad B", "80"],
       ],
     };
@@ -36,11 +37,12 @@ describe("quarterly import contract", () => {
     const parsed = importer.parseWorkbook(new Uint8Array([1]), "portfolio");
 
     expect(parsed.sheetName).toBe("Portfólio");
-    expect(parsed.rawRows).toBe(3);
-    expect(parsed.rows).toHaveLength(2);
+    expect(parsed.rawRows).toBe(4);
+    expect(parsed.rows).toHaveLength(3);
     expect(parsed.duplicateRows).toBe(1);
     expect(parsed.rows[0].lecom).toBe("1001");
     expect(parsed.rows[0].horas).toBe(120);
+    expect(parsed.rows.map((row: any) => row.titulo)).toContain("Projeto A - Release 02");
   });
 
   it("uses LECOM rather than the internal ID column in improvements", () => {
@@ -59,5 +61,22 @@ describe("quarterly import contract", () => {
     expect(parsed.rows).toHaveLength(2);
     expect(parsed.rows.map((row: any) => row.lecom)).toEqual(["2001", "2002"]);
     expect(parsed.rows[0].id).not.toContain("row-1");
+  });
+
+  it("uses the Azure squad name as the squad key and keeps the updated-name column apart", () => {
+    const { importer, sheets } = createImporter();
+    sheets.Portfólio = {
+      rows: [
+        ["INICIATIVA", "LECOM", "TÍTULO", "Squad Azure", "squad atualizada", "UUID", "DESPRIORIZAÇÃO "],
+        ["Projeto", "1", "Projeto A", "Jornada do Cliente - Acesso", "Digital - Acesso", "PROJ1", "DESPRIORIZADO(10/09)"],
+      ],
+    };
+
+    const parsed = importer.parseWorkbook(new Uint8Array([1]), "portfolio");
+
+    expect(parsed.rows[0].squad).toBe("Jornada do Cliente - Acesso");
+    expect(parsed.rows[0].squadAtualizada).toBe("Digital - Acesso");
+    expect(parsed.rows[0].uuid).toBe("PROJ1");
+    expect(parsed.rows[0].despriorizacao).toContain("DESPRIORIZADO");
   });
 });
