@@ -442,6 +442,7 @@
 
   <div class="tabbar" id="tabBar">
     <button class="tab active" data-tab="executive">📌 Visão Executiva</button>
+    <button class="tab" data-tab="pendencias">⚠️ Pendências</button>
     <button class="tab" data-tab="quality">🧪 Qualidade dos Dados</button>
     <button class="tab" data-tab="sms">👤 SMs</button>
     <button class="tab" data-tab="squads">🧩 Squads</button>
@@ -477,6 +478,17 @@
       <div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Boards ativos</th><th>Projetos</th><th>Proj. em andamento</th><th>Proj. planej./solic.</th><th>Proj. encerrados</th><th>Proj. fora</th><th>Melhorias</th><th>Melh. finalizadas</th><th>Melh. em curso</th><th>Melh. fora</th><th>Rodando</th></tr></thead><tbody id="execSquadBody"></tbody></table></div>
       <div style="margin-top:8px;font-size:10.5px;color:var(--cinza-texto);line-height:1.6;"><b>Como ler.</b> Projeto <i>fora</i> = despriorizado, cancelado ou suspenso; <i>em andamento</i> = execução, piloto, expansão e monitoramento. Melhoria <i>fora</i> = despriorizada ou cancelada; <i>em curso</i> = não iniciada até aguardando publicação. <i>Rodando</i> = projetos em andamento + melhorias em curso. Squad e SM vêm do Squad Azure e do levantamento de outubro.</div>
     </div>
+  </div>
+
+  <div class="tab-content hidden" id="tab-pendencias">
+    <div class="data-kpi-grid" id="pendKpiRow" style="grid-template-columns:repeat(auto-fit,minmax(128px,1fr));"></div>
+    <div id="pendBanner" class="importbanner warn" style="display:none; font-size:12px; line-height:1.6;"></div>
+    <div class="insight-section"><h3>Decisões e informações que faltam</h3><div class="resultcount">Cada linha é calculada com os dados atuais do Hub: quando o dado muda (ex.: a squad ganha SM ou pessoas), a pendência passa para "Resolvida" sozinha.</div><div class="tablewrap"><table class="squadtable"><thead><tr><th>Status</th><th>Pendência</th><th>Situação hoje</th><th>Quem resolve</th><th>O que destrava</th></tr></thead><tbody id="pendBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>SMs acima do limite de <span class="pendIdeal"></span> squads</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>SM</th><th>Squads</th><th>Excesso</th><th>Squads (com board ativo)</th></tr></thead><tbody id="pendOverBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>Squads ativas sem SM</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>Diretoria</th><th>Pessoas</th><th>Projetos</th><th>Melhorias</th></tr></thead><tbody id="pendNoSmBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>Squads ativas sem pessoas cadastradas</h3><div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>Diretoria</th><th>SM</th></tr></thead><tbody id="pendNoPeopleBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>SM/PMO do Portfólio que não são SMs do Hub</h3><div class="resultcount">Nomes que aparecem como SM/PMO nos projetos, mas não estão na lista de SMs. Desligados conhecidos ficam marcados.</div><div class="tablewrap"><table class="squadtable"><thead><tr><th>Nome no Portfólio</th><th>Projetos</th><th>Situação</th></tr></thead><tbody id="pendSmPortBody"></tbody></table></div></div>
+    <div class="insight-section"><h3>Como as bases entram</h3><div class="resultcount">O Portfólio e as Melhorias não ficam embutidos no Hub: cada pessoa importa os dois .xlsx na Visão Executiva. Sem isso, projetos e melhorias aparecem zerados nesta aba.</div></div>
   </div>
 
   <div class="tab-content hidden" id="tab-quality">
@@ -1581,11 +1593,100 @@ function renderQualityTab(){
     messages.innerHTML = '<b>Sem bases de projetos e melhorias.</b> Importe o Portfólio e as Melhorias para ver os indicadores.';
   } else messages.style.display = 'none';
 }
+
+/* ===== Aba Pendências: tudo calculado com os dados atuais ===== */
+const SM_DESLIGADOS = ['pollyana','victor vasconcelos','alexandre viana'];
+function renderPendenciasTab(){
+  const body = document.getElementById('pendBody'); if(!body) return;
+  const model = QUARTERLY_MODEL || buildQuarterlyModel();
+  const hasQ = !!(model && (model.metrics.projects || model.metrics.improvements));
+  const find = re => UNIFIED.filter(s=>re.test(s.squad));
+  const nPes = list => list.reduce((t,s)=>t+s.recursos.length,0);
+  const smOf = s => currentSMName(s) || '';
+  const ativas = UNIFIED.filter(s=>s.squadAtiva);
+  const aggOf = new Map(); if(model) model.squads.forEach(a=>{ if(a.squad) aggOf.set(a.squad.id, a); });
+  const dem = s => { const a = aggOf.get(s.id); return a ? {p:a.p.total, m:a.m.total} : {p:0, m:0}; };
+  const st = ok => ok ? '<span class="badge ok">Resolvida</span>' : '<span class="badge pend">Aberta</span>';
+  const rows = [];
+  const add = (ok, tema, situacao, quem, destrava) => rows.push({ok, tema, situacao, quem, destrava});
+
+  const fv = find(/Salesforce - Fluxo de Vendas/)[0], rc = find(/Salesforce - Relacionamento Comercial/)[0];
+  add(!!(fv && rc && rc.recursos.length>0), 'Salesforce: dividir as pessoas entre Fluxo de Vendas e Relacionamento Comercial',
+    'Fluxo de Vendas: <b>'+(fv?fv.recursos.length:0)+'</b> pessoas · Relacionamento Comercial: <b>'+(rc?rc.recursos.length:0)+'</b> pessoas. Todas vieram de "Digital - Salesforce".',
+    'Vic / Alexandre (SM)', 'Lista de quem vai para cada squad; só então o capacity de cada uma fica correto.');
+
+  const ft = ORPHAN_SQUADS.filter(s=>/fast track/i.test(s.squad));
+  add(!ft.length, 'Digital - Fast Track: definir o destino',
+    ft.length ? '<b>'+nPes(ft)+'</b> pessoas sem squad no Azure. Possível destino a confirmar: Comercial - Back Office - Fast Track (SM Vanessa).' : 'Sem pessoas pendentes.',
+    'Vic / Daniella', 'Ligar o nome antigo à squad certa ou desligá-lo da base de recursos.');
+
+  const move = find(/OMNICANALIDADE|APIs de Relacionamento/i);
+  const moveOpen = move.filter(s=>s.diretoria!=='Jornada do Cliente');
+  add(!moveOpen.length, 'Omnicanalidade e APIs de Relacionamento: confirmar a mudança para Jornada do Cliente',
+    move.map(s=>esc(s.squad)+' ('+esc(s.diretoria||'—')+', '+s.recursos.length+' pessoas, '+(smOf(s)?'SM '+esc(smOf(s)):'sem SM')+')').join('<br>'),
+    'Daniella', 'Trocar a diretoria e o diretor (Fabiano Leoni) e definir o SM.');
+
+  const novas = find(/Front Office - Pulso|Gestão do Beneficiário|Jornada do Cliente - PPO|Jornada do Cliente - Totem/);
+  const novasAbertas = novas.filter(s=>!smOf(s) || !s.recursos.length);
+  add(!novasAbertas.length, 'Squads novas do Azure sem SM ou sem pessoas',
+    novas.map(s=>esc(s.squad)+': '+(smOf(s)?'SM '+esc(smOf(s)):'<b>sem SM</b>')+', '+(s.recursos.length?s.recursos.length+' pessoas':'<b>sem pessoas</b>')).join('<br>'),
+    'Vic / diretores das áreas', 'SM responsável e lista de recursos de cada squad.');
+
+  const semSmDem = model ? model.semSmComDemanda : [];
+  add(hasQ && !semSmDem.length, 'Squads com projetos ou melhorias e sem SM',
+    hasQ ? '<b>'+semSmDem.length+'</b> squads · <b>'+qFormatNumber(model.metrics.semSmProjetos)+'</b> projetos · <b>'+qFormatNumber(model.metrics.semSmMelhorias)+'</b> melhorias (≈ '+model.metrics.deficitSMs+' SMs na razão de '+SM_IDEAL_SQUADS+' squads por SM).' : 'Importe o Portfólio e as Melhorias para calcular.',
+    'Vic / gestão', 'Atribuir SM às squads com demanda; hoje o trabalho delas não entra no capacity de ninguém.');
+
+  const acima = model ? model.smRows.filter(r=>r.folga<0) : [];
+  add(!acima.length, 'SMs acima do limite de '+SM_IDEAL_SQUADS+' squads',
+    '<b>'+acima.length+'</b> SMs acima, <b>'+(model?model.metrics.smNoLimite:0)+'</b> no limite e <b>'+(model?model.metrics.smComFolga:0)+'</b> com folga ('+(model?model.metrics.excessoTotal:0)+' squads acima do ideal, '+(model?model.metrics.folgaTotal:0)+' vagas livres).',
+    'Vic / gestão', 'Decisão de rebalanceamento. O Hub só mostra o diagnóstico.');
+
+  const divs = model ? model.divergencias : [];
+  add(hasQ && !divs.length, 'SM do Hub diferente do SM/PMO do Portfólio',
+    hasQ ? '<b>'+divs.length+'</b> squads (lista na aba Qualidade dos Dados).' : 'Importe o Portfólio para calcular.',
+    'Vic', 'Definir qual fonte prevalece e corrigir a outra.');
+
+  const nomesPort = {}; if(model) model.squads.forEach(a=>Object.entries(a.smPortfolio).forEach(([n,c])=>n.split('/').forEach(part=>{ part = part.trim(); if(part) nomesPort[part] = (nomesPort[part]||0)+c; })));
+  const foraHub = Object.entries(nomesPort).filter(([n])=>!SM_VIEW.some(sm=>namesLikelyMatch(sm.nome, n))).sort((a,b)=>b[1]-a[1]);
+  const desl = foraHub.filter(([n])=>SM_DESLIGADOS.some(d=>boardKey(n).indexOf(d)>=0));
+  add(hasQ && !desl.length, 'SMs desligados ainda aparecem como SM/PMO no Portfólio',
+    hasQ ? (desl.length ? desl.map(([n,c])=>esc(n)+' ('+c+' projetos)').join(', ') : 'Nenhum.') : 'Importe o Portfólio para calcular.',
+    'Dono do Portfólio', 'Corrigir na base de origem ou informar o substituto.');
+
+  const orph = ORPHAN_SQUADS.filter(s=>!/fast track/i.test(s.squad));
+  add(!orph.length, 'Nomes sem board no Azure que não são renomeações',
+    orph.length ? orph.map(s=>esc(s.squad)+' ('+s.recursos.length+')').join(', ') : 'Nenhum.',
+    'Vic', 'Dizer se são squads reais (criar o board), agrupadores ou erro de cadastro.');
+
+  const semPes = ativas.filter(s=>!s.recursos.length);
+  add(!semPes.length, 'Squads ativas sem pessoas cadastradas', '<b>'+semPes.length+'</b> squads (lista abaixo).', 'SMs', 'Preencher a base de recursos.');
+
+  body.innerHTML = rows.map(r=>'<tr><td>'+st(r.ok)+'</td><td><b>'+r.tema+'</b></td><td>'+r.situacao+'</td><td>'+r.quem+'</td><td>'+r.destrava+'</td></tr>').join('');
+  const abertas = rows.filter(r=>!r.ok).length;
+  document.getElementById('pendKpiRow').innerHTML =
+    qKpi('pendKpiOpen', qFormatNumber(abertas), 'Pendências abertas', abertas ? 'alert' : '') +
+    qKpi('pendKpiDone', qFormatNumber(rows.length-abertas), 'Resolvidas', '') +
+    qKpi('pendKpiNoSm', qFormatNumber(ativas.filter(s=>!smOf(s)).length), 'Squads ativas sem SM', 'warn') +
+    qKpi('pendKpiOver', qFormatNumber(acima.length), 'SMs acima do limite', acima.length ? 'warn' : '') +
+    qKpi('pendKpiNoPeople', qFormatNumber(semPes.length), 'Squads ativas sem pessoas', semPes.length ? 'warn' : '') +
+    qKpi('pendKpiOrph', qFormatNumber(ORPHAN_SQUADS.length), 'Nomes sem board', ORPHAN_SQUADS.length ? 'warn' : '');
+  document.querySelectorAll('.pendIdeal').forEach(el=>el.textContent = SM_IDEAL_SQUADS);
+  const ban = document.getElementById('pendBanner');
+  if(!hasQ){ ban.style.display='block'; ban.innerHTML='<b>Bases do trimestre não importadas.</b> As pendências que dependem de projetos e melhorias ficam sem número até a importação (Visão Executiva).'; } else ban.style.display='none';
+
+  document.getElementById('pendOverBody').innerHTML = acima.length ? acima.map(r=>{ const sm = SM_VIEW.find(x=>x.nome===r.nome); return '<tr><td>'+esc(r.nome)+'</td><td>'+r.squadCount+'</td><td>+'+(-r.folga)+'</td><td>'+(sm?sm.squads.filter(s=>s.squadAtiva).map(s=>esc(s.squad)).join('; '):'')+'</td></tr>'; }).join('') : qEmptyRow(4, 'Nenhum SM acima do limite.');
+  const semSmList = ativas.filter(s=>!smOf(s)).sort((a,b)=>(dem(b).p+dem(b).m)-(dem(a).p+dem(a).m) || a.squad.localeCompare(b.squad,'pt-BR'));
+  document.getElementById('pendNoSmBody').innerHTML = semSmList.length ? semSmList.map(s=>{ const d = dem(s); return '<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+s.recursos.length+'</td><td>'+(hasQ?d.p:'—')+'</td><td>'+(hasQ?d.m:'—')+'</td></tr>'; }).join('') : qEmptyRow(5, 'Todas as squads ativas têm SM.');
+  document.getElementById('pendNoPeopleBody').innerHTML = semPes.length ? semPes.map(s=>'<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+(smOf(s)?esc(smOf(s)):'<span class="badge nok">Sem SM</span>')+'</td></tr>').join('') : qEmptyRow(3, 'Todas as squads ativas têm pessoas.');
+  document.getElementById('pendSmPortBody').innerHTML = foraHub.length ? foraHub.map(([n,c])=>'<tr><td>'+esc(n)+'</td><td>'+c+'</td><td>'+(SM_DESLIGADOS.some(d=>boardKey(n).indexOf(d)>=0)?'<span class="badge nok">Desligado</span>':'<span class="badge pend">Não é SM no Hub</span>')+'</td></tr>').join('') : qEmptyRow(3, 'Todos os SM/PMO do Portfólio são SMs do Hub.');
+}
 function refreshQuarterlyViews(){
   QUARTERLY_MODEL = buildQuarterlyModel();
   renderQuarterlySources();
   renderExecutiveTab();
   renderQualityTab();
+  renderPendenciasTab();
 }
 ['execSmFilter','execSort'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('change', ()=>renderExecSquadTable()); });
 { const el=document.getElementById('execSquadSearch'); if(el) el.addEventListener('input', ()=>renderExecSquadTable()); }
@@ -1998,6 +2099,7 @@ document.querySelectorAll('#tabBar .tab').forEach(btn=>{
       if(t==='recursos') renderRecursosTab();
       if(t==='executive') renderExecutiveTab();
       if(t==='quality') renderQualityTab();
+      if(t==='pendencias') renderPendenciasTab();
     }catch(err){
       console.error('Erro ao trocar de aba:', err);
       alert('Erro ao abrir a aba: ' + err.message);
@@ -3033,6 +3135,7 @@ function rebuildAndRender(){
   const t = activeTab ? activeTab.getAttribute('data-tab') : 'executive';
   if(t==='executive') renderExecutiveTab();
   else if(t==='quality') renderQualityTab();
+  else if(t==='pendencias') renderPendenciasTab();
   else if(t==='sms') renderSMsTab();
   else if(t==='boards') renderBoardsTab();
   else if(t==='charts') renderChartsTab();
