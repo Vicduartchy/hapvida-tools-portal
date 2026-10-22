@@ -212,6 +212,101 @@ function ToolCard({ tool, onOpen }: { tool: Tool; onOpen: (tool: Tool) => void }
   );
 }
 
+type HubKpis = { squadsSemSm: number; smAcima: number; vermelho: number; amarelo: number; verde: number; semPessoas: number };
+type HubSnapshot = { generatedAt: string; ref?: string; squads: unknown[]; sms: unknown[]; kpis?: HubKpis; origem: "dashboard" | "arquivo" };
+
+const HUB_LS_KEY = "hac_hub_model_v1";
+
+/* Lê a base do hub: o resumo publicado pelo Dashboard SMs x Squads (localStorage) ou, na falta dele,
+   o arquivo gerado shared/data/hub-squads.js. Vale o de generatedAt mais recente (mesma regra do hub-core.js). */
+function readHubFromStorage(): HubSnapshot | null {
+  try {
+    const raw = window.localStorage.getItem(HUB_LS_KEY);
+    if (!raw) return null;
+    const m = JSON.parse(raw);
+    if (!m || m.v !== 1 || !Array.isArray(m.squads)) return null;
+    return { ...m, origem: "dashboard" };
+  } catch {
+    return null;
+  }
+}
+
+function useHubSnapshot(): HubSnapshot | null | undefined {
+  const [snap, setSnap] = useState<HubSnapshot | null | undefined>(undefined);
+  useEffect(() => {
+    let cancelled = false;
+    const local = readHubFromStorage();
+    const script = document.createElement("script");
+    script.src = "/shared/data/hub-squads.js";
+    const finish = () => {
+      if (cancelled) return;
+      const fileModel = (window as unknown as { HUB_SQUADS?: HubSnapshot }).HUB_SQUADS;
+      const file = fileModel && Array.isArray(fileModel.squads) ? { ...fileModel, origem: "arquivo" as const } : null;
+      const best = local && file ? (Date.parse(local.generatedAt) >= Date.parse(file.generatedAt) ? local : file) : local || file;
+      setSnap(best || null);
+    };
+    script.onload = finish;
+    script.onerror = finish;
+    document.head.appendChild(script);
+    return () => {
+      cancelled = true;
+      script.remove();
+    };
+  }, []);
+  return snap;
+}
+
+function HubHealthPanel() {
+  const snap = useHubSnapshot();
+  if (snap === undefined) return null;
+  if (snap === null) {
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <p className="text-xs font-extrabold text-amber-800">Base do hub indisponível</p>
+        <p className="mt-1 text-[11px] leading-4 text-amber-900/80">Abra o Dashboard SMs x Squads para publicar a base usada pelas demais ferramentas.</p>
+      </div>
+    );
+  }
+  const k = snap.kpis;
+  const when = Number.isNaN(Date.parse(snap.generatedAt)) ? "" : new Date(snap.generatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+  const rows: Array<{ label: string; value: number; slug: string; alert: boolean }> = k
+    ? [
+        { label: "Squads ativas sem SM (cobrar via coach)", value: k.squadsSemSm, slug: "dashboard-sms-squads", alert: k.squadsSemSm > 0 },
+        { label: "SMs acima da capacidade", value: k.smAcima, slug: "dashboard-sms-squads", alert: k.smAcima > 0 },
+        { label: "Squads ativas em saúde vermelha", value: k.vermelho, slug: "dashboard-sms-squads", alert: k.vermelho > 0 },
+        { label: "Squads ativas sem pessoas na base", value: k.semPessoas, slug: "dashboard-sms-squads", alert: k.semPessoas > 0 },
+      ]
+    : [];
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_2px_9px_rgba(20,37,63,0.04)]">
+      <div className="flex items-center gap-2">
+        <div className="grid h-8 w-8 place-items-center rounded-lg bg-blue-50 text-blue-700"><Network size={16} /></div>
+        <div>
+          <p className="text-xs font-extrabold text-slate-900">Saúde da base do hub</p>
+          <p className="text-[10px] text-slate-500">{snap.squads.length} squads · {snap.sms.length} SMs{when ? ` · ${when}` : ""}</p>
+        </div>
+      </div>
+      {rows.length > 0 ? (
+        <ul className="mt-3 space-y-1.5">
+          {rows.map((r) => (
+            <li key={r.label}>
+              <a href={`/ferramentas/${r.slug}.html`} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-2 rounded-md px-2 py-1 text-[11px] font-semibold text-slate-700 transition hover:bg-slate-50">
+                <span>{r.label}</span>
+                <span className={`rounded-full px-2 py-0.5 text-[10px] font-extrabold ${r.alert ? "bg-amber-100 text-amber-800" : "bg-emerald-100 text-emerald-800"}`}>{r.value}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="mt-3 text-[11px] leading-4 text-slate-500">Resumo de indicadores disponível após o Dashboard publicar a base.</p>
+      )}
+      <p className="mt-3 text-[10px] leading-4 text-slate-400">
+        {snap.origem === "dashboard" ? "Fonte: resumo publicado pelo Dashboard neste navegador." : `Fonte: arquivo da base${snap.ref ? ` (ref. ${snap.ref})` : ""}. Abra o Dashboard para atualizar.`}
+      </p>
+    </div>
+  );
+}
+
 export default function Home() {
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<ToolCategory | "Todas">("Todas");
@@ -270,7 +365,7 @@ export default function Home() {
         <div className="border-b border-slate-200 bg-white"><div className="mx-auto flex max-w-[1500px] items-center justify-between gap-3 px-4 py-3 sm:px-7 lg:px-10"><p className="text-[11px] leading-4 text-slate-500"><span className="font-extrabold text-slate-700">Centro de operações.</span> Selecione uma ferramenta para abrir sua rotina de análise.</p><span className="hidden text-[10px] font-extrabold uppercase tracking-[0.1em] text-slate-400 sm:block">Dados processados localmente</span></div></div>
         <div className="mx-auto max-w-[1500px] px-4 sm:px-7 lg:px-10"><nav className="flex gap-1 overflow-x-auto border-b border-slate-200 py-2" aria-label="Categorias de ferramentas">{categories.map((category) => { const Icon = category.icon; const selected = activeCategory === category.name; return <button key={category.name} type="button" onClick={() => setActiveCategory(category.name)} className={`flex shrink-0 items-center gap-2 rounded-md px-3 py-2 text-[11px] font-extrabold transition ${selected ? "bg-[#1746a2] text-white shadow-sm" : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"}`}><Icon size={14} />{category.label}</button>; })}</nav>
           <section className="grid gap-3 py-4 sm:grid-cols-2 lg:grid-cols-4" aria-label="Resumo do ecossistema">{[{ value: String(tools.length).padStart(2, "0"), label: "Ferramentas disponíveis", note: "catálogo online", icon: Boxes, tone: "text-blue-700 bg-blue-50" }, { value: String(tools.filter((t) => t.category === "Análise").length).padStart(2, "0"), label: "Análise operacional", note: "qualidade e aging", icon: BarChart3, tone: "text-emerald-700 bg-emerald-50" }, { value: String(tools.filter((t) => t.category === "Governança").length).padStart(2, "0"), label: "Fonte de referência", note: "Dashboard 2.0", icon: Network, tone: "text-amber-700 bg-amber-50" }, { value: "100%", label: "Processamento local", note: "sem envio de dados", icon: ShieldCheck, tone: "text-slate-700 bg-slate-100" }].map((metric) => { const Icon = metric.icon; return <div key={metric.label} className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-[0_2px_9px_rgba(20,37,63,0.04)]"><div className={`grid h-9 w-9 place-items-center rounded-lg ${metric.tone}`}><Icon size={17} /></div><div><p className="text-[22px] font-extrabold leading-none tracking-[-0.04em] text-slate-900">{metric.value}</p><p className="mt-1 text-[10px] font-extrabold uppercase tracking-[0.07em] text-slate-600">{metric.label}</p><p className="text-[10px] text-slate-400">{metric.note}</p></div></div>; })}</section>
-          <div className="grid gap-5 pb-8 lg:grid-cols-[minmax(0,1fr)_290px]"><section><div className="mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_2px_9px_rgba(20,37,63,0.04)] sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-700">Catálogo operacional</p><h2 className="mt-1 text-lg font-extrabold tracking-[-0.025em] text-slate-900">Ferramentas disponíveis <span className="ml-1 text-xs font-semibold text-slate-400">{filteredTools.length} de {tools.length}</span></h2></div><div className="relative w-full sm:max-w-[330px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Buscar ferramenta ou tema..." className="h-9 w-full rounded-md border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100" /></div></div>{filteredTools.length > 0 ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{filteredTools.map((tool) => <ToolCard key={tool.slug} tool={tool} onOpen={openTool} />)}</div> : <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center"><Search className="mx-auto text-slate-300" size={26} /><p className="mt-3 text-sm font-extrabold text-slate-800">Nenhuma ferramenta encontrada</p><p className="mt-1 text-xs text-slate-500">Tente outro termo ou selecione outra categoria.</p></div>}</section><aside className="space-y-3 lg:pt-[67px]"><div className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_2px_9px_rgba(20,37,63,0.04)]"><div className="flex items-center gap-2"><div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-50 text-amber-700"><FileSpreadsheet size={16} /></div><div><p className="text-xs font-extrabold text-slate-900">Fluxo recomendado</p><p className="text-[10px] text-slate-500">Do dado à decisão</p></div></div><div className="mt-4 space-y-3">{[["01","Carregue a base","Importe a planilha ou Dashboard de referência."],["02","Analise o recorte","Use filtros, indicadores e detalhamento."],["03","Aja com contexto","Exporte, copie uma mensagem ou acione a squad."]].map(([number,title,description], index) => <div key={number} className="flex gap-2.5"><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[9px] font-extrabold ${index === 2 ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>{number}</span><div><p className="text-[11px] font-extrabold text-slate-800">{title}</p><p className="mt-0.5 text-[10px] leading-4 text-slate-500">{description}</p></div></div>)}</div></div><div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4"><div className="flex items-center gap-2 text-blue-800"><BookOpen size={15} /><p className="text-xs font-extrabold">Fonte de referência</p></div><p className="mt-2 text-[11px] leading-4 text-blue-900/70">Comece pelo Dashboard SMs x Squads 2.0 para atualizar pessoas e squads. Depois, abra a análise específica.</p><button type="button" onClick={() => openTool(tools[0])} className="mt-3 inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-700 hover:text-blue-900">Abrir Dashboard <ArrowUpRight size={13} /></button></div></aside></div><footer className="flex flex-col gap-2 border-t border-slate-200 py-4 text-[10px] font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between"><span>Hub de Ferramentas · Agile Coach · Hapvida</span><span>Interface unificada · dados processados nas ferramentas</span></footer></div>
+          <div className="grid gap-5 pb-8 lg:grid-cols-[minmax(0,1fr)_290px]"><section><div className="mb-3 flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-[0_2px_9px_rgba(20,37,63,0.04)] sm:flex-row sm:items-center sm:justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-blue-700">Catálogo operacional</p><h2 className="mt-1 text-lg font-extrabold tracking-[-0.025em] text-slate-900">Ferramentas disponíveis <span className="ml-1 text-xs font-semibold text-slate-400">{filteredTools.length} de {tools.length}</span></h2></div><div className="relative w-full sm:max-w-[330px]"><Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} type="search" placeholder="Buscar ferramenta ou tema..." className="h-9 w-full rounded-md border border-slate-200 bg-slate-50 pl-9 pr-3 text-xs font-semibold text-slate-800 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100" /></div></div>{filteredTools.length > 0 ? <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">{filteredTools.map((tool) => <ToolCard key={tool.slug} tool={tool} onOpen={openTool} />)}</div> : <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center"><Search className="mx-auto text-slate-300" size={26} /><p className="mt-3 text-sm font-extrabold text-slate-800">Nenhuma ferramenta encontrada</p><p className="mt-1 text-xs text-slate-500">Tente outro termo ou selecione outra categoria.</p></div>}</section><aside className="space-y-3 lg:pt-[67px]"><HubHealthPanel /><div className="rounded-xl border border-slate-200 bg-white p-4 shadow-[0_2px_9px_rgba(20,37,63,0.04)]"><div className="flex items-center gap-2"><div className="grid h-8 w-8 place-items-center rounded-lg bg-amber-50 text-amber-700"><FileSpreadsheet size={16} /></div><div><p className="text-xs font-extrabold text-slate-900">Fluxo recomendado</p><p className="text-[10px] text-slate-500">Do dado à decisão</p></div></div><div className="mt-4 space-y-3">{[["01","Carregue a base","Importe a planilha ou Dashboard de referência."],["02","Analise o recorte","Use filtros, indicadores e detalhamento."],["03","Aja com contexto","Exporte, copie uma mensagem ou acione a squad."]].map(([number,title,description], index) => <div key={number} className="flex gap-2.5"><span className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[9px] font-extrabold ${index === 2 ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"}`}>{number}</span><div><p className="text-[11px] font-extrabold text-slate-800">{title}</p><p className="mt-0.5 text-[10px] leading-4 text-slate-500">{description}</p></div></div>)}</div></div><div className="rounded-xl border border-blue-100 bg-blue-50/70 p-4"><div className="flex items-center gap-2 text-blue-800"><BookOpen size={15} /><p className="text-xs font-extrabold">Fonte de referência</p></div><p className="mt-2 text-[11px] leading-4 text-blue-900/70">Comece pelo Dashboard SMs x Squads 2.0 para atualizar pessoas e squads. Depois, abra a análise específica.</p><button type="button" onClick={() => openTool(tools[0])} className="mt-3 inline-flex items-center gap-1 text-[11px] font-extrabold text-blue-700 hover:text-blue-900">Abrir Dashboard <ArrowUpRight size={13} /></button></div></aside></div><footer className="flex flex-col gap-2 border-t border-slate-200 py-4 text-[10px] font-medium text-slate-400 sm:flex-row sm:items-center sm:justify-between"><span>Hub de Ferramentas · Agile Coach · Hapvida</span><span>Interface unificada · dados processados nas ferramentas</span></footer></div>
       </main>
     </div>
   );

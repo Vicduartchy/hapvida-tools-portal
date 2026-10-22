@@ -1471,7 +1471,19 @@
     result = persisted;
     renderResultado();
   }
+
+  /* Escopo vindo do Dashboard (?squad= / ?sm=): filtra a lista já carregada. */
+  if (typeof HubCore !== 'undefined') {
+    var sc = HubCore.readScope(), scTerm = sc.squad || sc.sm || sc.diretoria;
+    if (scTerm) {
+      el('searchInput').value = scTerm;
+      uiState.searchQuery = scTerm;
+      if (result && result.items) renderFilteredViews();
+    }
+  }
 })();
+
+try { if (typeof HubCore !== 'undefined') HubCore.applyScopeToSearch('searchInput', { silent: true }); } catch (e) {}
 </script>
 </body>
 </html>

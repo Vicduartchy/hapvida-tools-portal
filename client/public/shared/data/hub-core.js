@@ -246,11 +246,48 @@
     return '/ferramentas/' + slug + '.html' + (params.length ? '?' + params.join('&') : '');
   }
 
+  /* pré-filtra a busca de uma ferramenta pelo escopo da URL (?squad=, ?sm=, ?diretoria=).
+     O campo pode nascer depois (ferramentas que desenham a tela após carregar a base): aguarda o campo existir,
+     espera o init da ferramenta terminar e só então preenche e dispara "input". Prioridade: squad, sm, diretoria. */
+  function applyScopeToSearch(inputId, opts) {
+    var scope = readScope();
+    var term = scope.squad || scope.sm || scope.diretoria;
+    var doc = global.document;
+    if (!term || !doc) return '';
+    var done = false;
+    function apply() {
+      var el = doc.getElementById(inputId);
+      if (!el || done) return !!done;
+      done = true;
+      el.value = term;
+      if (!(opts && opts.silent)) el.dispatchEvent(new global.Event('input', { bubbles: true }));
+      return true;
+    }
+    function arm() {
+      if (doc.getElementById(inputId)) { global.setTimeout(apply, 350); return; }
+      if (typeof global.MutationObserver !== 'function') return;
+      var obs = new global.MutationObserver(function () {
+        if (doc.getElementById(inputId)) { obs.disconnect(); global.setTimeout(apply, 50); }
+      });
+      obs.observe(doc.body || doc.documentElement, { childList: true, subtree: true });
+    }
+    if (doc.readyState === 'loading') doc.addEventListener('DOMContentLoaded', arm); else arm();
+    return term;
+  }
+
+  /* Chaves de mapeamento de SM que cada ferramenta mantinha por conta própria (importar arquivo do Dashboard).
+     Foram substituídas pela base única do hub; limpa o resíduo para não confundir quem inspeciona o navegador. */
+  var LEGACY_KEYS = ['hac_horasbranco_smmapping_v1', 'hac_qualidade_smmapping_v1', 'hapvida_aging_smmapping_v1', 'hapvida_aging_smmapping_meta_v1'];
+  function cleanupLegacy() {
+    try { LEGACY_KEYS.forEach(function (k) { global.localStorage.removeItem(k); }); } catch (e) { /* storage indisponível */ }
+  }
+  cleanupLegacy();
+
   global.HubCore = {
     LS_MODEL: LS_MODEL, MODEL_VERSION: MODEL_VERSION, DESLIGADOS: DESLIGADOS, SEM_SM: SEM_SM,
     clean: clean, normSquad: normSquad, normPerson: normPerson,
     load: load, reload: reload, resolve: resolve, smOf: smOf, isDesligado: isDesligado,
     smNames: smNames, matchSm: matchSm, squads: squads, diretorias: diretorias, getSmSquadMapping: getSmSquadMapping,
-    status: status, renderBadge: renderBadge, readScope: readScope, scopeLink: scopeLink
+    status: status, renderBadge: renderBadge, readScope: readScope, scopeLink: scopeLink, applyScopeToSearch: applyScopeToSearch, LEGACY_KEYS: LEGACY_KEYS
   };
 })(typeof window !== 'undefined' ? window : globalThis);

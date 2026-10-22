@@ -1746,6 +1746,8 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
   if($("btnExportHtml")) $("btnExportHtml").addEventListener("click", exportUpdatedHTML);
 
 })();
+
+try { if (typeof HubCore !== 'undefined') HubCore.applyScopeToSearch('tableSearch'); } catch (e) {}
 </script>
 </body>
 </html>

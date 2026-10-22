@@ -1323,6 +1323,8 @@ function init(){
 document.addEventListener('DOMContentLoaded', init);
 })();
 
+
+try { if (typeof HubCore !== 'undefined') HubCore.applyScopeToSearch('searchInput'); } catch (e) {}
 </script>
 </body>
 </html>

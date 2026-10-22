@@ -2230,6 +2230,25 @@ function wireSmSort(){
   });
 }
 
+/* Links "abrir em…": levam o recorte (SM ou squad) para as demais ferramentas do hub. */
+const HUB_OPEN_TARGETS = [
+  {slug:'calculadora-aging', nome:'Calculadora de Aging', sm:true},
+  {slug:'compromisso-trimestral', nome:'Compromisso Trimestral', sm:true},
+  {slug:'aging-po-lecom', nome:'Aging PO Lecom'},
+  {slug:'horas-sem-rastreabilidade', nome:'Horas sem Rastreabilidade'},
+  {slug:'qualidade-entregas', nome:'Qualidade das Entregas'},
+  {slug:'conferencia-epicos-portfolio', nome:'Conferência de Épicos'}
+];
+function hubOpenLinks(scope){
+  if(typeof HubCore==='undefined') return '';
+  const porSm = !!scope.sm && !scope.squad;
+  const alvos = HUB_OPEN_TARGETS.filter(t=> !porSm || t.sm);
+  if(!alvos.length) return '';
+  return '<div class="sd-block full" style="margin-top:14px;"><h4>Abrir este recorte em…</h4><div style="display:flex;gap:6px;flex-wrap:wrap;">' +
+    alvos.map(t=>'<a class="btn btn-outline btn-sm" target="_blank" rel="noopener" href="'+esc(HubCore.scopeLink(t.slug, scope))+'">'+esc(t.nome)+' ↗</a>').join('') +
+    '</div></div>';
+}
+
 function smRowDetail(sm){
   const squadRows = sm.squads.slice().sort((a,b)=> COLLATE.compare(a.squad,b.squad));
   const squadsTable = '<table class="mini-table"><thead><tr><th>Squad</th><th>Diretoria</th><th>Recursos</th><th>Boards</th></tr></thead><tbody>' +
@@ -2265,7 +2284,7 @@ function smRowDetail(sm){
   return '<div class="squad-detail-wrap" style="grid-template-columns:1fr;">' +
     '<div class="sd-block"><h4 style="display:flex; justify-content:space-between; align-items:center;"><span>Squads sob este SM ('+sm.squadCount+')'+(sm.overload?' <span class="badge miss">Acima do ideal (3)</span>':'')+'</span>' +
     '<span><button class="btn btn-outline btn-sm" data-sm-edit="'+esc(sm.id)+'" data-sm-nome="'+esc(sm.nome)+'">✏️ Editar SM</button></span></h4>'+squadsTable+'</div>' +
-    novasHtml + divergHtml +
+    novasHtml + divergHtml + hubOpenLinks({sm: sm.nome}) +
     '</div>';
 }
 
@@ -2529,6 +2548,7 @@ function squadRowDetail(s){
     '<button class="btn btn-outline btn-sm" data-squad-edit="'+esc(s.id)+'">✏️ Editar</button></h4><div class="sd-fields">'+fieldsHtml+'</div></div>' +
     '<div class="sd-block"><h4>Recursos mapeados ('+recRows.length+') <span class="prov-tag prov-recursos">IMPORT SM</span></h4>'+recTable+'</div>' +
     '<div class="sd-block full"><h4>Boards Azure vinculados ('+boardRows.length+') <span class="prov-tag prov-azure">AZURE + DE-PARA</span></h4>'+boardTable+'</div>' +
+    hubOpenLinks({squad: s.squad, sm: currentSMName(s)}) +
     '</div>';
 }
 

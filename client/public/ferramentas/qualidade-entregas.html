@@ -1502,6 +1502,8 @@ function init(){
 document.addEventListener('DOMContentLoaded', init);
 })();
 
+
+try { if (typeof HubCore !== 'undefined') HubCore.applyScopeToSearch('fBusca'); } catch (e) {}
 </script>
 </body>
 </html>
