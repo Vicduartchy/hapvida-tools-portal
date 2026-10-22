@@ -153,11 +153,14 @@ footer{max-width:920px;margin:0 auto;padding:0 20px 40px;color:var(--texto-suave
   </section>
 
 </main>
+<div style="text-align:center;margin:8px 0;"><span id="hubBadge"></span></div>
 <footer>Ferramenta interna Hapvida — uso exclusivo da governança ágil do DX Hub. Nenhum dado é armazenado entre sessões.</footer>
 
 <script src="/shared/vendor/jszip-3.10.2.min.js"></script>
 <script src="/shared/vendor/xlsx-core.min.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
+<script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/hub-core.js"></script>
 <script>
 /* ==========================================================================
    Consolidação de Alocação de Horas dos SMs — Hub do Agile Coach (Hapvida)
@@ -255,6 +258,22 @@ function findBaseSheets(wb) {
 // Normaliza um nome pra fins de COMPARAÇÃO apenas (maiúsculas/minúsculas e espaços
 // extras não são erro, são só estilo de digitação de cada SM). O valor exibido/gravado
 // continua sendo a grafia canônica da base de referência.
+try { if (typeof HubCore !== 'undefined') HubCore.renderBadge(document.getElementById('hubBadge')); } catch (e) {}
+
+/* Valida o nome do SM contra a base do hub (Dashboard SMs x Squads).
+   Retorna {tipo:'ok'|'sugerido'|'desligado'|'desconhecido'|'sem-base', nome?, msg}. */
+function validarSmHub(nome) {
+  if (typeof HubCore === 'undefined' || !HubCore.smNames().length) return { tipo: 'sem-base', msg: 'Base do hub indisponível: nome não validado.' };
+  const limpo = String(nome == null ? '' : nome).trim();
+  if (!limpo) return { tipo: 'desconhecido', msg: 'Informe o nome do SM.' };
+  const m = HubCore.matchSm(limpo);
+  if (m && HubCore.isDesligado(m.nome)) return { tipo: 'desligado', nome: m.nome, msg: m.nome + ' consta como desligado na base do hub. Confirmar o SM atual da squad.' };
+  if (m && m.via === 'exato') return { tipo: 'ok', nome: m.nome, msg: 'SM reconhecido na base do hub.' };
+  if (m) return { tipo: 'sugerido', nome: m.nome, msg: 'Na base do hub consta "' + m.nome + '".' };
+  if (HubCore.isDesligado(limpo)) return { tipo: 'desligado', msg: 'Nome consta como desligado na base do hub. Confirmar o SM atual da squad.' };
+  return { tipo: 'desconhecido', msg: 'Nome não encontrado entre os SMs da base do hub.' };
+}
+
 function normalizarNome(nome) {
   return String(nome == null ? '' : nome).trim().replace(/\s+/g, ' ').toLowerCase();
 }
@@ -278,7 +297,9 @@ async function processarReferencia(file) {
 }
 
 async function processarArquivoSM(file, idx) {
-  const item = { idx, nome: file.name, smSugerido: guessSmName(file.name), smConfirmado: null,
+  const sugeridoBruto = guessSmName(file.name);
+  const sugeridoHub = (typeof HubCore !== 'undefined' && sugeridoBruto) ? HubCore.matchSm(sugeridoBruto) : null;
+  const item = { idx, nome: file.name, smSugerido: (sugeridoHub && !HubCore.isDesligado(sugeridoHub.nome)) ? sugeridoHub.nome : sugeridoBruto, smConfirmado: null,
     status: 'ok', motivo: null, baseRows: [], ajusteRows: [], filledRows: [], erros: [], semProjeto: [],
     sheetsBase: [], sheetEscolhida: null, wb: null };
   let wb;
@@ -726,6 +747,12 @@ function renderChecklist() {
   const arquivosOk = state.arquivos.filter(a => a.status === 'ok');
   if (arquivosOk.length) {
     c.appendChild(el('h3', 'hc-h3', 'Por SM — confirme o nome e resolva as pendências de cada levantamento'));
+    if (typeof HubCore !== 'undefined' && HubCore.smNames().length) {
+      const dl = document.createElement('datalist');
+      dl.id = 'hc-sm-lista';
+      HubCore.smNames().forEach(n => { const o = document.createElement('option'); o.value = n; dl.appendChild(o); });
+      c.appendChild(dl);
+    }
     arquivosOk.forEach(item => {
       const somaDoItem = state.somaPendentes.filter(p => p.arquivoIdx === item.idx);
       const colabAusenteDoItem = state.colaboradorAusentePendentes.filter(p => p.arquivoIdx === item.idx);
@@ -737,14 +764,31 @@ function renderChecklist() {
       box.innerHTML = `<div class="hc-filename">SM responsável: <span class="hc-sm-nome">${item.smConfirmado}</span></div>
         <div class="hc-meta">${item.nome} · ${item.filledRows.length} linha(s) preenchida(s) · ${item.ajusteRows.length} ajuste(s)</div>
         <label class="hc-label" style="margin-top:10px;">Confirmar/corrigir nome do SM</label>
-        <input type="text" class="hc-input hc-sm-input" value="${item.smConfirmado}"/>`;
+        <input type="text" class="hc-input hc-sm-input" list="hc-sm-lista" value="${item.smConfirmado}"/>
+        <div class="hc-sm-check" style="font-size:12px;margin-top:4px;"></div>`;
 
       const smInput = box.querySelector('.hc-sm-input');
+      const smCheck = box.querySelector('.hc-sm-check');
+      const atualizarCheck = () => {
+        const v = validarSmHub(smInput.value);
+        const cor = v.tipo === 'ok' ? '#1B7A3E' : (v.tipo === 'sem-base' ? '#666' : '#B35A00');
+        smCheck.style.color = cor;
+        smCheck.textContent = v.msg;
+        if (v.tipo === 'sugerido') {
+          const b = document.createElement('button');
+          b.type = 'button'; b.textContent = 'Usar "' + v.nome + '"';
+          b.style.cssText = 'margin-left:8px;font-size:11px;cursor:pointer;';
+          b.onclick = () => { smInput.value = v.nome; smInput.oninput(); };
+          smCheck.appendChild(b);
+        }
+      };
       smInput.oninput = () => {
+        atualizarCheck();
         item.smConfirmado = smInput.value.trim();
         box.querySelector('.hc-sm-nome').textContent = item.smConfirmado || item.smSugerido;
         atualizarStatusGeracao();
       };
+      atualizarCheck();
 
       if (somaDoItem.length) {
         box.appendChild(el('h4', 'hc-h4', `Erros de soma — Melhoria + Projeto ≠ 100% (${somaDoItem.length})`));

@@ -6,6 +6,8 @@
 <title>Apuração de Horas por Recursos x Squad — Hub do Agile Coach · Hapvida</title>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/exceljs-4.4.0.min.js"></script>
+<script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/hub-core.js"></script>
 <style>
   :root{
     color-scheme: light;
@@ -257,6 +259,7 @@
     <h2 style="font-size:15px; margin-bottom:12px">Resultado do cruzamento</h2>
     <div class="summary-grid" id="summaryGrid"></div>
     <div style="margin-top:16px">
+      <div id="hubBadge" class="note" style="margin-bottom:8px"></div>
       <button class="btn primary big" id="downloadBtn">Baixar planilha cruzada (.xlsx)</button>
     </div>
     <p class="note" style="margin-top:10px">O arquivo sai com 7 abas, nesta ordem: <b>Apuração de Horas</b> (% Melhoria × % Projeto por colaborador, com Gestor Direto/Gerente/Gerente Executivo/Diretoria/Cargo vindos da BASE_&lt;mês&gt;.&lt;ano&gt; e dos overrides da aba Ajuste, e Ordem de Investimento vinda da aba Consulta, cruzada pelo LECOM/ID de cada projeto), <b>Base Cruzada</b> (cada hora apontada, já classificada e casada com o item de compromisso, com uma linha indicando a origem de cada coluna), <b>Horas por Squad</b> (aberto por recurso, com % de participação no squad e % por tipo de demanda), <b>Compromisso · Projetos</b> e <b>Compromisso · Melhorias</b> (planejado × realizado, aberto por squad de execução), <b>Organograma</b> (BASE_&lt;mês&gt;.&lt;ano&gt; consolidada por colaborador, com AJUSTE aplicado) e <b>Lecom Dobrados</b> (LECOMs cadastrados ao mesmo tempo como melhoria e como projeto). Cabeçalhos coloridos, datas no formato DD/MM/AAAA e nomes de colaborador normalizados (Primeira Letra Maiúscula).</p>
@@ -277,6 +280,16 @@
    Mesma lógica de classificação/cruzamento do Radar de Compromisso, mas a
    única saída é uma planilha .xlsx com 7 abas.
    ========================================================================= */
+
+/* SM da squad (Team Project) segundo a base do hub (shared/data/hub-core.js). */
+var SEM_SM_LABEL = "Sem SM (cobrar via coach)";
+function smDaSquad(squadName){
+  if (typeof HubCore === "undefined" || !squadName) return "";
+  var f = HubCore.resolve(squadName);
+  if (!f.found) return "(Squad fora da base do hub)";
+  var sm = HubCore.clean(f.squad.sm);
+  return sm || SEM_SM_LABEL;
+}
 
 var CATS = {
   PROJETOS:         { label: "Projetos",              varName: "--cat-projetos"  },
@@ -821,6 +834,7 @@ function buildModel(rows1, rows2, rows3, rows4Organograma, rows4Ajuste, rows4Con
       gerenteExecutivo: normalizeName(orgRow && orgRow["GERENTE EXECUTIVO"]) || "",
       cargo: (orgRow && orgRow["CARGO"]) || "",
       squad: squad,
+      sm: smDaSquad(squad),
       epicTitle: r["TITLE_EPIC"] || "(Sem épico)",
       featureTitle: r["TITLE_FEATURES"] || "(Sem feature)",
       tituloLecom: lecomSource === "feature" ? (r["TITLE_FEATURES"] || null) : (lecomSource === "epic" ? (r["TITLE_EPIC"] || null) : null),
@@ -871,7 +885,7 @@ function compromissoLabel(c){
    — por isso a origem mostrada é "Base 4 (Base 1 se colaborador não
    encontrado)". */
 var CRUZADA_HEADERS = [
-  "Data","Categoria","Compromisso","LECOM","Diretoria","Gerente","Squad","Épico","Feature",
+  "Data","Categoria","Compromisso","LECOM","Diretoria","Gerente","Squad","SM","Épico","Feature",
   "User Story","Task","Recurso","Horas","Squad compromisso","Status compromisso","Tamanho",
   "Horas planejadas","Iniciativa","Priorização (Melhorias)","Obs. inclusão (Projetos)",
   "Desprioriação","Origem","Tipo (raw)"
@@ -883,7 +897,7 @@ var CRUZADA_COLTYPES = CRUZADA_HEADERS.map(function(h){
 });
 var CRUZADA_ORIGIN_MAP = {
   "Data": "base1", "Categoria": "calc", "Compromisso": "calc", "LECOM": "base1",
-  "Diretoria": "base4", "Gerente": "base4", "Squad": "base1", "Épico": "base1",
+  "Diretoria": "base4", "Gerente": "base4", "Squad": "base1", "SM": "hub", "Épico": "base1",
   "Feature": "base1", "User Story": "base1", "Task": "base1", "Recurso": "base1",
   "Horas": "base1", "Squad compromisso": "base23", "Status compromisso": "base23",
   "Tamanho": "base23", "Horas planejadas": "base23", "Iniciativa": "base23",
@@ -896,6 +910,7 @@ var CRUZADA_ORIGIN_LABEL = {
   base2: "Base 2 - Melhorias",
   base3: "Base 3 - Projetos",
   base4: "Base 4 - Organograma (Base 1 se colaborador não encontrado)",
+  hub: "Base do hub (Dashboard SMs x Squads)",
   calc: "Calculado no cruzamento"
 };
 var CRUZADA_ORIGIN_TONE = CRUZADA_HEADERS.map(function(h){ return CRUZADA_ORIGIN_MAP[h]; });
@@ -903,14 +918,14 @@ var CRUZADA_ORIGIN = CRUZADA_ORIGIN_TONE.map(function(tone){ return CRUZADA_ORIG
 var CRUZADA_WIDTHS = CRUZADA_HEADERS.map(function(h){
   if (["Épico","Feature","User Story","Task","Iniciativa"].indexOf(h) !== -1) return 40;
   if (["Priorização (Melhorias)","Obs. inclusão (Projetos)"].indexOf(h) !== -1) return 30;
-  if (["Recurso","Gerente","Squad compromisso","Diretoria"].indexOf(h) !== -1) return 24;
+  if (["Recurso","Gerente","Squad compromisso","Diretoria","SM"].indexOf(h) !== -1) return 24;
   return 16;
 });
 
 function buildCruzadaBundle(items){
   var rows = items.map(function(r){
     return [
-      r.data, CATS[r.categoria].label, compromissoLabel(r.compromisso), r.lecomId, r.diretoria, r.gerente, r.squad,
+      r.data, CATS[r.categoria].label, compromissoLabel(r.compromisso), r.lecomId, r.diretoria, r.gerente, r.squad, r.sm,
       r.epicTitle, r.featureTitle, r.storyTitle, r.taskTitle, r.recurso, r.horas, r.squadCompromisso,
       r.statusCompromisso, r.tamanho, r.horasPlanejadas, r.iniciativa, r.priorizacao, r.inclusaoObs, r.desprior,
       r.origem, r.tipoRaw
@@ -926,17 +941,18 @@ function buildCruzadaBundle(items){
    Uma linha por Squad + Recurso, com as horas por tipo de demanda (como já
    existia), mais % desse recurso sobre o total do squad e % de cada tipo de
    demanda sobre o total do próprio recurso. ---------------------------- */
-var SQUAD_HEADERS = ["Squad","Recurso"]
+var SQUAD_HEADERS = ["Squad","SM","Recurso"]
   .concat(CAT_ORDER.map(function(c){ return CATS[c].label; }))
   .concat(["Total","% do Squad"])
   .concat(CAT_ORDER.map(function(c){ return "% " + CATS[c].label + " (recurso)"; }));
-var SQUAD_COLTYPES = ["text","text"]
+var SQUAD_COLTYPES = ["text","text","text"]
   .concat(CAT_ORDER.map(function(){ return "hours"; }))
   .concat(["hours","percent"])
   .concat(CAT_ORDER.map(function(){ return "percent"; }));
 var SQUAD_WIDTHS = SQUAD_HEADERS.map(function(h, i){
   if (i === 0) return 24;
-  if (i === 1) return 28;
+  if (i === 1) return 24;
+  if (i === 2) return 28;
   return Math.min(30, Math.max(12, h.length + 2));
 });
 
@@ -945,6 +961,7 @@ function buildSquadBundle(items){
   items.forEach(function(it){
     if (!squadMap.has(it.squad)) squadMap.set(it.squad, { squad: it.squad, total: 0, recursos: new Map() });
     var sg = squadMap.get(it.squad);
+    sg.sm = it.sm;
     sg.total += it.horas;
     if (!sg.recursos.has(it.recurso)){
       var o = { recurso: it.recurso, total: 0 };
@@ -961,7 +978,7 @@ function buildSquadBundle(items){
   squads.forEach(function(sg){
     var recursos = Array.from(sg.recursos.values()).sort(function(a,b){ return b.total - a.total; });
     recursos.forEach(function(rg){
-      var row = [sg.squad, rg.recurso];
+      var row = [sg.squad, sg.sm || "", rg.recurso];
       CAT_ORDER.forEach(function(c){ row.push(rg[c]); });
       row.push(rg.total, sg.total > 0 ? (rg.total / sg.total) : 0);
       CAT_ORDER.forEach(function(c){ row.push(rg.total > 0 ? (rg[c] / rg.total) : 0); });
@@ -1242,6 +1259,7 @@ var ORIGIN_TONE_COLORS = {
   base2: { fill: STYLE.originBase2Fill, font: STYLE.originBase2Font },
   base3: { fill: STYLE.originBase3Fill, font: STYLE.originBase3Font },
   base4: { fill: STYLE.originBase4Fill, font: STYLE.originBase4Font },
+  hub: { fill: STYLE.originCalcFill, font: STYLE.originCalcFont },
   calc: { fill: STYLE.originCalcFill, font: STYLE.originCalcFont }
 };
 function styleOriginCell(cell, tone){
@@ -1698,6 +1716,9 @@ else init();
 
 })();
 
+
+/* Selo da base do hub (SM por squad vem do Dashboard SMs x Squads). */
+try { if (typeof HubCore !== "undefined") HubCore.renderBadge(document.getElementById("hubBadge")); } catch (e) {}
 </script>
 
 </body>
