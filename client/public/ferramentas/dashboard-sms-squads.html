@@ -3,6 +3,7 @@
 <meta charset="UTF-8">
 <title>Dashboard SMs x Squads 2.0 | Hapvida</title>
 <script src="/shared/data/squad-canon.js"></script>
+<script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/data/resources-import.js"></script>
@@ -482,6 +483,9 @@
   <div class="roadmap-note" style="margin-top:8px;">
     Divisão SM × squad: <b>Levantamentos_SMs.xlsx</b>. Nomes/diretor/gerente: conferidos contra De-Para Azure (Jun/24). <b>📥 Importar as três bases</b> recalcula o cruzamento por squad, SM, LECOM e qualidade dos dados. <b>✏️ Editar</b> e <b>🗑️ Excluir</b> continuam salvos neste navegador.
   </div>
+  <div style="margin-top:8px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+    <button class="btn btn-outline btn-sm" id="btnExportHub" type="button" title="Gera o arquivo hub-squads.js com as squads, SMs e aliases atuais. Ele alimenta as outras ferramentas em qualquer navegador.">📤 Exportar base do hub</button>
+    <span class="source-status">As outras ferramentas leem esta base automaticamente neste navegador. O arquivo exportado vale para todos os navegadores depois de publicado.</span>
   </div>
 </details>
 
@@ -1588,7 +1592,7 @@ function renderQualityTab(){
 }
 
 /* ===== Aba Pendências: tudo calculado com os dados atuais ===== */
-const SM_DESLIGADOS = ['pollyana','victor vasconcelos','alexandre viana'];
+const SM_DESLIGADOS = (typeof HubCore !== 'undefined') ? HubCore.DESLIGADOS : ['pollyana','victor vasconcelos','alexandre viana'];
 function renderPendenciasTab(){
   const body = document.getElementById('pendBody'); if(!body) return;
   const model = QUARTERLY_MODEL || buildQuarterlyModel();
@@ -2030,6 +2034,7 @@ function refreshQuarterlyViews(){
   gfSyncUI();
   renderQuarterlySources();
   renderBasesSummary();
+  publishHubModel();
   renderExecutiveTab();
   renderQualityTab();
   updateTabBadges();
@@ -2821,6 +2826,49 @@ function buildHealthMap(){
   });
   return map;
 }
+/* ===== Modelo do hub: o dashboard é a fonte; as outras ferramentas leem (ver shared/data/hub-core.js) ===== */
+function hubModelSnapshot(){
+  const health = buildHealthMap();
+  const names = list => { const seen = new Set(); return list.map(n=>String(n || '').replace(/ /g, ' ').trim()).filter(n=>n && !seen.has(n) && seen.add(n)); };
+  const squads = UNIFIED.map(s=>({
+    id: s.id, squad: s.squad,
+    nomes: names([s.squad].concat(Array.isArray(s.aliases) ? s.aliases : [], s.boards.map(b=>b.board), s.recursos.map(r=>r.squad))),
+    diretoria: s.diretoria || '', diretor: s.diretor || '', gerente: s.gerente || '',
+    sm: currentSMName(s) || '', ativa: !!s.squadAtiva, pessoas: s.recursos.length, boards: s.boards.length,
+    saude: (health.get(s.id) || {}).nivel || ''
+  }));
+  const ativas = squads.filter(s=>s.ativa);
+  const ref = boardHealth().ref;
+  const meta = type => (window.HACQuarterlyImport ? HACQuarterlyImport.getMeta(type) : null) || {};
+  const imp = type => ({ linhas: meta(type).uniqueRows || 0, arquivo: meta(type).fileName || '', em: meta(type).importedAt || '' });
+  return {
+    v: 1, generatedAt: new Date().toISOString(), ref: ref ? ref.toLocaleDateString('pt-BR') : '', origem: 'dashboard',
+    squads,
+    sms: SM_VIEW.map(sm=>({ nome: sm.nome, squads: sm.squadCount, ativas: sm.squads.filter(s=>s.squadAtiva).length, acima: !!sm.overload })),
+    desligados: SM_DESLIGADOS.slice(),
+    kpis: {
+      squadsSemSm: ativas.filter(s=>!s.sm).length, smAcima: SM_VIEW.filter(sm=>sm.overload).length,
+      vermelho: ativas.filter(s=>s.saude === 'vermelho').length, amarelo: ativas.filter(s=>s.saude === 'amarelo').length, verde: ativas.filter(s=>s.saude === 'verde').length,
+      semPessoas: ativas.filter(s=>!s.pessoas).length
+    },
+    imports: { portfolio: imp('portfolio'), improvements: imp('improvements'), recursos: RESOURCES_RAW.length }
+  };
+}
+function publishHubModel(){
+  try{
+    localStorage.setItem(typeof HubCore !== 'undefined' ? HubCore.LS_MODEL : 'hac_hub_model_v1', JSON.stringify(hubModelSnapshot()));
+    if(typeof HubCore !== 'undefined') HubCore.reload();
+  }catch(err){ console.warn('Não foi possível publicar o modelo do hub', err); }
+}
+function exportHubModelFile(){
+  const model = hubModelSnapshot(); model.imports = null;
+  const text = '/* Gerado pelo Dashboard SMs x Squads em '+model.generatedAt+'. Não editar à mão: use o botão "Exportar base do hub". */\nwindow.HUB_SQUADS = '+JSON.stringify(model)+';\n';
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], { type:'text/javascript' }));
+  a.download = 'hub-squads.js';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
 function healthBadge(info){
   if(!info || info.nivel === 'inativa') return '<span class="badge na">—</span>';
   const cls = info.nivel === 'verde' ? 'ok' : info.nivel === 'amarelo' ? 'pend' : 'nok';
@@ -3354,6 +3402,7 @@ loadOverrides();
 if(window.HACResourcesImport) HACResourcesImport.loadPersisted();
 if(window.HACQuarterlyImport){ HACQuarterlyImport.loadPersisted(); HACQuarterlyImport.bindUI(); }
 wireGlobalFilter();
+document.getElementById('btnExportHub').addEventListener('click', exportHubModelFile);
 const _restoredTab = gfRestore();
 buildUnified();
 buildSMView();
