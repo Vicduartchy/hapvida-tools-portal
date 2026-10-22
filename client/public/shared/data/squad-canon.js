@@ -1,15 +1,9 @@
 /*
- * Fonte única de verdade da lista base de squads (id, diretoria, diretor,
- * gerente, SM atual/anterior/proposto) usada por todas as ferramentas do
- * Hub do Agile Coach.
- *
- * Este arquivo é a "camada estática" — a lista muda quando o time muda de
- * verdade (nova squad, reorganização). Edições pontuais de SM feitas na
- * ferramenta Dashboard SMs x Squads ficam numa camada separada em
- * localStorage (chave compartilhada, ver shared/data/sm-mapping.js),
- * aplicadas por cima desta lista em tempo de execução — assim uma edição
- * lá aparece automaticamente em todas as outras ferramentas, sem precisar
- * reexportar ou fazer upload manual em cada uma.
+ * Catálogo-base de squads (id, diretoria, diretor, gerente, SM anterior/proposto,
+ * aliases) usado SOMENTE pelo Dashboard SMs x Squads como ponto de partida do
+ * registro e pela Conferência de Épicos. As demais ferramentas leem o modelo
+ * consolidado em shared/data/hub-core.js (hub-squads.js + resumo do dashboard),
+ * que reflete os boards do Azure, o levantamento dos SMs e as edições manuais.
  *
  * Extraído de dashboard-sms-squads.html em 2026-08-26.
  * 2026-10-21: reorganização de Comercial (renomeações, divisões e unificação de squads;

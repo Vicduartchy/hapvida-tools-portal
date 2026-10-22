@@ -336,6 +336,8 @@ table.map-table select{border:1px solid var(--cinza-borda);border-radius:6px;pad
   <footer class="brand-footer">Hub do Agile Coach · Hapvida — ferramenta offline, sem dependências externas. Dados processados localmente no navegador.</footer>
 </div>
 
+<script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script>
@@ -346,7 +348,6 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
 /* ============================================================
    DADOS-SEMENTE — base de squads x SMs (snapshot, atualizável via backup)
    ============================================================ */
-var SQUADS_SEED = [{"squad": "Operadora - Cadastro - Melhorias e Projetos", "area": "Operadora", "sm_atual": "Alexandre Campos"}, {"squad": "Operadora - Cadastro - Sustentação e Refatoração", "area": "Operadora", "sm_atual": "Alexandre Campos"}, {"squad": "Operadora - Salesforce", "area": "Operadora", "sm_atual": "—"}, {"squad": "Operadora - Atendimento", "area": "Operadora", "sm_atual": "Alexandre Viana"}, {"squad": "Operadora - Autorização", "area": "Operadora", "sm_atual": "Alexandre Viana"}, {"squad": "Operadora - Backoffice - Supply", "area": "Operadora", "sm_atual": "Ana Cecilia Oliveira"}, {"squad": "Operadora - RPA", "area": "Operadora", "sm_atual": "Ana Cecilia Oliveira"}, {"squad": "Operadora - Comissão", "area": "Operadora", "sm_atual": "Ana Cecilia Oliveira"}, {"squad": "Assistencial - Aplicativos Assistenciais", "area": "Assistencial", "sm_atual": "Anderson Bezerra"}, {"squad": "Assistencial - Internação Multidisciplinar", "area": "Assistencial", "sm_atual": "Anderson Bezerra"}, {"squad": "IA - Diagnóstico", "area": "IA", "sm_atual": "Anderson Bezerra"}, {"squad": "Assistencial - Backoffice Hospitalar - Gestão de Leitos", "area": "Assistencial", "sm_atual": "Andrezza Jatay"}, {"squad": "Assistencial - Torre Backoffice Hospitalar (Atendimento)", "area": "Assistencial", "sm_atual": "Andrezza Jatay"}, {"squad": "Assistencial - Torre Backoffice Hospitalar (Faturamento)", "area": "Assistencial", "sm_atual": "Andrezza Jatay"}, {"squad": "IA - Curadoria", "area": "IA", "sm_atual": "Breno Teixeira"}, {"squad": "IA - Operações Assistenciais", "area": "IA", "sm_atual": "Breno Teixeira"}, {"squad": "IA - Gestão de Crônicos e Predição", "area": "IA", "sm_atual": "Breno Teixeira"}, {"squad": "Insights - Indicadores Corporativos", "area": "Insights", "sm_atual": "Caio Nojoza"}, {"squad": "Insights - Planejamento Financeiro", "area": "Insights", "sm_atual": "Caio Nojoza"}, {"squad": "Insights - Gestão e Gov de Dados", "area": "Insights", "sm_atual": "Caio Nojoza"}, {"squad": "Insights - Assistencial e GRM", "area": "Insights", "sm_atual": "Caio Nojoza"}, {"squad": "Digital - Acesso", "area": "Digital", "sm_atual": "CONTRATAR (A)"}, {"squad": "Digital - API", "area": "Digital", "sm_atual": "CONTRATAR (A)"}, {"squad": "Digital - Financeiro", "area": "Digital", "sm_atual": "CONTRATAR (A)"}, {"squad": "Digital - Agendamento", "area": "Digital", "sm_atual": "CONTRATAR (B) - Sênior"}, {"squad": "Digital - Fast Track", "area": "Digital", "sm_atual": "CONTRATAR (B) - Sênior"}, {"squad": "Digital – APIs de Relacionamento", "area": "Digital", "sm_atual": "CONTRATAR (C) - Pleno"}, {"squad": "Digital - Engagement", "area": "Digital", "sm_atual": "CONTRATAR (C) - Pleno"}, {"squad": "Digital - OMNICANALIDADE", "area": "Digital", "sm_atual": "CONTRATAR (C) - Pleno"}, {"squad": "TI - Arquitetura - Governança (Engenharia)", "area": "TI", "sm_atual": "CONTRATAR (D) - Pleno"}, {"squad": "TI - Arquitetura - Governança (Soluções)", "area": "TI", "sm_atual": "CONTRATAR (D) - Pleno"}, {"squad": "TI - Arquitetura - QA 2.0", "area": "TI", "sm_atual": "CONTRATAR (D) - Pleno"}, {"squad": "Digital - Analytics e IA", "area": "Digital", "sm_atual": "CONTRATAR (E) - Pleno"}, {"squad": "Digital - Bot Autosserviço", "area": "Digital", "sm_atual": "CONTRATAR (E) - Pleno"}, {"squad": "Digital - Call Center", "area": "Digital", "sm_atual": "CONTRATAR (E) - Pleno"}, {"squad": "TI - Cyber Segurança", "area": "TI", "sm_atual": "CONTRATAR (F) - Pleno"}, {"squad": "TI - Gestão de Identidades e Acesso", "area": "TI", "sm_atual": "CONTRATAR (F) - Pleno"}, {"squad": "TI - Governança de SI", "area": "TI", "sm_atual": "CONTRATAR (F) - Pleno"}, {"squad": "TI - Network e NOC", "area": "TI", "sm_atual": "Diego Viana"}, {"squad": "TI - Operações e Implantação e PEP", "area": "TI", "sm_atual": "Diego Viana"}, {"squad": "TI - Service Desk e Service Now", "area": "TI", "sm_atual": "Diego Viana"}, {"squad": "TI - Arquitetura - Cloud Azure", "area": "TI", "sm_atual": "Dionei Carlos"}, {"squad": "TI - Datacenter", "area": "TI", "sm_atual": "Dionei Carlos"}, {"squad": "TI - Observabilidade", "area": "TI", "sm_atual": "Dionei Carlos"}, {"squad": "TI - Datacenter (Banco de dados)", "area": "TI", "sm_atual": "Dionei Carlos"}, {"squad": "TI - Adquiridas", "area": "TI", "sm_atual": "Fernando Elson"}, {"squad": "TI - Operação Diagnóstico", "area": "TI", "sm_atual": "Fernando Elson"}, {"squad": "TI - SAVI Implantação", "area": "TI", "sm_atual": "Fernando Elson"}, {"squad": "Assistencial - Torre Emergência (linha de frente)", "area": "Assistencial", "sm_atual": "Henrique Paula"}, {"squad": "Assistencial - Torre Emergência (central da chefia)", "area": "Assistencial", "sm_atual": "Henrique Paula"}, {"squad": "Assistencial - Torre Emergência (emergência)", "area": "Assistencial", "sm_atual": "Henrique Paula"}, {"squad": "Assistencial - Diagnóstico LIS", "area": "Assistencial", "sm_atual": "Italo Santos"}, {"squad": "Assistencial - Sustentação Diagnósticos", "area": "Assistencial", "sm_atual": "Italo Santos"}, {"squad": "Assistencial - Torre Backoffice Hospitalar (Farmácia)", "area": "Assistencial", "sm_atual": "Italo Santos"}, {"squad": "Digital - Bot de Vendas", "area": "Digital", "sm_atual": "João Carvalho"}, {"squad": "Digital - Contrate Online Odonto", "area": "Digital", "sm_atual": "João Carvalho"}, {"squad": "Digital - Contrate Online PF", "area": "Digital", "sm_atual": "João Carvalho"}, {"squad": "Digital - Vendas Saúde PME", "area": "Digital", "sm_atual": "João Carvalho"}, {"squad": "Operadora - Reembolso", "area": "Operadora", "sm_atual": "José Gomes"}, {"squad": "Operadora - Regulação ANS", "area": "Operadora", "sm_atual": "José Gomes"}, {"squad": "Operadora - Backoffice RH", "area": "Operadora", "sm_atual": "Kevin Kayser"}, {"squad": "Assistencial - HomeCare Mobile", "area": "Assistencial", "sm_atual": "Pollyana Maciel"}, {"squad": "Assistencial - HomeCare Web", "area": "Assistencial", "sm_atual": "Pollyana Maciel"}, {"squad": "Assistencial - Linha de Cuidado", "area": "Assistencial", "sm_atual": "Larissa Dantas"}, {"squad": "Assistencial - Produtos e Projetos Especiais", "area": "Assistencial", "sm_atual": "Larissa Dantas"}, {"squad": "Digital - Aplicativo Venda de Serviços", "area": "Digital", "sm_atual": "Larissa Pessoa"}, {"squad": "Digital - Portal Empresa - Sustentação da Base", "area": "Digital", "sm_atual": "Larissa Pessoa"}, {"squad": "Digital - Portal Empresas", "area": "Digital", "sm_atual": "Larissa Pessoa"}, {"squad": "Digital - Portais Institucionais", "area": "Digital", "sm_atual": "Leiliane Almeida"}, {"squad": "Digital - Portal do Corretor", "area": "Digital", "sm_atual": "Leiliane Almeida"}, {"squad": "Digital - CRM", "area": "Digital", "sm_atual": "Leiliane Almeida"}, {"squad": "Assistencial - MedPrev", "area": "Assistencial", "sm_atual": "Lucas Estefano"}, {"squad": "Assistencial - Qualivida", "area": "Assistencial", "sm_atual": "Lucas Estefano"}, {"squad": "Assistencial - SIGA Clínicas", "area": "Assistencial", "sm_atual": "Lucas Estefano"}, {"squad": "Insights - Lakehouse", "area": "Insights", "sm_atual": "Luiz Oliveira"}, {"squad": "Insights - Analytics engineering - Mercado", "area": "Insights", "sm_atual": "Luiz Oliveira"}, {"squad": "Insights - Analytics Engineering - Planej. Estratégico", "area": "Insights", "sm_atual": "Luiz Oliveira"}, {"squad": "Insights - Arquitetura de Dados", "area": "Insights", "sm_atual": "Luiz Oliveira"}, {"squad": "Operadora - CSC Digital - Portal CSC", "area": "Operadora", "sm_atual": "Luiz Ribeiro"}, {"squad": "Incorporações - Cargas", "area": "Incorporações", "sm_atual": "Luiz Ribeiro"}, {"squad": "Insights - Data Science - Backoffice", "area": "Insights", "sm_atual": "Luiz Roberto"}, {"squad": "Insights - Data Science - Visão Computacional", "area": "Insights", "sm_atual": "Luiz Roberto"}, {"squad": "Insights - Plataforma ML e AI", "area": "Insights", "sm_atual": "Luiz Roberto"}, {"squad": "Operadora - Folha Médica 2.0", "area": "Operadora", "sm_atual": "Mendeleyev Amorim"}, {"squad": "Operadora - Haptech", "area": "Operadora", "sm_atual": "Mendeleyev Amorim"}, {"squad": "Operadora - Odonto", "area": "Operadora", "sm_atual": "Mendeleyev Amorim"}, {"squad": "Operadora - Portal Prestador", "area": "Operadora", "sm_atual": "Mendeleyev Amorim"}, {"squad": "Digital - Cuidaê", "area": "Digital", "sm_atual": "Leiliane Almeida"}, {"squad": "Digital - APP do Prestador", "area": "Digital", "sm_atual": "Pollyana Maciel"}, {"squad": "Digital - Telemedicina", "area": "Digital", "sm_atual": "Pollyana Maciel"}, {"squad": "Operadora - Coparticipação", "area": "Operadora", "sm_atual": "Raphael Paixão"}, {"squad": "Operadora - Faturamento (CAFEX)", "area": "Operadora", "sm_atual": "Raphael Paixão"}, {"squad": "Insights - Operadora", "area": "Insights", "sm_atual": "Renata Santiago"}, {"squad": "Insights - Analytics Engineering - Diretoria de Protocolos", "area": "Insights", "sm_atual": "Renata Santiago"}, {"squad": "Insights - Analytics Engineering - Novos Projetos e Sustentação", "area": "Insights", "sm_atual": "Renata Santiago"}, {"squad": "Insights - Analytics Engineering - Rentabilidade e Incorporação", "area": "Insights", "sm_atual": "Renata Santiago"}, {"squad": "IA - Terapias", "area": "IA", "sm_atual": "Rodrigo Alves"}, {"squad": "Assistencial - LEGADO - Hospitalar Assistencial", "area": "Assistencial", "sm_atual": "Rodrigo Alves"}, {"squad": "Assistencial - SIGA WEB - Linha Assistencial", "area": "Assistencial", "sm_atual": "Rodrigo Alves"}, {"squad": "Operadora - Contas Médicas", "area": "Operadora", "sm_atual": "Savio Veríssimo"}, {"squad": "Operadora - Credenciamento", "area": "Operadora", "sm_atual": "Savio Veríssimo"}, {"squad": "—", "area": "Não classificado", "sm_atual": "Stefany Karen Gomes da Costa Freitas"}, {"squad": "IA - Auditoria e Eficiência Assistencial", "area": "IA", "sm_atual": "Vanessa Cunha"}, {"squad": "Assistencial - Protocolos - Eletivo e Emergência", "area": "Assistencial", "sm_atual": "Vanessa Cunha"}, {"squad": "Assistencial - Protocolos - Internação (viewer)", "area": "Assistencial", "sm_atual": "Vanessa Cunha"}, {"squad": "Assistencial - Protocolos - Internação (modelador)", "area": "Assistencial", "sm_atual": "Vanessa Cunha"}, {"squad": "Operadora - Comercial", "area": "Operadora", "sm_atual": "Vanessa Gurgel"}, {"squad": "Operadora - Fast Track Comercial", "area": "Operadora", "sm_atual": "Vanessa Gurgel"}, {"squad": "Operadora - Comercial (incidentes)", "area": "Operadora", "sm_atual": "Vanessa Gurgel"}, {"squad": "Operadora - Agendas Consultas", "area": "Operadora", "sm_atual": "Victor Gradvohl"}, {"squad": "Operadora - Automação", "area": "Operadora", "sm_atual": "Victor Gradvohl"}, {"squad": "Operadora - Backoffice - SAP - Melhorias", "area": "Operadora", "sm_atual": "Victor Vasconcelos"}, {"squad": "Operadora - SAP Integrações", "area": "Operadora", "sm_atual": "Victor Vasconcelos"}, {"squad": "Operadora - Backoffice - Financeiro", "area": "Operadora", "sm_atual": "Victor Vasconcelos"}, {"squad": "Operadora - IFRS 17", "area": "Operadora", "sm_atual": "Victor Vasconcelos"}];
 /*ROWS_START*/var EMBEDDED_ROWS = [];/*ROWS_END*/
 /*MAPPING_START*/var EMBEDDED_MAPPING = {};/*MAPPING_END*/
 /*EXPORT_TS_START*/var EMBEDDED_EXPORT_TS = 0;/*EXPORT_TS_END*/
@@ -408,7 +409,8 @@ var DEFAULT_WA_TEMPLATE =
 "📌 Identifiquei *{qtd}* demanda(s) aberta(s) há mais de {limiar} dias, paradas na etapa atual:\n{lista}\n\n"+
 "Pode dar uma olhada e ver o que precisa pra destravar? Qualquer dúvida, me chama 🙂";
 
-var LS_SQUADS = 'hac_lecom_squads_v1';
+var LS_SQUADS_LEGADO = 'hac_lecom_squads_v1'; // base antiga por upload; descartada em favor do hub-core
+var SEM_SM_LABEL = 'Sem SM (cobrar via coach)';
 var LS_MAPPING = 'hac_lecom_mapping_v1';
 var LS_SHOWLABELS = 'hac_lecom_showlabels_v1';
 var LS_TEMPLATE = 'hac_lecom_template_v1';
@@ -463,16 +465,12 @@ function downloadCanvasPNG(canvas, filename){
    STORAGE
    ============================================================ */
 function loadSquads(){
-  try{
-    var raw = localStorage.getItem(LS_SQUADS);
-    if(raw){ var p = JSON.parse(raw); STATE.squads = p.squads; STATE.squadsUpdatedAt = p.savedAt; return; }
-  }catch(e){}
-  STATE.squads = SQUADS_SEED;
-  STATE.squadsUpdatedAt = null;
-}
-function saveSquads(squads, savedAt){
-  STATE.squads = squads; STATE.squadsUpdatedAt = savedAt;
-  try{ localStorage.setItem(LS_SQUADS, JSON.stringify({squads:squads, savedAt:savedAt})); }catch(e){}
+  try{ localStorage.removeItem(LS_SQUADS_LEGADO); }catch(e){}
+  var hub = (typeof HubCore !== 'undefined') ? HubCore.squads() : [];
+  STATE.squads = hub.filter(function(s){ return s.ativa !== false; }).map(function(s){
+    return {squad:s.squad, area:s.diretoria||'', sm_atual:s.sm||''};
+  });
+  STATE.squadsUpdatedAt = (typeof HubCore !== 'undefined') ? HubCore.status().generatedAt : null;
 }
 function loadMapping(){
   try{ var raw = localStorage.getItem(LS_MAPPING); STATE.mapping = raw ? JSON.parse(raw) : {}; }catch(e){ STATE.mapping = {}; }
@@ -488,6 +486,8 @@ function getLastLoadMeta(){ try{ var r=localStorage.getItem(LS_LASTLOAD); return
 /* ============================================================
    MAPEAMENTO AUTOMÁTICO Produto -> Squad/SM
    ============================================================ */
+/* SM sempre lido da base do hub no momento do cálculo (o mapeamento salvo guarda só a squad) */
+function smDaSquad(squadName){ return (typeof HubCore !== 'undefined' && squadName) ? HubCore.smOf(squadName) : ''; }
 function recomputeAutoMapping(){
   var squadTokens = STATE.squads.map(function(s){ return {squad:s.squad, area:s.area, sm:s.sm_atual, toks:normTok(s.squad)}; });
   var produtos = {};
@@ -707,15 +707,15 @@ function aggregate(){
   var bySM = {};
   abertos.forEach(function(r){
     var map = r.produto ? STATE.mapping[r.produto] : null;
-    if(!map || map.status==='ignorado' || map.status==='semmatch' || !map.sm) return;
+    if(!map || map.status==='ignorado' || map.status==='semmatch' || !map.squad) return;
     if((r.agingEtapa||0) < AGING_LIMIAR_PADRAO) return;
-    var key = map.sm;
+    var key = smDaSquad(map.squad) || SEM_SM_LABEL;
     if(!bySM[key]) bySM[key] = {sm:key, squad:map.squad, itens:[]};
     bySM[key].itens.push(r);
   });
   var cobranca = Object.keys(bySM).map(function(k){ return bySM[k]; }).sort(function(a,b){ return b.itens.length-a.itens.length; });
 
-  var totalMapeadoCount = abertos.filter(function(r){ var mp=r.produto?STATE.mapping[r.produto]:null; return mp && mp.sm; }).length;
+  var totalMapeadoCount = abertos.filter(function(r){ var mp=r.produto?STATE.mapping[r.produto]:null; return mp && mp.squad && mp.status!=='ignorado' && mp.status!=='semmatch'; }).length;
 
   STATE.totals = {
     totalGeral: rows.length, totalAbertos: abertos.length,
@@ -808,9 +808,7 @@ function baseLayoutHTML(){
     '<div class="panel">'+
       '<div class="panel-head"><div><h2>Base de Squads x SMs usada no mapeamento</h2>'+
       '<div class="panel-sub" id="squadsBaseInfo"></div></div>'+
-      '<label class="btn btn-outline btn-sm" style="cursor:pointer;">📋 Importar SMs'+
-        '<input type="file" id="squadsFile" accept=".html,.json" style="display:none;">'+
-      '</label></div>'+
+      '</div>'+
     '</div>'+
     '<div class="panel">'+
       '<div class="panel-head"><div><h2>Produto (Lecom) → Squad → SM</h2>'+
@@ -1137,9 +1135,7 @@ function closeWaModal(){ el('waModal').classList.remove('open'); }
    ============================================================ */
 function renderMappingTab(){
   var updEl = el('squadsBaseInfo');
-  updEl.textContent = STATE.squadsUpdatedAt ?
-    ('Base atualizada via backup em '+fmtDateBR(new Date(STATE.squadsUpdatedAt))+' · '+STATE.squads.length+' squads') :
-    ('Usando snapshot padrão embutido · '+STATE.squads.length+' squads · exporte um backup do Dashboard SMs x Squads e carregue aqui pra atualizar');
+  if(typeof HubCore !== 'undefined'){ HubCore.renderBadge(updEl); updEl.textContent += ' · mapeamento usa as '+STATE.squads.length+' squads ativas'; }
 
   var produtoCounts = {};
   STATE.rows.forEach(function(r){ if(r.produto) produtoCounts[r.produto] = (produtoCounts[r.produto]||0)+1; });
@@ -1169,7 +1165,7 @@ function renderMappingTab(){
     var tagClass = mp.status||'semmatch';
     var tagLabel = {auto:'Sugestão auto', confirmado:'Confirmado', ignorado:'Ignorado', semmatch:'Sem match'}[tagClass]||tagClass;
     var opts = '<option value="">— nenhuma —</option>'+squadOptions.map(function(s){
-      return '<option value="'+escAttr(s.squad)+'" '+(mp.squad===s.squad?'selected':'')+'>'+esc(s.squad)+' ('+esc(s.sm_atual)+')</option>';
+      return '<option value="'+escAttr(s.squad)+'" '+(mp.squad===s.squad?'selected':'')+'>'+esc(s.squad)+' ('+esc(s.sm_atual||'Sem SM')+')</option>';
     }).join('');
     return '<tr>'+
       '<td>'+esc(p)+'</td>'+
@@ -1204,49 +1200,6 @@ function renderMappingTab(){
       renderMappingTab(); renderCobranca(); renderKPIs();
     });
   });
-}
-
-function parseDashboardSmBase(html){
-  function readBlock(marker, pattern){
-    var m = html.match(pattern);
-    if(!m) return null;
-    try { return JSON.parse(m[1]); } catch(e){ throw new Error('O bloco '+marker+' do Dashboard está inválido.'); }
-  }
-  var oldData = readBlock('DATA', /\/\*DATA_START\*\/const DATA = ([\s\S]+?);\s*\/\*DATA_END\*\//);
-  var rows = oldData && Array.isArray(oldData.squads) ? oldData.squads : null;
-  if(!rows || !rows.length){
-    rows = readBlock('SQUADCANON', /\/\*SQUADCANON_START\*\/(?:var|let|const)\s+SQUAD_CANON\s*=\s*([\s\S]+?);\s*\/\*SQUADCANON_END\*\//i);
-  }
-  if(!Array.isArray(rows) || !rows.length) throw new Error('Não encontrei uma base de squads no arquivo. Aceito o Dashboard antigo e o Dashboard SMs x Squads 2.0.');
-  return rows.map(function(s){ return {squad:String(s.squad||s.nome_azure||s.nome||'').replace(/\u00a0/g,' ').trim(), area:s.area||s.diretoria||'', diretoria:s.diretoria||s.area||'', diretor:s.diretor||'', sm_atual:s.sm_atual||s.sm_proposto||s.sm||''}; }).filter(function(s){return s.squad;});
-}
-
-function handleSquadsBackup(file){
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      var text = e.target.result;
-      // Aceita tanto o backup .json quanto o Dashboard HTML (.html)
-      var squads;
-      if(file.name.toLowerCase().endsWith('.html') || text.trim().startsWith('<!doctype') || text.trim().startsWith('<html')){
-        // Extrai a base do Dashboard antigo ou do Dashboard SMs x Squads 2.0
-        squads = parseDashboardSmBase(text);
-      } else {
-        // Tenta como JSON de backup
-        var payload = JSON.parse(text);
-        if(!Array.isArray(payload.squads)) throw new Error('formato inválido');
-        squads = payload.squads;
-      }
-      saveSquads(squads, new Date().toISOString());
-      recomputeAutoMapping();
-      aggregate();
-      renderAll();
-      showToast('✅ Base de SMs atualizada: '+squads.length+' squads de "'+file.name+'"');
-    }catch(err){
-      alert('Não consegui ler esse arquivo.\n\nDetalhe: '+err.message+'\n\nAceito: Dashboard_SMs_x_Squads_Hapvida.html, Dashboard_SMs_x_Squads_Hapvida_2_0.html ou backup .json do Dashboard.');
-    }
-  };
-  reader.readAsText(file, 'utf-8');
 }
 
 /* ============================================================
@@ -1292,7 +1245,6 @@ function wireStaticUI(){
     });
   });
 
-  el('squadsFile').addEventListener('change', function(e){ if(e.target.files[0]) handleSquadsBackup(e.target.files[0]); e.target.value=''; });
 
   el('mapSearch').addEventListener('input', function(){ STATE.mapSearch=this.value; renderMappingTab(); });
   document.querySelectorAll('#mapFilterSeg button').forEach(function(b){

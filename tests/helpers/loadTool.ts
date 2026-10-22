@@ -13,6 +13,8 @@ import { JSDOM } from "jsdom";
  * @param relativeHtmlPath caminho relativo a client/public/ferramentas/
  * @param scriptIndex índice do bloco <script> (sem src) que contém a lógica
  *   da aplicação (normalmente o último, depois dos vendors tipo Chart.js/SheetJS)
+ * @param preloadScripts arquivos de client/public/ (ex.: shared/data/hub-core.js) executados
+ *   no sandbox antes do script da ferramenta, como faz o <script src> real.
  * @param exportSnippet trecho JS injetado só na cópia em memória, expondo o
  *   necessário em globalThis.__test__ para o teste inspecionar — nunca é
  *   escrito no HTML real.
@@ -21,6 +23,7 @@ export function loadToolScript(
   relativeHtmlPath: string,
   scriptIndex: number,
   exportSnippet: string,
+  preloadScripts: string[] = [],
 ) {
   const htmlPath = path.resolve(
     process.cwd(),
@@ -66,6 +69,9 @@ export function loadToolScript(
   const context = dom.window as unknown as vm.Context;
   vm.createContext(context);
   (context as any).__capture__ = {};
+  for (const file of preloadScripts) {
+    vm.runInContext(readFileSync(path.resolve(process.cwd(), "client/public", file), "utf-8"), context);
+  }
   vm.runInContext(appScript, context);
 
   return (context as any).__capture__;

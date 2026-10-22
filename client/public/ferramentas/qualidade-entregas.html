@@ -250,13 +250,9 @@ footer.brand-footer{
     <button class="btn btn-azul" id="fileBtn">Selecionar planilha</button>
     <button class="btn btn-outline print-hide" id="printBtn">Imprimir / PDF</button>
     <button class="btn print-hide" id="btnExportHtml" style="background:#0F2370;color:#fff;" title="Gera um novo arquivo .html com a planilha analisada já embutida — funciona em qualquer navegador">💾 Exportar HTML atualizado</button>
-    <label class="btn btn-outline print-hide" style="cursor:pointer;background:#E8F0FE;color:#1A3DAA;" title="Importa o Dashboard_SMs_x_Squads_Hapvida.html para mostrar o SM de cada squad">📋 Importar SMs
-      <input type="file" id="smImportInput" accept=".html" style="display:none;">
-    </label>
   </div>
 
   <div id="errorBanner"></div>
-  <div id="smImportBanner" style="display:none;background:#E7F3EC;border:1px solid #BFE0CC;border-radius:7px;padding:9px 14px;font-size:12.5px;color:#1E7A37;margin-bottom:10px;"></div>
   <div id="smMappingBadge" style="font-size:12px;color:#7A8294;padding:4px 0;margin-bottom:6px;"></div>
 
   <div id="mappingPanel" class="panel hidden">
@@ -280,8 +276,8 @@ footer.brand-footer{
   <footer class="brand-footer">Hub do Agile Coach · Hapvida — ferramenta offline, sem dependências externas. Dados processados localmente no navegador.</footer>
 </div>
 
-<script src="/shared/data/squad-canon.js"></script>
-<script src="/shared/data/sm-mapping.js"></script>
+<script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script>
@@ -294,7 +290,6 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
    ============================================================ */
 var LS_LASTLOAD   = 'hac_qualidade_lastload_v1';
 var LS_SHOWLABELS = 'hac_qualidade_showlabels_v1';
-var LS_SM_MAPPING = 'hac_qualidade_smmapping_v1';
 
 var TIPOS_VALIDOS = ['Bug','Defect','Incident'];
 
@@ -355,7 +350,7 @@ var FIELD_LABELS = {
 var STATE = {
   rows: [],            // itens brutos normalizados
   smMapping: {},        // squad name -> {sm, area, diretor}
-  smMappingMeta: null,
+  smMappingMeta: null, // HubCore.status()
   fileName: null,
   showLabels: true,
   charts: {},
@@ -471,41 +466,14 @@ function hideBanners(){
 }
 
 /* ============================================================
-   SM MAPPING — sincronizado automaticamente do Dashboard SMs x Squads
-   (via /shared/data/squad-canon.js + sm-mapping.js). Upload manual do
-   arquivo continua funcionando como alternativa/fallback.
+   BASE DO HUB — SM, diretoria e status de cada squad vêm de
+   /shared/data/hub-core.js (modelo gerado pelo Dashboard SMs x Squads).
+   Squad = projeto do Azure, então o nome do Team Project resolve direto.
    ============================================================ */
 function loadSmMapping(){
-  if(typeof window.getSmSquadMapping === 'function'){
-    var shared = window.getSmSquadMapping();
-    var sharedCount = Object.keys(shared || {}).length;
-    if(sharedCount > 0){
-      STATE.smMapping = shared;
-      STATE.smMappingMeta = {loadedAt: new Date().toISOString(), total: sharedCount, source:'shared'};
-      STATE._smMappingVersion++;
-      return;
-    }
-  }
-  try{
-    var raw = localStorage.getItem(LS_SM_MAPPING);
-    if(raw){
-      var p = JSON.parse(raw);
-      STATE.smMapping = p.mapping || {};
-      STATE.smMappingMeta = p.meta || null;
-      STATE._smMappingVersion++;
-    }
-  }catch(e){}
-}
-function saveSmMapping(){
-  try{
-    localStorage.setItem(LS_SM_MAPPING, JSON.stringify({mapping: STATE.smMapping, meta: STATE.smMappingMeta}));
-  }catch(e){}
-}
-function boardKeySimple(s){
-  return String(s||'').trim().replace(/\u00a0/g,' ').toLowerCase()
-    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-    .replace(/\(DESATIVADO\)/ig,' ')
-    .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+  if(typeof HubCore === 'undefined'){ STATE.smMapping = {}; STATE.smMappingMeta = null; }
+  else { STATE.smMapping = HubCore.getSmSquadMapping(); STATE.smMappingMeta = HubCore.status(); }
+  STATE._smMappingVersion++;
 }
 // primeiro segmento do Area Path (antes da 1ª barra) — no Azure DevOps, geralmente é o próprio Team Project/squad
 function firstAreaSegment(areaPath){
@@ -513,98 +481,22 @@ function firstAreaSegment(areaPath){
   var idx = s.search(/[\\/]/); // barra normal ou invertida
   return idx>=0 ? s.slice(0, idx) : s;
 }
-function buildSmIndex(){
-  if(STATE._smIndexCache && STATE._smIndexVer === STATE._smMappingVersion) return STATE._smIndexCache;
-  var idx = Object.keys(STATE.smMapping).map(function(name){
-    return { key: boardKeySimple(name), name: name, info: STATE.smMapping[name] };
-  }).filter(function(it){ return it.key; });
-  idx.sort(function(a,b){ return b.key.length - a.key.length; }); // chaves mais específicas primeiro
-  STATE._smIndexCache = idx;
-  STATE._smIndexVer = STATE._smMappingVersion;
-  return idx;
-}
-// casamento em 4 camadas, igual ao usado na aba Boards Azure do Dashboard de SMs:
-// 1) chave exata  2) sufixo (bk termina com " "+key)  3) key contido em bk  4) bk contido em key
-function matchSmByKey(bk, idx){
-  if(!bk) return null;
-  for(var i=0;i<idx.length;i++){ if(idx[i].key === bk) return idx[i]; }
-  for(var i=0;i<idx.length;i++){ if(idx[i].key.length>=6 && bk.endsWith(' '+idx[i].key)) return idx[i]; }
-  for(var i=0;i<idx.length;i++){ if(idx[i].key.length>=8 && bk.indexOf(idx[i].key)>=0) return idx[i]; }
-  for(var i=0;i<idx.length;i++){ if(bk.length>=8 && idx[i].key.indexOf(bk)>=0) return idx[i]; }
-  return null;
-}
 function smOf(squadName){
-  if(!squadName) return null;
-  // 1. match direto — squad já vem como Team Project (nome limpo, resolvido em finishProcessing)
-  var direct = STATE.smMapping[squadName] || STATE.smMapping[squadName.trim().replace(/\u00a0/g,' ')];
-  if(direct) return direct;
-  // 2. fallback: casamento em 4 camadas, pra absorver pequenas variações de grafia entre o Team Project
-  //    do Azure e o nome da squad na base de SMs (ex.: espaço duplo, "(DESATIVADO)", etc.)
-  var idx = buildSmIndex();
-  var hit = matchSmByKey(boardKeySimple(squadName), idx);
-  return hit ? hit.info : null;
-}
-function parseDashboardSmBase(html){
-  function readBlock(marker, pattern){
-    var m = html.match(pattern);
-    if(!m) return null;
-    try { return JSON.parse(m[1]); } catch(e){ throw new Error('O bloco '+marker+' do Dashboard está inválido.'); }
-  }
-  var oldData = readBlock('DATA', /\/\*DATA_START\*\/const DATA = ([\s\S]+?);\s*\/\*DATA_END\*\//);
-  var rows = oldData && Array.isArray(oldData.squads) ? oldData.squads : null;
-  if(!rows || !rows.length){
-    rows = readBlock('SQUADCANON', /\/\*SQUADCANON_START\*\/(?:var|let|const)\s+SQUAD_CANON\s*=\s*([\s\S]+?);\s*\/\*SQUADCANON_END\*\//i);
-  }
-  if(!Array.isArray(rows) || !rows.length) throw new Error('Não encontrei uma base de squads no arquivo. Aceito o Dashboard antigo e o Dashboard SMs x Squads 2.0.');
-  return rows.map(function(s){ return {squad:String(s.squad||s.nome_azure||s.nome||'').replace(/\u00a0/g,' ').trim(), area:s.area||s.diretoria||'', diretoria:s.diretoria||s.area||'', diretor:s.diretor||'', sm_atual:s.sm_atual||s.sm_proposto||s.sm||''}; }).filter(function(s){return s.squad;});
-}
-
-function importSmMappingFromFile(file){
-  var reader = new FileReader();
-  reader.onload = function(e){
-    try{
-      var html = e.target.result;
-      var squads = parseDashboardSmBase(html);
-      var mapping = {};      var mapping = {};
-      data.squads.forEach(function(s){
-        if(s.squad){
-          var cleanName = s.squad.trim().replace(/\u00a0/g, ' ');
-          mapping[cleanName] = {sm: s.sm_atual, area: s.area, diretor: s.diretor};
-          if(cleanName !== s.squad.trim()) mapping[s.squad.trim()] = {sm: s.sm_atual, area: s.area, diretor: s.diretor};
-        }
-      });
-      STATE.smMapping = mapping;
-      STATE.smMappingMeta = {loadedAt: new Date().toISOString(), fileName: file.name, total: squads.length};
-      STATE._smMappingVersion++;
-      saveSmMapping();
-      renderSmMappingBadge();
-      populateFilters();
-      if(STATE.rows.length) renderAll();
-      showSmImportSuccess(file.name, squads.length);
-    }catch(err){
-      el('smMappingBadge').innerHTML = '<span style="color:#A3171A;font-size:12px;">❌ '+esc(err.message)+'</span>';
-    }
-  };
-  reader.readAsText(file);
+  if(typeof HubCore === 'undefined' || !squadName) return null;
+  var found = HubCore.resolve(squadName);
+  if(!found.found) return null;
+  var s = found.squad, sm = HubCore.clean(s.sm);
+  return {sm: sm, area: s.diretoria||'', diretoria: s.diretoria||'', diretor: s.diretor||'', ativa: s.ativa!==false, semSm: !sm};
 }
 function renderSmMappingBadge(){
   var badge = el('smMappingBadge');
-  if(!badge) return;
-  if(STATE.smMappingMeta && STATE.smMappingMeta.source === 'shared'){
-    badge.innerHTML = '<span style="color:#1C8C4A;font-size:12px;">✅ '+esc(STATE.smMappingMeta.total)+' squads sincronizadas automaticamente do <b>Dashboard SMs x Squads</b></span>';
-  } else if(STATE.smMappingMeta){
-    var dt = new Date(STATE.smMappingMeta.loadedAt).toLocaleDateString('pt-BR');
-    badge.innerHTML = '<span style="color:#1C8C4A;font-size:12px;">✅ '+esc(STATE.smMappingMeta.total)+' squads importadas de <b>'+esc(STATE.smMappingMeta.fileName)+'</b> ('+dt+')</span>';
-  } else {
-    badge.innerHTML = '<span style="color:#7A8294;font-size:12px;">Mapeamento de SMs não carregado — importe o Dashboard de SMs para exibir o SM de cada squad.</span>';
+  if(!badge || typeof HubCore === 'undefined') return;
+  HubCore.renderBadge(badge);
+  var fora = uniqSorted((STATE.rows || []).map(function(r){ return r.squad; }).filter(function(n){ return n && !HubCore.resolve(n).found; }));
+  if(fora.length){
+    badge.textContent += ' · ' + fora.length + ' squad(s) da planilha fora da base do hub';
+    badge.title += '\nNão reconhecidas: ' + fora.slice(0, 30).join('; ') + (fora.length > 30 ? '…' : '');
   }
-}
-function showSmImportSuccess(filename, total){
-  var b = el('smImportBanner');
-  if(!b) return;
-  b.style.display = 'block';
-  b.innerHTML = '✅ Importados '+total+' squads de "'+esc(filename)+'". Coluna SM e filtro de SM/Diretoria ativos.';
-  setTimeout(function(){ b.style.display='none'; }, 5000);
 }
 
 /* ============================================================
@@ -1064,6 +956,7 @@ function populateFilters(){
    RENDER ALL
    ============================================================ */
 function renderAll(){
+  renderSmMappingBadge();
   renderKpisGeral();
   renderChartTipo();
   renderChartTrend();
@@ -1322,7 +1215,7 @@ function renderAgingTable(rows){
       '<td><span class="badge '+tipoCls+'">'+r.tipo+'</span></td>'+
       '<td>'+esc(r.title||'(sem título)')+'</td>'+
       '<td>'+esc(r.squad)+'</td>'+
-      '<td>'+(r.sm?esc(r.sm):'<span style="color:#9AA3B5;">—</span>')+'</td>'+
+      '<td>'+(r.sm?esc(r.sm):'<span title="Squad sem SM: cobrar via coach" style="color:#B35A00;font-weight:700;">Sem SM</span>')+'</td>'+
       '<td>'+esc(r.state)+'</td>'+
       '<td><span class="badge faixa-'+faixaIdx+'">'+fmtInt(r.diasAberto)+' dias</span></td>'+
     '</tr>';
@@ -1410,7 +1303,7 @@ function renderProcessoTab(){
   });
   var body = el('concentracaoBody');
   if(body) body.innerHTML = concList.length ? concList.map(function(s){
-    return '<tr><td><b>'+esc(s.squad)+'</b></td><td>'+esc(s.diretoria)+'</td><td>'+(s.sm?esc(s.sm):'<span style="color:#9AA3B5;">—</span>')+'</td>'+
+    return '<tr><td><b>'+esc(s.squad)+'</b></td><td>'+esc(s.diretoria)+'</td><td>'+(s.sm?esc(s.sm):'<span title="Squad sem SM: cobrar via coach" style="color:#B35A00;font-weight:700;">Sem SM</span>')+'</td>'+
       '<td>'+fmtInt(s.Bug)+'</td><td>'+fmtInt(s.Defect)+'</td><td>'+fmtInt(s.Incident)+'</td><td class="num">'+fmtInt(s.total)+'</td></tr>';
   }).join('') : '<tr><td colspan="7" class="noresults">Nenhum item encontrado com esses filtros.</td></tr>';
 }
@@ -1559,11 +1452,6 @@ function init(){
   STATE.showLabels = loadShowLabels();
   wireMappingPanel();
 
-  var smImportEl = el('smImportInput');
-  if(smImportEl) smImportEl.addEventListener('change', function(e){
-    if(e.target.files[0]) importSmMappingFromFile(e.target.files[0]);
-    e.target.value='';
-  });
   renderSmMappingBadge();
 
   if(EMBEDDED_ROWS && EMBEDDED_ROWS.length){
