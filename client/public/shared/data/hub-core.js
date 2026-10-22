@@ -122,9 +122,34 @@
     return idx;
   }
 
+  /* Classificação Produto x Operação (shared/data/squad-tipo.js): a lista manda; resolve por nome exato, normalizado ou alias. */
+  var TIPOS = ['Produto', 'Operação'];
+  function applyTipo(model) {
+    var lista = global.SQUAD_TIPO;
+    var out = { aplicados: 0, semCorrespondencia: [] };
+    if (!model || !lista) return out;
+    var idx = {};
+    model.squads.forEach(function (rec) {
+      uniq([rec.squad].concat(rec.nomes || [])).forEach(function (nome) {
+        var k = normSquad(nome);
+        if (!k) return;
+        if (!idx[k] || (rec.ativa && !idx[k].ativa)) idx[k] = rec;
+      });
+    });
+    model.squads.forEach(function (rec) { delete rec.tipo; });
+    TIPOS.forEach(function (tipo) {
+      (lista[tipo] || []).forEach(function (nome) {
+        var rec = idx[normSquad(nome)];
+        if (rec) { rec.tipo = tipo; out.aplicados++; } else out.semCorrespondencia.push(tipo + ': ' + nome);
+      });
+    });
+    return out;
+  }
+
   function load(force) {
     if (cache && !force) return cache;
     var picked = pickModel();
+    if (picked.model) applyTipo(picked.model);
     cache = { model: picked.model, origem: picked.origem, index: picked.model ? buildIndex(picked.model) : null };
     return cache;
   }
@@ -169,6 +194,22 @@
     });
     return hits.length === 1 ? { nome: hits[0].nome, via: 'parcial' } : null;
   }
+  function tipoOf(name) {
+    var r = resolve(name);
+    return r.found ? (r.squad.tipo || '') : '';
+  }
+  /* contagem por tipo (ativas e total) + nomes da lista oficial que não acharam squad no modelo */
+  function tipoResumo() {
+    var c = load();
+    var out = { Produto: { total: 0, ativas: 0 }, 'Operação': { total: 0, ativas: 0 }, semTipo: { total: 0, ativas: 0 }, semCorrespondencia: [] };
+    if (!c.model) return out;
+    c.model.squads.forEach(function (s) {
+      var b = out[s.tipo || 'semTipo'];
+      b.total++; if (s.ativa) b.ativas++;
+    });
+    out.semCorrespondencia = applyTipo(c.model).semCorrespondencia;
+    return out;
+  }
   function squads() { var c = load(); return c.model ? c.model.squads.slice() : []; }
   function diretorias() {
     var seen = {};
@@ -185,7 +226,7 @@
       uniq([rec.squad].concat(rec.nomes || [])).forEach(function (nome) {
         if (mapping[nome] && !rec.ativa) return;
         mapping[nome] = {
-          sm: clean(rec.sm), area: rec.diretoria || '', diretoria: rec.diretoria || '', diretor: rec.diretor || '',
+          tipo: rec.tipo || '', sm: clean(rec.sm), area: rec.diretoria || '', diretoria: rec.diretoria || '', diretor: rec.diretor || '',
           gerente: rec.gerente || '', ativa: rec.ativa !== false, semSm: !clean(rec.sm), id: rec.id
         };
       });
@@ -288,6 +329,6 @@
     clean: clean, normSquad: normSquad, normPerson: normPerson,
     load: load, reload: reload, resolve: resolve, smOf: smOf, isDesligado: isDesligado,
     smNames: smNames, matchSm: matchSm, squads: squads, diretorias: diretorias, getSmSquadMapping: getSmSquadMapping,
-    status: status, renderBadge: renderBadge, readScope: readScope, scopeLink: scopeLink, applyScopeToSearch: applyScopeToSearch, LEGACY_KEYS: LEGACY_KEYS
+    status: status, renderBadge: renderBadge, readScope: readScope, scopeLink: scopeLink, applyScopeToSearch: applyScopeToSearch, tipoOf: tipoOf, tipoResumo: tipoResumo, TIPOS: TIPOS, LEGACY_KEYS: LEGACY_KEYS
   };
 })(typeof window !== 'undefined' ? window : globalThis);

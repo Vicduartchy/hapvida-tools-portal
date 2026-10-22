@@ -46,3 +46,37 @@ describe("hub-core: escopo entre ferramentas e limpeza de resíduos", () => {
     expect(win.localStorage.getItem("outra_chave")).toBe("ok");
   });
 });
+
+describe("hub-core: classificação Produto x Operação", () => {
+  function bootTipo() {
+    const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "http://localhost/", runScripts: "outside-only" });
+    for (const f of ["hub-squads.js", "squad-tipo.js", "hub-core.js"]) vm.runInContext(read(f), dom.getInternalVMContext());
+    return dom.window as any;
+  }
+
+  it("lista oficial tem 100 Produto e 43 Operação, sem nome repetido entre as listas", () => {
+    const { SQUAD_TIPO } = bootTipo();
+    expect(SQUAD_TIPO["Produto"]).toHaveLength(100);
+    expect(SQUAD_TIPO["Operação"]).toHaveLength(43);
+    const todos = [...SQUAD_TIPO["Produto"], ...SQUAD_TIPO["Operação"]];
+    expect(new Set(todos).size).toBe(143);
+  });
+
+  it("todo nome da lista acha squad no hub (alias conta) e ativas ficam classificadas", () => {
+    const win = bootTipo();
+    const resumo = win.HubCore.tipoResumo();
+    expect(resumo.semCorrespondencia).toEqual([]);
+    expect(resumo["Produto"].ativas).toBe(100);
+    // 43 nomes, mas TI - Arquitetura - QA 2.0 é alias de TI - Governança de QA no hub: 42 squads distintas
+    expect(resumo["Operação"].ativas).toBe(42);
+    expect(win.HubCore.tipoOf("Operadora - Odonto")).toBe("Produto");
+    expect(win.HubCore.tipoOf("TI - Datacenter")).toBe("Operação");
+    expect(win.HubCore.tipoOf("TI - Arquitetura - QA 2.0")).toBe("Operação");
+    expect(win.HubCore.tipoOf("Squad inexistente")).toBe("");
+  });
+
+  it("expõe o tipo no mapeamento consumido pelas ferramentas", () => {
+    const win = bootTipo();
+    expect(win.HubCore.getSmSquadMapping()["Operadora - Odonto"].tipo).toBe("Produto");
+  });
+});

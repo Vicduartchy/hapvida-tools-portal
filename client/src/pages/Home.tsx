@@ -213,7 +213,8 @@ function ToolCard({ tool, onOpen }: { tool: Tool; onOpen: (tool: Tool) => void }
 }
 
 type HubKpis = { squadsSemSm: number; smAcima: number; vermelho: number; amarelo: number; verde: number; semPessoas: number };
-type HubSnapshot = { generatedAt: string; ref?: string; squads: unknown[]; sms: unknown[]; kpis?: HubKpis; origem: "dashboard" | "arquivo" };
+type HubSquadRow = { ativa?: boolean; tipo?: string };
+type HubSnapshot = { generatedAt: string; ref?: string; squads: HubSquadRow[]; sms: unknown[]; kpis?: HubKpis; origem: "dashboard" | "arquivo" };
 
 const HUB_LS_KEY = "hac_hub_model_v1";
 
@@ -268,6 +269,10 @@ function HubHealthPanel() {
     );
   }
   const k = snap.kpis;
+  const ativas = snap.squads.filter((s) => s.ativa !== false);
+  const porTipo = { Produto: 0, Operação: 0, semTipo: 0 };
+  ativas.forEach((s) => { if (s.tipo === "Produto") porTipo.Produto++; else if (s.tipo === "Operação") porTipo.Operação++; else porTipo.semTipo++; });
+  const temTipo = porTipo.Produto + porTipo.Operação > 0;
   const when = Number.isNaN(Date.parse(snap.generatedAt)) ? "" : new Date(snap.generatedAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
   const rows: Array<{ label: string; value: number; slug: string; alert: boolean }> = k
     ? [
@@ -286,6 +291,11 @@ function HubHealthPanel() {
           <p className="text-[10px] text-slate-500">{snap.squads.length} squads · {snap.sms.length} SMs{when ? ` · ${when}` : ""}</p>
         </div>
       </div>
+      {temTipo && (
+        <p className="mt-3 rounded-md bg-slate-50 px-2 py-1.5 text-[11px] font-semibold text-slate-700">
+          Ativas por tipo: <b>{porTipo.Produto}</b> Produto · <b>{porTipo.Operação}</b> Operação{porTipo.semTipo > 0 ? ` · ${porTipo.semTipo} sem tipo` : ""}
+        </p>
+      )}
       {rows.length > 0 ? (
         <ul className="mt-3 space-y-1.5">
           {rows.map((r) => (

@@ -3,6 +3,7 @@
 <meta charset="UTF-8">
 <title>Dashboard SMs x Squads 2.0 | Hapvida</title>
 <script src="/shared/data/squad-canon.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
@@ -499,6 +500,7 @@
       <div class="gf-field"><span class="gf-lbl">Diretoria</span><div class="msel" id="mselGfDiretoria"><button type="button" class="msel-btn" id="mselGfDiretoriaBtn">Diretoria <span class="count" id="mselGfDiretoriaCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfDiretoriaPanel"></div></div></div>
       <div class="gf-field"><span class="gf-lbl">SM</span><div class="msel" id="mselGfSm"><button type="button" class="msel-btn" id="mselGfSmBtn">SM <span class="count" id="mselGfSmCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfSmPanel"></div></div></div>
       <div class="gf-field"><span class="gf-lbl">Saúde</span><div class="msel" id="mselGfSaude"><button type="button" class="msel-btn" id="mselGfSaudeBtn">Saúde <span class="count" id="mselGfSaudeCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfSaudePanel"></div></div></div>
+      <div class="gf-field"><span class="gf-lbl">Tipo</span><div class="msel" id="mselGfTipo"><button type="button" class="msel-btn" id="mselGfTipoBtn">Tipo <span class="count" id="mselGfTipoCount" style="display:none;">0</span></button><div class="msel-panel" id="mselGfTipoPanel"></div></div></div>
       <div class="gf-field"><span class="gf-lbl">Status</span><select id="gfStatus"><option value="ativas">Só ativas</option><option value="todas">Ativas e desativadas</option><option value="desativadas">Só desativadas</option></select></div>
       <div class="gf-field gf-grow"><span class="gf-lbl">Buscar</span><input type="search" id="gfBusca" placeholder="🔎 Squad, SM, diretor, gerente ou colaborador…" autocomplete="off"></div>
       <button type="button" class="gf-linkbtn" id="gfMore">Mais filtros ▾</button>
@@ -710,6 +712,7 @@
         <thead><tr>
           <th data-sort="squad">Squad <span class="sort-arrow">▲</span></th>
           <th data-sort="diretoria">Diretoria <span class="sort-arrow">↕</span></th>
+          <th data-sort="tipo">Tipo <span class="sort-arrow">↕</span></th>
           <th data-sort="diretor">Diretor <span class="sort-arrow">↕</span></th>
           <th data-sort="gerente">Gerente <span class="sort-arrow">↕</span></th>
           <th data-sort="levantamento_sm">SM <span class="sort-arrow">↕</span></th>
@@ -1817,8 +1820,16 @@ function renderExecCharts(model, hasQ){
 /* ===== Barra única de filtros: vale para todas as abas ===== */
 const SEM_SM_OPTION = '(Sem SM)';
 const SAUDE_VALUES = ['Vermelho', 'Amarelo', 'Verde'];
+/* Tipo da squad (Produto x Operação), vindo do cadastro oficial em shared/data/squad-tipo.js via hub-core */
+const SEM_TIPO_OPTION = '(Sem tipo)';
+const TIPO_VALUES = ['Produto', 'Operação', SEM_TIPO_OPTION];
+function tipoBadge(tipo){
+  if(!tipo) return '<span class="badge pend" title="Fora do cadastro oficial de squads (Produto/Operação)">Sem tipo</span>';
+  return '<span class="badge '+(tipo==='Produto'?'ok':'pend')+'">'+esc(tipo)+'</span>';
+}
+function tipoDaSquad(s){ return (typeof HubCore !== 'undefined' && HubCore.tipoOf(s.squad)) || ''; }
 const GF_STORAGE_KEY = 'hac_hub_filters_v1';
-const gfDefault = () => ({ diretoria:new Set(), sm:new Set(), saude:new Set(), funcao:new Set(), q:'', status:'ativas', pend:'', acima:false, diverg:false, boardStatus:'', boardVinculo:'', compartilhado:'' });
+const gfDefault = () => ({ diretoria:new Set(), sm:new Set(), saude:new Set(), tipo:new Set(), funcao:new Set(), q:'', status:'ativas', pend:'', acima:false, diverg:false, boardStatus:'', boardVinculo:'', compartilhado:'' });
 const GF = gfDefault();
 const PEND_LABEL = { sem_sm:'Sem SM', sem_pessoas:'Sem pessoas', boards_parados:'Boards parados há mais de 180 dias' };
 const STATUS_LABEL = { ativas:'Só ativas', todas:'Ativas e desativadas', desativadas:'Só desativadas' };
@@ -1827,7 +1838,7 @@ function gfInvalidate(){ _gfPred = null; _gfPredNoQ = null; _modelSig = ''; }
 function activeTabName(){ const b = document.querySelector('#tabBar .tab.active'); return b ? b.getAttribute('data-tab') : 'executive'; }
 /* filtros que recortam o universo (a busca por texto não conta: ela só afeta as tabelas e contadores) */
 function globalFilterActive(){
-  return !!(GF.diretoria.size || GF.sm.size || GF.saude.size || GF.pend || GF.acima || GF.diverg || GF.status === 'desativadas');
+  return !!(GF.diretoria.size || GF.sm.size || GF.saude.size || GF.tipo.size || GF.pend || GF.acima || GF.diverg || GF.status === 'desativadas');
 }
 let FULL_MODEL = null;
 function gfBuildPredicate(ignoreQ){
@@ -1843,6 +1854,7 @@ function gfBuildPredicate(ignoreQ){
     if(GF.status === 'ativas' && !s.squadAtiva) return false;
     if(GF.status === 'desativadas' && s.squadAtiva) return false;
     if(GF.diretoria.size && !GF.diretoria.has(s.diretoria)) return false;
+    if(GF.tipo.size && !GF.tipo.has(tipoDaSquad(s) || SEM_TIPO_OPTION)) return false;
     const sm = currentSMName(s), smk = sm ? boardKey(sm) : '';
     if(GF.sm.size && !((sm && smKeys.has(smk)) || (!sm && semSm))) return false;
     if(acima && !(smk && acima.has(smk))) return false;
@@ -1905,6 +1917,7 @@ function gfCollectChips(){
   GF.diretoria.forEach(v=>chips.push({ label:'Diretoria: '+v, remove:()=>GF.diretoria.delete(v) }));
   GF.sm.forEach(v=>chips.push({ label:'SM: '+v, remove:()=>GF.sm.delete(v) }));
   GF.saude.forEach(v=>chips.push({ label:'Saúde: '+v, remove:()=>GF.saude.delete(v) }));
+  GF.tipo.forEach(v=>chips.push({ label:'Tipo: '+v, remove:()=>GF.tipo.delete(v) }));
   if(GF.q) chips.push({ label:'Busca: '+GF.q, remove:()=>{ GF.q = ''; } });
   if(GF.status !== 'ativas') chips.push({ label:'Status: '+STATUS_LABEL[GF.status], remove:()=>{ GF.status = 'ativas'; } });
   if(GF.pend) chips.push({ label:'Pendência: '+PEND_LABEL[GF.pend], remove:()=>{ GF.pend = ''; } });
@@ -1926,9 +1939,10 @@ function gfSyncUI(){
   renderMultiSelect('diretoria', 'mselGfDiretoria', dirs, onChange, GF);
   renderMultiSelect('sm', 'mselGfSm', sms, onChange, GF);
   renderMultiSelect('saude', 'mselGfSaude', SAUDE_VALUES, onChange, GF);
+  renderMultiSelect('tipo', 'mselGfTipo', TIPO_VALUES, onChange, GF);
   const funcoes = uniqueSorted(RESOURCES_RAW.map(r=>r.funcao));
   renderMultiSelect('funcao', 'mselGfFuncao', funcoes, onChange, GF);
-  ['mselGfDiretoria','mselGfSm','mselGfSaude','mselGfFuncao'].forEach((id, i)=> wireMultiSelect(['diretoria','sm','saude','funcao'][i], id, onChange, GF));
+  ['mselGfDiretoria','mselGfSm','mselGfSaude','mselGfTipo','mselGfFuncao'].forEach((id, i)=> wireMultiSelect(['diretoria','sm','saude','tipo','funcao'][i], id, onChange, GF));
   const setVal = (id, v) => { const el = document.getElementById(id); if(el && el.value !== v) el.value = v; };
   setVal('gfStatus', GF.status); setVal('gfPend', GF.pend); setVal('gfBoardStatus', GF.boardStatus); setVal('gfBoardVinculo', GF.boardVinculo); setVal('gfCompart', GF.compartilhado);
   const busca = document.getElementById('gfBusca'); if(busca && document.activeElement !== busca && busca.value !== GF.q) busca.value = GF.q;
@@ -1953,7 +1967,7 @@ function gfSyncContext(){
 
 /* memória: URL (para compartilhar) e navegador (para reabrir de onde parou) */
 function gfSerialize(){
-  return { d:[...GF.diretoria], s:[...GF.sm], h:[...GF.saude], f:[...GF.funcao], q:GF.q, st:GF.status, p:GF.pend, a:GF.acima ? 1 : 0, v:GF.diverg ? 1 : 0, bs:GF.boardStatus, bv:GF.boardVinculo, c:GF.compartilhado, t:activeTabName() };
+  return { d:[...GF.diretoria], s:[...GF.sm], h:[...GF.saude], ti:[...GF.tipo], f:[...GF.funcao], q:GF.q, st:GF.status, p:GF.pend, a:GF.acima ? 1 : 0, v:GF.diverg ? 1 : 0, bs:GF.boardStatus, bv:GF.boardVinculo, c:GF.compartilhado, t:activeTabName() };
 }
 function gfPersist(){
   const json = JSON.stringify(gfSerialize());
@@ -1968,7 +1982,7 @@ function gfRestore(){
   if(!json) return null;
   try{
     const o = JSON.parse(json);
-    GF.diretoria = new Set(o.d || []); GF.sm = new Set(o.s || []); GF.saude = new Set(o.h || []); GF.funcao = new Set(o.f || []);
+    GF.diretoria = new Set(o.d || []); GF.sm = new Set(o.s || []); GF.saude = new Set(o.h || []); GF.tipo = new Set(o.ti || []); GF.funcao = new Set(o.f || []);
     GF.q = String(o.q || ''); GF.status = STATUS_LABEL[o.st] ? o.st : 'ativas'; GF.pend = PEND_LABEL[o.p] ? o.p : '';
     GF.acima = !!o.a; GF.diverg = !!o.v; GF.boardStatus = o.bs || ''; GF.boardVinculo = o.bv || ''; GF.compartilhado = o.c || '';
     return o.t || null;
@@ -1978,7 +1992,7 @@ function gfRestore(){
 function applyGlobalFilter(){
   gfInvalidate();
   SQUAD_PAGE = 1; SM_PAGE = 1; BOARDS_PAGE = 1;
-  const msig = JSON.stringify([...GF.diretoria, '|', ...GF.sm, '|', ...GF.saude, GF.status, GF.pend, GF.acima, GF.diverg]);
+  const msig = JSON.stringify([...GF.diretoria, '|', ...GF.sm, '|', ...GF.saude, '|', ...GF.tipo, GF.status, GF.pend, GF.acima, GF.diverg]);
   if(msig !== _modelSig || !QUARTERLY_MODEL){ _modelSig = msig; QUARTERLY_MODEL = buildQuarterlyModel(); }
   gfSyncUI();
   gfPersist();
@@ -2030,7 +2044,7 @@ function refreshQuarterlyViews(){
   gfInvalidate();
   FULL_MODEL = buildQuarterlyModel(true);
   QUARTERLY_MODEL = buildQuarterlyModel();
-  _modelSig = JSON.stringify([...GF.diretoria, '|', ...GF.sm, '|', ...GF.saude, GF.status, GF.pend, GF.acima, GF.diverg]);
+  _modelSig = JSON.stringify([...GF.diretoria, '|', ...GF.sm, '|', ...GF.saude, '|', ...GF.tipo, GF.status, GF.pend, GF.acima, GF.diverg]);
   gfSyncUI();
   renderQuarterlySources();
   renderBasesSummary();
@@ -2584,6 +2598,7 @@ function renderSquadsTab(){
     if(sk==='recursos'){ va=a.recursos.length; vb=b.recursos.length; }
     else if(sk==='boards'){ va=a.boards.length; vb=b.boards.length; }
     else if(sk==='levantamento_sm'){ va=currentSMName(a).toLowerCase(); vb=currentSMName(b).toLowerCase(); }
+    else if(sk==='tipo'){ va=tipoDaSquad(a); vb=tipoDaSquad(b); }
     else { va=String(a[sk]||'').toLowerCase(); vb=String(b[sk]||'').toLowerCase(); }
     const cmp = typeof va==='number' ? (va-vb) : COLLATE_NUM.compare(va,vb);
     return sd==='asc' ? cmp : -cmp;
@@ -2604,6 +2619,8 @@ function renderSquadsTab(){
   kpiRow.appendChild(kpiCard('kpiSqSM', comSM+' / '+total, 'Com SM (levantamento)', comSM<total?'warn':undefined));
   kpiRow.appendChild(kpiCard('kpiSqRec', comRecursos+' / '+total, 'Com recursos mapeados', comRecursos<total?'warn':undefined));
   kpiRow.appendChild(kpiCard('kpiSqBoards', comBoards+' / '+total, 'Com board Azure vinculado', comBoards<total?'warn':undefined));
+  const nProd = filteredSquads().filter(s=>tipoDaSquad(s)==='Produto').length, nOper = filteredSquads().filter(s=>tipoDaSquad(s)==='Operação').length;
+  kpiRow.appendChild(kpiCard('kpiSqTipo', nProd+' / '+nOper, 'Produto / Operação ('+(total-nProd-nOper)+' sem tipo)'));
   kpiRow.appendChild(kpiCard('kpiSqPend', pendAmbos, 'Sem recurso e sem board (pendência total)', pendAmbos>0?'alert':undefined));
   const niv = filteredSquads().filter(s=>s.squadAtiva).map(s=>(health.get(s.id) || {}).nivel);
   kpiRow.appendChild(kpiCard('kpiSqVermelho', niv.filter(n=>n==='vermelho').length, 'Squads ativas em vermelho', niv.some(n=>n==='vermelho') ? 'alert' : undefined));
@@ -2616,7 +2633,7 @@ function renderSquadsTab(){
   if(SQUAD_PAGE > maxPageSq) SQUAD_PAGE = maxPageSq;
   if(SQUAD_PAGE < 1) SQUAD_PAGE = 1;
   if(rows.length===0){
-    tbody.innerHTML = '<tr><td colspan="8" class="noresults">Nenhuma squad encontrada com esses filtros.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="noresults">Nenhuma squad encontrada com esses filtros.</td></tr>';
     renderPaginationControls('squadPagination', 0, 1, PAGE_SIZE, ()=>{});
     return;
   }
@@ -2626,6 +2643,7 @@ function renderSquadsTab(){
     return '<tr class="squad-row'+(isOpen?' open':'')+'" data-id="'+esc(s.id)+'">' +
       '<td><span class="chevron">▸</span> '+esc(s.squad)+'</td>' +
       '<td>'+esc(s.diretoria||'—')+'</td>' +
+      '<td>'+tipoBadge(tipoDaSquad(s))+'</td>' +
       '<td>'+esc(s.diretor||'—')+'</td>' +
       '<td>'+esc(s.gerente||'—')+'</td>' +
       '<td>'+(squadHasSM(s)? esc(currentSMName(s)) : '<span class="badge miss">Sem SM</span>')+'</td>' +
@@ -2633,7 +2651,7 @@ function renderSquadsTab(){
       '<td>'+(s.temBoards? '<span class="badge ok">'+s.boards.length+'</span>' : '<span class="badge pend">0</span>')+'</td>' +
       '<td>'+healthBadge(health.get(s.id))+'</td>' +
       '</tr>' +
-      '<tr class="squad-detail-row'+(isOpen?' open':'')+'" data-detail-id="'+esc(s.id)+'"><td colspan="8">'+(isOpen ? squadRowDetail(s) : '')+'</td></tr>';
+      '<tr class="squad-detail-row'+(isOpen?' open':'')+'" data-detail-id="'+esc(s.id)+'"><td colspan="9">'+(isOpen ? squadRowDetail(s) : '')+'</td></tr>';
   }).join('');
 
   tbody.querySelectorAll('.squad-row').forEach(tr=>{
@@ -2855,7 +2873,7 @@ function hubModelSnapshot(){
     nomes: names([s.squad].concat(Array.isArray(s.aliases) ? s.aliases : [], s.boards.map(b=>b.board), s.recursos.map(r=>r.squad))),
     diretoria: s.diretoria || '', diretor: s.diretor || '', gerente: s.gerente || '',
     sm: currentSMName(s) || '', ativa: !!s.squadAtiva, pessoas: s.recursos.length, boards: s.boards.length,
-    saude: (health.get(s.id) || {}).nivel || ''
+    saude: (health.get(s.id) || {}).nivel || '', tipo: tipoDaSquad(s)
   }));
   const ativas = squads.filter(s=>s.ativa);
   const ref = boardHealth().ref;
