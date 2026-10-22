@@ -352,6 +352,10 @@
           <select id="stateSelect"><option value="ALL">Todos os States</option></select>
         </div>
         <div class="filter-field">
+          <label for="tipoSelect">Tipo da squad</label>
+          <select id="tipoSelect"><option value="ALL">Produto e Operação</option><option value="Produto">Produto</option><option value="Operação">Operação</option><option value="(Sem tipo)">Sem tipo</option></select>
+        </div>
+        <div class="filter-field">
           <label for="squadSelect">Squad</label>
           <select id="squadSelect"><option value="ALL">Todas as Squads</option></select>
         </div>
@@ -424,6 +428,7 @@
               <th data-key="sourceLabel">Origem <span class="sort-arrow">↕</span></th>
               <th data-key="diretoria">Diretoria <span class="sort-arrow">↕</span></th>
               <th data-key="teamProject">Squad <span class="sort-arrow">↕</span></th>
+              <th data-key="tipo">Tipo <span class="sort-arrow">↕</span></th>
               <th data-key="sm">SM <span class="sort-arrow">↕</span></th>
               <th data-key="lecom">LECOM <span class="sort-arrow">↕</span></th>
               <th data-key="portfolioTitle">Projeto Portfólio <span class="sort-arrow">↕</span></th>
@@ -474,6 +479,7 @@
 
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
 <script src="/shared/vendor/chartjs-plugin-datalabels-2.2.0.min.js"></script>
@@ -499,6 +505,10 @@
   function matchSm(teamProject){
     var s = hubSquad(teamProject);
     return s ? clean(s.sm) : '';
+  }
+  function matchTipo(teamProject){
+    var s = hubSquad(teamProject);
+    return s ? (s.tipo || '') : '';
   }
   function smCell(item){
     if(item.sm) return escapeHtml(item.sm);
@@ -736,7 +746,7 @@
     msg += 'Por favor, revisem os itens e regularizem a origem conforme a situação de cada registro. Obrigado!';
 
     return {
-      teamProject: squadNome, diretoria: matchDiretoria(squadNome), sm: matchSm(squadNome),
+      teamProject: squadNome, diretoria: matchDiretoria(squadNome), sm: matchSm(squadNome), tipo: matchTipo(squadNome),
       totalOperational: op.length, totalReviewCadastro: rev.length, totalHistorical: hi.length,
       totalMismatch: itens.filter(function(x){ return x.hasQuarterMismatch; }).length,
       totalConflict: conflicts.length,
@@ -798,7 +808,7 @@
       }
       out.push({
         workItemId: a.id, workItemType: a.workItemType, title: a.title, teamProject: a.teamProject,
-        diretoria: matchDiretoria(a.teamProject), sm: matchSm(a.teamProject), state: a.state, demandType: a.demandType,
+        diretoria: matchDiretoria(a.teamProject), sm: matchSm(a.teamProject), tipo: matchTipo(a.teamProject), state: a.state, demandType: a.demandType,
         lecom: a.lecom, parentId: pid, parentWorkItemType: parentEpic ? 'Epic' : parentFeature ? 'Feature' : (pid ? 'Não localizado' : ''),
         portfolioTitle: uniq(ps.map(function(x){ return x.title; }), ' || '), portfolioSquad: portSquad,
         portfolioCommitment: uniq(ps.map(function(x){ return x.commitment; })), portfolioPhase: uniq(ps.map(function(x){ return x.phase; })),
@@ -817,7 +827,7 @@
         ? 'Auditar como Projeto quanto ao Epic e confirmar a duplicidade Projeto + Melhoria.'
         : 'Não cobrar Epic: acompanhar como Melhoria, sem vínculo obrigatório a Epic.';
       return {
-        workItemId: a.id, title: a.title, teamProject: a.teamProject, diretoria: matchDiretoria(a.teamProject), sm: matchSm(a.teamProject),
+        workItemId: a.id, title: a.title, teamProject: a.teamProject, diretoria: matchDiretoria(a.teamProject), sm: matchSm(a.teamProject), tipo: matchTipo(a.teamProject),
         lecom: a.lecom, state: a.state, demandType: a.demandType, parentId: key(a.parent), sourceCategory: origin,
         sourceLabel: label, improvementTitle: uniq(ims.map(function(x){ return x.title; }), ' || '),
         improvementStatus: uniq(ims.map(function(x){ return x.status; })), portfolioTitle: pTitle, suggestedAction: action
@@ -859,7 +869,7 @@
   var files = { portfolio: null, improvements: null, features: null, epics: null, reference: null };
   var result = null;
   var chartInstances = {};
-  var uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+  var uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', selectedTipo: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
 
   function el(id){ return document.getElementById(id); }
 
@@ -953,7 +963,7 @@
         };
         persistResult();
         statusMsg('Conferência concluída: ' + audit.summary.totalReviewSituations + ' situação(ões) de projeto para revisão; ' + audit.summary.totalImprovementOnlyFeatures + ' melhoria(s) fora da cobrança de Epic.', 'ok');
-        uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+        uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', selectedTipo: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
         el('searchInput').value = '';
         renderResultado();
       }catch(err){
@@ -977,7 +987,7 @@
     el('btnExecutar').disabled = true;
     statusMsg('', '');
     result = null;
-    uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
+    uiState = { filterCategory: 'ALL', selectedDiretoria: [], selectedState: 'ALL', selectedSquad: 'ALL', selectedTipo: 'ALL', searchQuery: '', sortKey: 'workItemId', sortDir: 'asc' };
     try{ localStorage.removeItem(LS_KEY); }catch(e){}
     el('resultado').style.display = 'none';
   });
@@ -1034,6 +1044,7 @@
       if(selectedDiretorias.length && selectedDiretorias.indexOf(item.diretoria || '(sem diretoria)') === -1) return false;
       if(uiState.selectedState !== 'ALL' && (item.state || '(sem state)') !== uiState.selectedState) return false;
       if(uiState.selectedSquad !== 'ALL' && item.teamProject !== uiState.selectedSquad) return false;
+      if(uiState.selectedTipo !== 'ALL' && (item.tipo || '(Sem tipo)') !== uiState.selectedTipo) return false;
       if(!query) return true;
       return [item.workItemId, item.title, item.teamProject, item.lecom, item.improvementTitle, item.portfolioTitle].join(' ').toLowerCase().indexOf(query) > -1;
     });
@@ -1242,6 +1253,7 @@
     if(selected.length) active.push(selected.length + (selected.length === 1 ? ' diretoria' : ' diretorias'));
     if(uiState.selectedState !== 'ALL') active.push('State: ' + uiState.selectedState);
     if(uiState.selectedSquad !== 'ALL') active.push('Squad selecionada');
+    if(uiState.selectedTipo !== 'ALL') active.push('Tipo: ' + uiState.selectedTipo);
     if(uiState.filterCategory !== 'ALL') active.push(statusLabel(uiState.filterCategory === 'OPERATIONAL' ? 'CORRIGIR_AGORA' : uiState.filterCategory === 'REVIEW' ? 'REVISAR_CADASTRO' : 'CONFIRMAR_HISTORICO'));
     if(uiState.searchQuery.trim()) active.push('busca ativa');
     count.textContent = active.length ? filteredItems().length + ' item(ns) · ' + active.join(' · ') : 'Todos os ' + result.items.length + ' itens da conferência';
@@ -1283,6 +1295,7 @@
       if(selectedDiretorias.length && selectedDiretorias.indexOf(item.diretoria || '(sem diretoria)') === -1) return false;
       if(uiState.selectedState !== 'ALL' && (item.state || '(sem state)') !== uiState.selectedState) return false;
       if(uiState.selectedSquad !== 'ALL' && item.teamProject !== uiState.selectedSquad) return false;
+      if(uiState.selectedTipo !== 'ALL' && (item.tipo || '(Sem tipo)') !== uiState.selectedTipo) return false;
       if(!query) return true;
       return [item.workItemId, item.title, item.teamProject, item.lecom, item.parentId, item.portfolioTitle]
         .join(' ').toLowerCase().indexOf(query) > -1;
@@ -1304,7 +1317,7 @@
     var list = sortedItems(filteredItems());
     var body = el('itemsTableBody');
     if(!list.length){
-      body.innerHTML = '<tr class="empty-row"><td colspan="12">Nenhuma situação encontrada para os filtros selecionados.</td></tr>';
+      body.innerHTML = '<tr class="empty-row"><td colspan="13">Nenhuma situação encontrada para os filtros selecionados.</td></tr>';
       return;
     }
     body.innerHTML = list.map(function(item){
@@ -1314,6 +1327,7 @@
         '<td><span class="status-tag ' + (item.classificationConflict ? 'amber' : 'slate') + '">' + escapeHtml(item.sourceLabel || 'Projeto') + '</span></td>' +
         '<td class="truncate" title="' + escapeHtml(item.diretoria) + '">' + escapeHtml(item.diretoria || '(sem diretoria)') + '</td>' +
         '<td class="truncate" title="' + escapeHtml(item.teamProject) + '">' + escapeHtml(item.teamProject) + '</td>' +
+        '<td>' + (item.tipo ? escapeHtml(item.tipo) : '<span style="color:#888;">Sem tipo</span>') + '</td>' +
         '<td class="truncate">' + smCell(item) + '</td>' +
         '<td class="mono">' + escapeHtml(item.lecom || '-') + '</td>' +
         '<td class="truncate" title="' + escapeHtml(item.portfolioTitle) + '">' + escapeHtml(item.portfolioTitle || '(não localizado)') + '</td>' +
@@ -1389,12 +1403,18 @@
     populateSquadSelect();
     renderFilteredViews();
   });
+  el('tipoSelect').addEventListener('change', function(e){
+    uiState.selectedTipo = e.target.value;
+    renderFilteredViews();
+  });
   el('squadSelect').addEventListener('change', function(e){
     uiState.selectedSquad = e.target.value;
     renderFilteredViews();
   });
   el('btnLimparFiltros').addEventListener('click', function(){
     uiState.filterCategory = 'ALL';
+    uiState.selectedTipo = 'ALL';
+    el('tipoSelect').value = 'ALL';
     uiState.selectedDiretoria = [];
     uiState.selectedState = 'ALL';
     uiState.selectedSquad = 'ALL';
@@ -1439,11 +1459,11 @@
   el('btnExportCsv').addEventListener('click', function(){
     var list = sortedItems(filteredItems());
     if(!list.length) return;
-    var headers = ['Feature','Origem','Diretoria','Squad','SM','LECOM','Projeto Portfólio','Demand Type','State','Parent','Situação','Ação'];
+    var headers = ['Feature','Origem','Diretoria','Squad','Tipo','SM','LECOM','Projeto Portfólio','Demand Type','State','Parent','Situação','Ação'];
     var escape = function(v){ return '"' + String(v == null ? '' : v).replace(/"/g,'""') + '"'; };
     var lines = [headers.join(';')];
     list.forEach(function(item){
-      lines.push([item.workItemId, item.sourceLabel, item.diretoria, item.teamProject, item.sm, item.lecom, item.portfolioTitle, item.demandType, item.state, item.parentId, statusLabel(item.statusCategory), item.suggestedAction].map(escape).join(';'));
+      lines.push([item.workItemId, item.sourceLabel, item.diretoria, item.teamProject, item.tipo || 'Sem tipo', item.sm, item.lecom, item.portfolioTitle, item.demandType, item.state, item.parentId, statusLabel(item.statusCategory), item.suggestedAction].map(escape).join(';'));
     });
     var blob = new Blob(['\ufeff' + lines.join('\n')], { type: 'text/csv;charset=utf-8' });
     var url = URL.createObjectURL(blob);

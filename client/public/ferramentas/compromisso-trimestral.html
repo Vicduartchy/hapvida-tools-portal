@@ -205,6 +205,7 @@
       <select id="estadoFiltro" title="Filtrar por State (Azure DevOps)">
         <option value="">Todos os states</option>
       </select>
+      <select id="tipoFiltro" title="Tipo da squad (cadastro oficial: Produto x Operação)"><option value="">Todos os tipos</option><option value="Produto">Produto</option><option value="Operação">Operação</option><option value="(Sem tipo)">Sem tipo</option></select>
       <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;" title="Esconde Team Projects de squads desativadas no Azure (base do hub)"><input type="checkbox" id="soAtivas" checked> Só squads ativas</label>
       <div class="spacer"></div>
       <button class="btn ghost" id="btnResetFiltros">Limpar filtros</button>
@@ -249,6 +250,7 @@
           <tr>
             <th data-key="diretoria">Diretoria <span class="sort-arrow">↕</span></th>
             <th data-key="squad">Squad (Team Project) <span class="sort-arrow">↕</span></th>
+            <th data-key="tipo">Tipo <span class="sort-arrow">↕</span></th>
             <th data-key="sm">SM <span class="sort-arrow">↕</span></th>
             <th data-key="estados">Estados <span class="sort-arrow">↕</span></th>
             <th data-key="total">Total Features <span class="sort-arrow">↕</span></th>
@@ -297,6 +299,7 @@
 <script src="/shared/vendor/chartjs-plugin-datalabels-2.2.0.min.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 
 <!--BLOCK_START:PRISTINE_DATA-->
@@ -321,6 +324,7 @@
     estados: [],
     diretoriaFiltro: new Set(),
     soAtivas: true,
+    tipoFiltro: '',
     squadBusca: '',
     statusFiltro: '',
     estadoFiltro: '',
@@ -334,11 +338,11 @@
 
   // ---------- Base do hub (SM, diretoria e status da squad) ----------
   function hubDaSquad(teamProject){
-    var vazio = { found:false, diretoria:'', sm:'', ativa:null };
+    var vazio = { found:false, diretoria:'', sm:'', ativa:null, tipo:'' };
     if (typeof HubCore === 'undefined' || !teamProject) return vazio;
     var r = HubCore.resolve(teamProject);
     if (!r.found) return vazio;
-    return { found:true, diretoria:r.squad.diretoria || '', sm:HubCore.clean(r.squad.sm), ativa:r.squad.ativa !== false };
+    return { found:true, diretoria:r.squad.diretoria || '', sm:HubCore.clean(r.squad.sm), ativa:r.squad.ativa !== false, tipo:r.squad.tipo || '' };
   }
 
   // ---------- Parsing / normalização ----------
@@ -359,6 +363,7 @@
       squad: teamProject,
       diretoria: diretoria,
       sm: hub.sm,
+      tipo: hub.tipo,
       hubFound: hub.found,
       ativa: hub.ativa,
       titulo: r['Title'] || '',
@@ -455,7 +460,7 @@
   /* linhas salvas no navegador não guardam SM nem status: releem a base do hub a cada carga */
   function enriquecerComHub(r){
     var hub = hubDaSquad(r.squad);
-    return Object.assign({}, r, { diretoria: hub.diretoria || r.diretoria, sm: hub.sm, hubFound: hub.found, ativa: hub.ativa });
+    return Object.assign({}, r, { diretoria: hub.diretoria || r.diretoria, sm: hub.sm, tipo: hub.tipo, hubFound: hub.found, ativa: hub.ativa });
   }
 
   // ---------- Persistência ----------
@@ -479,7 +484,7 @@
   function agregarPorSquad(rows){
     var map = {};
     rows.forEach(function(r){
-      if (!map[r.squad]) map[r.squad] = { squad:r.squad, diretoria:r.diretoria, sm:r.sm, hubFound:r.hubFound, ativa:r.ativa, total:0, com:0, sem:0, estadosSet:{} };
+      if (!map[r.squad]) map[r.squad] = { squad:r.squad, diretoria:r.diretoria, sm:r.sm, tipo:r.tipo, hubFound:r.hubFound, ativa:r.ativa, total:0, com:0, sem:0, estadosSet:{} };
       map[r.squad].total++;
       if (r.compromisso === 1) map[r.squad].com++; else map[r.squad].sem++;
       if (r.estado) map[r.squad].estadosSet[r.estado] = true;
@@ -522,6 +527,7 @@
     return rows.filter(function(r){
       if (state.diretoriaFiltro.size > 0 && !state.diretoriaFiltro.has(r.diretoria)) return false;
       if (state.soAtivas && r.ativa === false) return false;
+      if (state.tipoFiltro && (r.tipo || '(Sem tipo)') !== state.tipoFiltro) return false;
       if (state.squadBusca) {
         var q = state.squadBusca.toLowerCase();
         var alvo = (r.squad + ' ' + r.sm + ' ' + r.titulo + ' ' + r.responsavel + ' ' + r.lecom).toLowerCase();
@@ -736,6 +742,7 @@
       html += '<tr class="' + (alerta ? 'row-alert' : '') + '">' +
         '<td>' + s.diretoria + '</td>' +
         '<td>' + s.squad + (alerta ? '<span class="tag-zero">0% flagged</span>' : '') + '</td>' +
+        '<td>' + (s.tipo ? s.tipo : '<span style="color:#888;">Sem tipo</span>') + '</td>' +
         '<td>' + (s.sm ? s.sm : (s.hubFound ? '<span title="Squad sem SM: cobrar via coach" style="color:#B35A00;font-weight:700;">Sem SM</span>' : '<span title="Team Project fora da base do hub" style="color:#9AA3B5;">—</span>')) + '</td>' +
         '<td>' + s.estados + '</td>' +
         '<td class="num">' + s.total + '</td>' +
@@ -755,7 +762,7 @@
           state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
         } else {
           state.sortKey = key;
-          state.sortDir = key === 'squad' || key === 'diretoria' || key === 'estados' || key === 'sm' ? 'asc' : 'desc';
+          state.sortDir = key === 'squad' || key === 'diretoria' || key === 'estados' || key === 'sm' || key === 'tipo' ? 'asc' : 'desc';
         }
         document.querySelectorAll('#squadTable th').forEach(function(h){
           h.classList.remove('sort-active');
@@ -915,6 +922,7 @@
       return {
         'Diretoria': s.diretoria,
         'Squad (Team Project)': s.squad,
+        'Tipo': s.tipo || 'Sem tipo',
         'SM': s.sm || (s.hubFound ? 'Sem SM' : ''),
         'Estados': s.estados,
         'Total Features': s.total,
@@ -924,7 +932,7 @@
       };
     });
     var ws = XLSX.utils.json_to_sheet(linhas);
-    ws['!cols'] = [ {wch:16}, {wch:44}, {wch:24}, {wch:18}, {wch:14}, {wch:20}, {wch:20}, {wch:16} ];
+    ws['!cols'] = [ {wch:16}, {wch:44}, {wch:12}, {wch:24}, {wch:18}, {wch:14}, {wch:20}, {wch:20}, {wch:16} ];
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Compromisso Trimestral');
     var ts = new Date();
@@ -961,6 +969,10 @@
       state.squadBusca = e.target.value;
       renderTudo();
     });
+    document.getElementById('tipoFiltro').addEventListener('change', function(e){
+      state.tipoFiltro = e.target.value;
+      renderTudo();
+    });
     document.getElementById('soAtivas').addEventListener('change', function(e){
       state.soAtivas = e.target.checked;
       renderTudo();
@@ -981,6 +993,8 @@
       state.statusFiltro = '';
       state.estadoFiltro = '';
       state.soAtivas = true;
+      state.tipoFiltro = '';
+      document.getElementById('tipoFiltro').value = '';
       document.getElementById('soAtivas').checked = true;
       document.getElementById('squadSearch').value = '';
       document.getElementById('statusFiltro').value = '';

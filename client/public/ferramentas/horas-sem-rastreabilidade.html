@@ -304,6 +304,7 @@ footer.brand-footer{
 </div>
 
 <script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
@@ -387,6 +388,7 @@ var STATE = {
   sortDir: 'desc',
   viewMode: 'abs',     // 'abs' | 'pct'
   filterSm: [],        // SM filter (multi-select)
+  filterTipo: [],       // Tipo (Produto/Operação) multi-select
   filterArea: [],       // Área filter (multi-select)
   filterDiretoria: [],  // Diretoria filter (multi-select, ranking)
   chartFilters: {diretoria:'', squad:'', classificacao:'', status:''}, // filtros da aba Classificações
@@ -413,7 +415,7 @@ function smOf(squadName){
   var found = HubCore.resolve(squadName);
   if(!found.found) return null;
   var s = found.squad, sm = HubCore.clean(s.sm);
-  return {sm: sm, area: s.diretoria||'', diretoria: s.diretoria||'', diretor: s.diretor||'', ativa: s.ativa!==false, semSm: !sm};
+  return {sm: sm, area: s.diretoria||'', diretoria: s.diretoria||'', diretor: s.diretor||'', ativa: s.ativa!==false, semSm: !sm, tipo: s.tipo||''};
 }
 function renderSmMappingBadge(){
   var badge = el('smMappingBadge');
@@ -517,6 +519,11 @@ function populateSmFilter(){
   msfPopulate('msfSm', smOpts, STATE.filterSm, 'Todos os SMs', 'SM');
   msfInit('msfSm', function(){ return STATE.filterSm; }, function(vals){
     STATE.filterSm = vals; STATE.page=1; renderRanking();
+  });
+  // Tipo (Produto x Operação), vindo do cadastro oficial no hub
+  msfPopulate('msfTipo', ['Produto','Operação','(Sem tipo)'], STATE.filterTipo, 'Todos os tipos', 'tipo');
+  msfInit('msfTipo', function(){ return STATE.filterTipo; }, function(vals){
+    STATE.filterTipo = vals; STATE.page=1; renderRanking();
   });
   // Área options
   var areas = {};
@@ -796,7 +803,7 @@ function aggregate(){
       var smInfo = smOf(pn);
       squads[pn] = {
         projectName: pn, diretoria: row.diretoria,
-        sm: smInfo ? smInfo.sm : null,
+        sm: smInfo ? smInfo.sm : null, tipo: smInfo ? smInfo.tipo : '',
         horasTotal: 0, horasSemOrigem: 0, qtdTasksSemOrigem: 0, tasks: []
       };
     }
@@ -881,6 +888,9 @@ function baseLayoutHTML(){
         '<div class="msf" id="msfSm"><button type="button" class="msf-btn" data-default="Todos os SMs">Todos os SMs</button>'+
           '<div class="msf-panel"><input type="text" class="msf-search" placeholder="Buscar..."><div class="msf-list"></div>'+
           '<div class="msf-actions"><button type="button" class="msf-clear">Limpar</button><button type="button" class="msf-apply">Aplicar</button></div></div></div>'+
+        '<div class="msf" id="msfTipo"><button type="button" class="msf-btn" data-default="Todos os tipos">Todos os tipos</button>'+
+          '<div class="msf-panel"><input type="text" class="msf-search" placeholder="Buscar..."><div class="msf-list"></div>'+
+          '<div class="msf-actions"><button type="button" class="msf-clear">Limpar</button><button type="button" class="msf-apply">Aplicar</button></div></div></div>'+
         '<div class="msf" id="msfArea"><button type="button" class="msf-btn" data-default="Todas as áreas">Todas as áreas</button>'+
           '<div class="msf-panel"><input type="text" class="msf-search" placeholder="Buscar..."><div class="msf-list"></div>'+
           '<div class="msf-actions"><button type="button" class="msf-clear">Limpar</button><button type="button" class="msf-apply">Aplicar</button></div></div></div>'+
@@ -897,6 +907,7 @@ function baseLayoutHTML(){
       '</div>'+
       '<div style="overflow-x:auto;"><table class="rank"><thead><tr>'+
         '<th data-sort="diretoria">Diretoria</th>'+
+        '<th data-sort="tipo">Tipo</th>'+
         '<th data-sort="sm">SM</th>'+
         '<th data-sort="projectName">Squad</th>'+
         '<th data-sort="horas">Horas sem origem</th>'+
@@ -1464,6 +1475,9 @@ function getFilteredSortedSquads(){
   if(STATE.filterSm && STATE.filterSm.length){
     list = list.filter(function(s){ return s.sm && STATE.filterSm.indexOf(s.sm) > -1; });
   }
+  if(STATE.filterTipo && STATE.filterTipo.length){
+    list = list.filter(function(s){ return STATE.filterTipo.indexOf(s.tipo || '(Sem tipo)') > -1; });
+  }
   if(STATE.filterArea && STATE.filterArea.length){
     list = list.filter(function(s){
       var info = smOf(s.projectName);
@@ -1486,6 +1500,7 @@ function getFilteredSortedSquads(){
     else if(key==='pct'){ va=a.pct; vb=b.pct; }
     else if(key==='diretoria'){ va=String(a.diretoria); vb=String(b.diretoria); }
     else if(key==='sm'){ va=String(a.sm||''); vb=String(b.sm||''); }
+    else if(key==='tipo'){ va=String(a.tipo||''); vb=String(b.tipo||''); }
     else { va=String(a.projectName); vb=String(b.projectName); }
     if(typeof va==='string'){ return dir==='asc' ? va.localeCompare(vb) : vb.localeCompare(va); }
     return dir==='asc' ? va-vb : vb-va;
@@ -1509,6 +1524,7 @@ function renderRanking(){
     var drillHtml = isOpen ? renderDrill(s) : '';
     return '<tr>'+
       '<td><span class="dir-tag">'+esc(s.diretoria)+'</span></td>'+
+      '<td style="font-size:12px;">'+(s.tipo ? esc(s.tipo) : '<span style="color:#888;" title="Fora do cadastro oficial">Sem tipo</span>')+'</td>'+
       '<td style="font-size:12px;color:#1A3DAA;">'+(s.sm ? esc(s.sm) : '<span title="Squad ativa sem SM: cobrar via coach" style="color:#B35A00;font-weight:700;">Sem SM</span>')+'</td>'+
       '<td><a href="#" class="rowToggle" data-squad="'+esc(s.projectName)+'" style="color:#1B1F2A;font-weight:700;text-decoration:none;">'+esc(s.projectName)+'</a></td>'+
       '<td class="num">'+fmtNum(s.horasSemOrigem)+'h</td>'+
@@ -1519,10 +1535,10 @@ function renderRanking(){
         '<button class="icon-btn" data-wa="'+esc(s.projectName)+'">WhatsApp</button>'+
       '</td>'+
     '</tr>'+
-    '<tr class="print-hide"><td colspan="8" style="padding:0;border-bottom:none;"><div class="drill'+(isOpen?' open':'')+'" id="drill-'+cssSafe(s.projectName)+'">'+drillHtml+'</div></td></tr>';
+    '<tr class="print-hide"><td colspan="9" style="padding:0;border-bottom:none;"><div class="drill'+(isOpen?' open':'')+'" id="drill-'+cssSafe(s.projectName)+'">'+drillHtml+'</div></td></tr>';
   }).join('');
 
-  el('rankBody').innerHTML = rowsHtml || '<tr><td colspan="8" style="text-align:center;color:var(--cinza-texto);padding:24px;">Nenhuma squad encontrada com esse filtro.</td></tr>';
+  el('rankBody').innerHTML = rowsHtml || '<tr><td colspan="9" style="text-align:center;color:var(--cinza-texto);padding:24px;">Nenhuma squad encontrada com esse filtro.</td></tr>';
 
   el('pagination').innerHTML =
     '<button id="pgPrev" '+(STATE.page<=1?'disabled':'')+'>‹ Anterior</button>'+
@@ -1809,6 +1825,7 @@ function init(){
   STATE.statusFilter='all';
   STATE.filterSm=[];
   STATE.filterArea=[];
+  STATE.filterTipo=[];
   STATE.filterDiretoria=[];
   STATE.chartFilters = {diretoria:'', squad:'', classificacao:'', status:''};
   STATE.showLabels = loadShowLabels();

@@ -4,7 +4,7 @@ import { loadToolScript } from "./helpers/loadTool";
 
 const hubFile = readFileSync("client/public/shared/data/hub-squads.js", "utf-8");
 const hubModel = JSON.parse(hubFile.slice(hubFile.indexOf("window.HUB_SQUADS = ") + "window.HUB_SQUADS = ".length).replace(/;\s*$/, ""));
-const PRELOAD = ["shared/data/hub-squads.js", "shared/data/hub-core.js"];
+const PRELOAD = ["shared/data/hub-squads.js", "shared/data/squad-tipo.js", "shared/data/hub-core.js"];
 
 /** Ferramentas que consomem o hub-core: contrato "toda squad do hub resolve, e sem SM não vira '—'". */
 const CONSUMERS: Array<{ file: string; snippet: string }> = [
@@ -35,6 +35,11 @@ describe.each(CONSUMERS)("$file lê SM, diretoria e status da base do hub", ({ f
     const semSm = hubModel.squads.find((s: any) => s.ativa && !s.sm);
     expect(tool.smOf(comSm.squad)).toMatchObject({ sm: comSm.sm, diretoria: comSm.diretoria, semSm: false });
     expect(tool.smOf(semSm.squad)).toMatchObject({ sm: "", semSm: true, ativa: true });
+  });
+
+  it("traz o tipo da squad (Produto x Operação) do cadastro oficial", () => {
+    expect(tool.smOf("Operadora - Odonto")).toMatchObject({ tipo: "Produto" });
+    expect(tool.smOf("TI - Datacenter")).toMatchObject({ tipo: "Operação" });
   });
 
   it("não inventa squad desconhecida", () => {

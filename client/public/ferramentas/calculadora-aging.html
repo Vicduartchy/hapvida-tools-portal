@@ -620,6 +620,7 @@
 
     <div class="table-toolbar">
       <input type="text" id="tableSearch" placeholder="🔎 Buscar por ID, título, squad, estado...">
+      <select id="tipoFiltro" title="Tipo da squad (cadastro oficial)"><option value="">Todos os tipos de squad</option><option value="Produto">Produto</option><option value="Operação">Operação</option><option value="(Sem tipo)">Sem tipo</option></select>
       <div class="pager-controls">
         <select id="pageSize">
           <option value="25">25 / página</option>
@@ -697,6 +698,7 @@
 </footer>
 
 <script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 
@@ -1027,6 +1029,7 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
         squad: squadVal,
         sm: hubInfo(squadVal).sm,
         diretoria: hubInfo(squadVal).diretoria,
+        tipoSquad: hubInfo(squadVal).tipo || null,
         created: created,
         activated: activated,
         closed: closed,
@@ -1128,11 +1131,11 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
 
   /* SM e diretoria da squad vêm da base do hub (shared/data/hub-core.js): vazio quando a squad não existe na base */
   function hubInfo(squadName){
-    var out = {sm:null, diretoria:null, found:false, semSm:false};
+    var out = {sm:null, diretoria:null, tipo:'', found:false, semSm:false};
     if(typeof HubCore === 'undefined' || !squadName) return out;
     var r = HubCore.resolve(squadName);
     if(!r.found) return out;
-    return {sm: HubCore.clean(r.squad.sm) || null, diretoria: r.squad.diretoria || null, found:true, semSm: !HubCore.clean(r.squad.sm)};
+    return {sm: HubCore.clean(r.squad.sm) || null, diretoria: r.squad.diretoria || null, tipo: r.squad.tipo || '', found:true, semSm: !HubCore.clean(r.squad.sm)};
   }
 
   function renderResults(initSortCol, initSortDir){
@@ -1202,7 +1205,11 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
 
   function getFilteredSortedResults(){
     var term = $("tableSearch").value.trim();
-    var filtered = state.results.filter(function(r){ return rowMatchesSearch(r, term); });
+    var tipoSel = $("tipoFiltro") ? $("tipoFiltro").value : "";
+    var filtered = state.results.filter(function(r){
+      if(tipoSel && (r.tipoSquad || "(Sem tipo)") !== tipoSel) return false;
+      return rowMatchesSearch(r, term);
+    });
     filtered.sort(function(a,b){
       var va = a[sortCol], vb = b[sortCol];
       if(va === null || va === undefined) va = sortDir==="desc" ? -Infinity : Infinity;
@@ -1227,7 +1234,7 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
     if(state.colTitleUsed) cols.push({k:"title", l:"Título"});
     if(state.colStateUsed) cols.push({k:"state", l:"Estado"});
     if(state.colTypeUsed) cols.push({k:"type", l:"Tipo"});
-    if(state.colSquadUsed) cols.push({k:"squad", l:"Squad"}, {k:"sm", l:"SM"});
+    if(state.colSquadUsed) cols.push({k:"squad", l:"Squad"}, {k:"sm", l:"SM"}, {k:"tipoSquad", l:"Tipo da squad"});
     cols.push({k:"created", l:"Criação"});
     if(state.colActivatedUsed) cols.push({k:"activated", l:"Ativação"});
     if(state.colClosedUsed) cols.push({k:"closed", l:"Fechamento"});
@@ -1311,6 +1318,7 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
   }
 
   $("tableSearch").addEventListener("input", function(){ state.currentPage = 1; renderTable(); });
+  $("tipoFiltro").addEventListener("change", function(){ state.currentPage = 1; renderTable(); });
   $("pageSize").addEventListener("change", function(){ state.pageSize = parseInt($("pageSize").value,10)||50; state.currentPage = 1; renderTable(); });
   $("prevPageBtn").addEventListener("click", function(){ state.currentPage--; renderTable(); });
   $("nextPageBtn").addEventListener("click", function(){ state.currentPage++; renderTable(); });
@@ -1321,7 +1329,7 @@ var __PRISTINE_HTML__ = document.documentElement.outerHTML;
     if(state.colTitleUsed) cols.push({k:"title", l:"Título"});
     if(state.colStateUsed) cols.push({k:"state", l:"Estado"});
     if(state.colTypeUsed) cols.push({k:"type", l:"Tipo"});
-    if(state.colSquadUsed) cols.push({k:"squad", l:"Squad"}, {k:"sm", l:"SM"}, {k:"diretoria", l:"Diretoria"});
+    if(state.colSquadUsed) cols.push({k:"squad", l:"Squad"}, {k:"sm", l:"SM"}, {k:"tipoSquad", l:"Tipo da squad"}, {k:"diretoria", l:"Diretoria"});
     cols.push({k:"created", l:"Criação"});
     if(state.colActivatedUsed) cols.push({k:"activated", l:"Ativação"});
     if(state.colClosedUsed) cols.push({k:"closed", l:"Fechamento"});

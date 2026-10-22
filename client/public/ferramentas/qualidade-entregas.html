@@ -277,6 +277,7 @@ footer.brand-footer{
 </div>
 
 <script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
@@ -355,7 +356,7 @@ var STATE = {
   showLabels: true,
   charts: {},
   filters: {
-    diretoria:[], squad:[], sm:[], tipo:'', status:'', busca:''
+    diretoria:[], squad:[], sm:[], tipoSquad:[], tipo:'', status:'', busca:''
   },
   sortKey: 'diasAberto',
   sortDir: 'desc',
@@ -486,7 +487,7 @@ function smOf(squadName){
   var found = HubCore.resolve(squadName);
   if(!found.found) return null;
   var s = found.squad, sm = HubCore.clean(s.sm);
-  return {sm: sm, area: s.diretoria||'', diretoria: s.diretoria||'', diretor: s.diretor||'', ativa: s.ativa!==false, semSm: !sm};
+  return {sm: sm, area: s.diretoria||'', diretoria: s.diretoria||'', diretor: s.diretor||'', ativa: s.ativa!==false, semSm: !sm, tipo: s.tipo||''};
 }
 function renderSmMappingBadge(){
   var badge = el('smMappingBadge');
@@ -721,6 +722,9 @@ function baseLayoutHTML(){
       '<div class="msf" id="msfSm"><button type="button" class="msf-btn" data-default="Todos os SMs">Todos os SMs</button>'+
         '<div class="msf-panel"><input type="text" class="msf-search" placeholder="Buscar..."><div class="msf-list"></div>'+
         '<div class="msf-actions"><button type="button" class="msf-clear">Limpar</button><button type="button" class="msf-apply">Aplicar</button></div></div></div>'+
+      '<div class="msf" id="msfTipoSquad"><button type="button" class="msf-btn" data-default="Todos os tipos">Todos os tipos</button>'+
+        '<div class="msf-panel"><input type="text" class="msf-search" placeholder="Buscar..."><div class="msf-list"></div>'+
+        '<div class="msf-actions"><button type="button" class="msf-clear">Limpar</button><button type="button" class="msf-apply">Aplicar</button></div></div></div>'+
       '<select id="fTipo"><option value="">Bug, Defect e Incident</option><option value="Bug">Só Bug</option><option value="Defect">Só Defect</option><option value="Incident">Só Incident</option></select>'+
       '<select id="fStatus"><option value="">Abertos e fechados</option><option value="aberto">Só abertos</option><option value="fechado">Só fechados</option></select>'+
       '<input type="text" id="fBusca" placeholder="Buscar título, squad, ID...">'+
@@ -802,7 +806,7 @@ function baseLayoutHTML(){
       '<h2>Squads com maior concentração de itens</h2>'+
       '<div class="panel-sub">Ranking de volume total (Bug+Defect+Incident) no recorte atual — squads no topo concentram mais retrabalho</div>'+
       '<div style="overflow-x:auto;"><table class="rank" id="tableConcentracao">'+
-        '<thead><tr><th data-sort="squad">Squad <span class="sort-arrow">↕</span></th><th data-sort="diretoria">Diretoria <span class="sort-arrow">↕</span></th><th data-sort="sm">SM <span class="sort-arrow">↕</span></th><th data-sort="Bug">Bug <span class="sort-arrow">↕</span></th><th data-sort="Defect">Defect <span class="sort-arrow">↕</span></th><th data-sort="Incident">Incident <span class="sort-arrow">↕</span></th><th data-sort="total">Total <span class="sort-arrow">▼</span></th></tr></thead>'+
+        '<thead><tr><th data-sort="squad">Squad <span class="sort-arrow">↕</span></th><th data-sort="diretoria">Diretoria <span class="sort-arrow">↕</span></th><th data-sort="tipoSquad">Tipo <span class="sort-arrow">↕</span></th><th data-sort="sm">SM <span class="sort-arrow">↕</span></th><th data-sort="Bug">Bug <span class="sort-arrow">↕</span></th><th data-sort="Defect">Defect <span class="sort-arrow">↕</span></th><th data-sort="Incident">Incident <span class="sort-arrow">↕</span></th><th data-sort="total">Total <span class="sort-arrow">▼</span></th></tr></thead>'+
         '<tbody id="concentracaoBody"></tbody>'+
       '</table></div>'+
     '</div>'+
@@ -823,6 +827,7 @@ function enrichRow(r){
   var diasAberto = r.created ? diffDays(r.created, fechado ? (r.closed||new Date()) : new Date()) : null;
   return Object.assign({}, r, {
     sm: sm && sm!=='—' ? sm : null,
+    tipoSquad: smInfo ? (smInfo.tipo || '') : '',
     diretoria: diretoria || '(Sem diretoria)',
     fechado: fechado,
     diasAberto: diasAberto
@@ -843,6 +848,7 @@ function getFilteredRows(){
     if(f.diretoria && f.diretoria.length && f.diretoria.indexOf(r.diretoria) < 0) return false;
     if(f.squad && f.squad.length && f.squad.indexOf(r.squad) < 0) return false;
     if(f.sm && f.sm.length && f.sm.indexOf(r.sm) < 0) return false;
+    if(f.tipoSquad && f.tipoSquad.length && f.tipoSquad.indexOf(r.tipoSquad || '(Sem tipo)') < 0) return false;
     if(f.tipo && r.tipo !== f.tipo) return false;
     if(f.status === 'aberto' && r.fechado) return false;
     if(f.status === 'fechado' && !r.fechado) return false;
@@ -944,6 +950,10 @@ function populateFilters(){
   msfPopulate('msfSquad', squadOpts, STATE.filters.squad, 'Todas as squads', 'squad');
   msfInit('msfSquad', function(){ return STATE.filters.squad; }, function(vals){
     STATE.filters.squad = vals; STATE.page=1; renderAll();
+  });
+  msfPopulate('msfTipoSquad', ['Produto','Operação','(Sem tipo)'], STATE.filters.tipoSquad, 'Todos os tipos', 'tipo');
+  msfInit('msfTipoSquad', function(){ return STATE.filters.tipoSquad; }, function(vals){
+    STATE.filters.tipoSquad = vals; STATE.page=1; renderAll();
   });
   var smOpts = uniqSorted(all.map(function(r){return r.sm;}));
   msfPopulate('msfSm', smOpts, STATE.filters.sm, 'Todos os SMs', 'SM');
@@ -1286,7 +1296,7 @@ function renderProcessoTab(){
   // tabela de concentração
   var bySquadAll = {};
   rows.forEach(function(r){
-    if(!bySquadAll[r.squad]) bySquadAll[r.squad] = {squad:r.squad, diretoria:r.diretoria, sm:r.sm, Bug:0, Defect:0, Incident:0};
+    if(!bySquadAll[r.squad]) bySquadAll[r.squad] = {squad:r.squad, diretoria:r.diretoria, sm:r.sm, tipoSquad:r.tipoSquad, Bug:0, Defect:0, Incident:0};
     bySquadAll[r.squad][r.tipo]++;
   });
   var concList = Object.values(bySquadAll).map(function(s){
@@ -1303,9 +1313,9 @@ function renderProcessoTab(){
   });
   var body = el('concentracaoBody');
   if(body) body.innerHTML = concList.length ? concList.map(function(s){
-    return '<tr><td><b>'+esc(s.squad)+'</b></td><td>'+esc(s.diretoria)+'</td><td>'+(s.sm?esc(s.sm):'<span title="Squad sem SM: cobrar via coach" style="color:#B35A00;font-weight:700;">Sem SM</span>')+'</td>'+
+    return '<tr><td><b>'+esc(s.squad)+'</b></td><td>'+esc(s.diretoria)+'</td><td>'+(s.tipoSquad?esc(s.tipoSquad):'<span style="color:#888;">Sem tipo</span>')+'</td><td>'+(s.sm?esc(s.sm):'<span title="Squad sem SM: cobrar via coach" style="color:#B35A00;font-weight:700;">Sem SM</span>')+'</td>'+
       '<td>'+fmtInt(s.Bug)+'</td><td>'+fmtInt(s.Defect)+'</td><td>'+fmtInt(s.Incident)+'</td><td class="num">'+fmtInt(s.total)+'</td></tr>';
-  }).join('') : '<tr><td colspan="7" class="noresults">Nenhum item encontrado com esses filtros.</td></tr>';
+  }).join('') : '<tr><td colspan="8" class="noresults">Nenhum item encontrado com esses filtros.</td></tr>';
 }
 
 function applyShowLabels(){
@@ -1352,7 +1362,7 @@ function wireStaticUI(){
   }
   var btnLimpar = el('btnLimparFiltros');
   if(btnLimpar) btnLimpar.addEventListener('click', function(){
-    STATE.filters = {diretoria:[], squad:[], sm:[], tipo:'', status:'', busca:''};
+    STATE.filters = {diretoria:[], squad:[], sm:[], tipoSquad:[], tipo:'', status:'', busca:''};
     [fTipo,fStatus].forEach(function(s){ if(s) s.value=''; });
     if(fBusca) fBusca.value='';
     STATE.page = 1;

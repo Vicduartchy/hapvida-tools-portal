@@ -7,6 +7,7 @@
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/exceljs-4.4.0.min.js"></script>
 <script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 <style>
   :root{
@@ -289,6 +290,12 @@ function smDaSquad(squadName){
   if (!f.found) return "(Squad fora da base do hub)";
   var sm = HubCore.clean(f.squad.sm);
   return sm || SEM_SM_LABEL;
+}
+
+function tipoDaSquad(squadName){
+  if (typeof HubCore === "undefined" || !squadName) return "";
+  var f = HubCore.resolve(squadName);
+  return f.found ? (f.squad.tipo || "Sem tipo") : "";
 }
 
 var CATS = {
@@ -835,6 +842,7 @@ function buildModel(rows1, rows2, rows3, rows4Organograma, rows4Ajuste, rows4Con
       cargo: (orgRow && orgRow["CARGO"]) || "",
       squad: squad,
       sm: smDaSquad(squad),
+      tipoSquad: tipoDaSquad(squad),
       epicTitle: r["TITLE_EPIC"] || "(Sem épico)",
       featureTitle: r["TITLE_FEATURES"] || "(Sem feature)",
       tituloLecom: lecomSource === "feature" ? (r["TITLE_FEATURES"] || null) : (lecomSource === "epic" ? (r["TITLE_EPIC"] || null) : null),
@@ -885,7 +893,7 @@ function compromissoLabel(c){
    — por isso a origem mostrada é "Base 4 (Base 1 se colaborador não
    encontrado)". */
 var CRUZADA_HEADERS = [
-  "Data","Categoria","Compromisso","LECOM","Diretoria","Gerente","Squad","SM","Épico","Feature",
+  "Data","Categoria","Compromisso","LECOM","Diretoria","Gerente","Squad","Tipo da squad","SM","Épico","Feature",
   "User Story","Task","Recurso","Horas","Squad compromisso","Status compromisso","Tamanho",
   "Horas planejadas","Iniciativa","Priorização (Melhorias)","Obs. inclusão (Projetos)",
   "Desprioriação","Origem","Tipo (raw)"
@@ -897,7 +905,7 @@ var CRUZADA_COLTYPES = CRUZADA_HEADERS.map(function(h){
 });
 var CRUZADA_ORIGIN_MAP = {
   "Data": "base1", "Categoria": "calc", "Compromisso": "calc", "LECOM": "base1",
-  "Diretoria": "base4", "Gerente": "base4", "Squad": "base1", "SM": "hub", "Épico": "base1",
+  "Diretoria": "base4", "Gerente": "base4", "Squad": "base1", "Tipo da squad": "hub", "SM": "hub", "Épico": "base1",
   "Feature": "base1", "User Story": "base1", "Task": "base1", "Recurso": "base1",
   "Horas": "base1", "Squad compromisso": "base23", "Status compromisso": "base23",
   "Tamanho": "base23", "Horas planejadas": "base23", "Iniciativa": "base23",
@@ -925,7 +933,7 @@ var CRUZADA_WIDTHS = CRUZADA_HEADERS.map(function(h){
 function buildCruzadaBundle(items){
   var rows = items.map(function(r){
     return [
-      r.data, CATS[r.categoria].label, compromissoLabel(r.compromisso), r.lecomId, r.diretoria, r.gerente, r.squad, r.sm,
+      r.data, CATS[r.categoria].label, compromissoLabel(r.compromisso), r.lecomId, r.diretoria, r.gerente, r.squad, r.tipoSquad, r.sm,
       r.epicTitle, r.featureTitle, r.storyTitle, r.taskTitle, r.recurso, r.horas, r.squadCompromisso,
       r.statusCompromisso, r.tamanho, r.horasPlanejadas, r.iniciativa, r.priorizacao, r.inclusaoObs, r.desprior,
       r.origem, r.tipoRaw
@@ -941,18 +949,19 @@ function buildCruzadaBundle(items){
    Uma linha por Squad + Recurso, com as horas por tipo de demanda (como já
    existia), mais % desse recurso sobre o total do squad e % de cada tipo de
    demanda sobre o total do próprio recurso. ---------------------------- */
-var SQUAD_HEADERS = ["Squad","SM","Recurso"]
+var SQUAD_HEADERS = ["Squad","Tipo","SM","Recurso"]
   .concat(CAT_ORDER.map(function(c){ return CATS[c].label; }))
   .concat(["Total","% do Squad"])
   .concat(CAT_ORDER.map(function(c){ return "% " + CATS[c].label + " (recurso)"; }));
-var SQUAD_COLTYPES = ["text","text","text"]
+var SQUAD_COLTYPES = ["text","text","text","text"]
   .concat(CAT_ORDER.map(function(){ return "hours"; }))
   .concat(["hours","percent"])
   .concat(CAT_ORDER.map(function(){ return "percent"; }));
 var SQUAD_WIDTHS = SQUAD_HEADERS.map(function(h, i){
   if (i === 0) return 24;
-  if (i === 1) return 24;
-  if (i === 2) return 28;
+  if (i === 1) return 14;
+  if (i === 2) return 24;
+  if (i === 3) return 28;
   return Math.min(30, Math.max(12, h.length + 2));
 });
 
@@ -961,7 +970,7 @@ function buildSquadBundle(items){
   items.forEach(function(it){
     if (!squadMap.has(it.squad)) squadMap.set(it.squad, { squad: it.squad, total: 0, recursos: new Map() });
     var sg = squadMap.get(it.squad);
-    sg.sm = it.sm;
+    sg.sm = it.sm; sg.tipo = it.tipoSquad;
     sg.total += it.horas;
     if (!sg.recursos.has(it.recurso)){
       var o = { recurso: it.recurso, total: 0 };
@@ -978,7 +987,7 @@ function buildSquadBundle(items){
   squads.forEach(function(sg){
     var recursos = Array.from(sg.recursos.values()).sort(function(a,b){ return b.total - a.total; });
     recursos.forEach(function(rg){
-      var row = [sg.squad, sg.sm || "", rg.recurso];
+      var row = [sg.squad, sg.tipo || "", sg.sm || "", rg.recurso];
       CAT_ORDER.forEach(function(c){ row.push(rg[c]); });
       row.push(rg.total, sg.total > 0 ? (rg.total / sg.total) : 0);
       CAT_ORDER.forEach(function(c){ row.push(rg.total > 0 ? (rg[c] / rg.total) : 0); });

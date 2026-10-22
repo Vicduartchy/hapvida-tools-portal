@@ -337,6 +337,7 @@ table.map-table select{border:1px solid var(--cinza-borda);border-radius:6px;pad
 </div>
 
 <script src="/shared/data/hub-squads.js"></script>
+<script src="/shared/data/squad-tipo.js"></script>
 <script src="/shared/data/hub-core.js"></script>
 <script src="/shared/vendor/xlsx-full.min.js"></script>
 <script src="/shared/vendor/chartjs-4.5.1.min.js"></script>
@@ -468,7 +469,7 @@ function loadSquads(){
   try{ localStorage.removeItem(LS_SQUADS_LEGADO); }catch(e){}
   var hub = (typeof HubCore !== 'undefined') ? HubCore.squads() : [];
   STATE.squads = hub.filter(function(s){ return s.ativa !== false; }).map(function(s){
-    return {squad:s.squad, area:s.diretoria||'', sm_atual:s.sm||''};
+    return {squad:s.squad, area:s.diretoria||'', sm_atual:s.sm||'', tipo:s.tipo||''};
   });
   STATE.squadsUpdatedAt = (typeof HubCore !== 'undefined') ? HubCore.status().generatedAt : null;
 }
@@ -1165,7 +1166,7 @@ function renderMappingTab(){
     var tagClass = mp.status||'semmatch';
     var tagLabel = {auto:'Sugestão auto', confirmado:'Confirmado', ignorado:'Ignorado', semmatch:'Sem match'}[tagClass]||tagClass;
     var opts = '<option value="">— nenhuma —</option>'+squadOptions.map(function(s){
-      return '<option value="'+escAttr(s.squad)+'" '+(mp.squad===s.squad?'selected':'')+'>'+esc(s.squad)+' ('+esc(s.sm_atual||'Sem SM')+')</option>';
+      return '<option value="'+escAttr(s.squad)+'" '+(mp.squad===s.squad?'selected':'')+'>'+esc(s.squad)+' ('+esc(s.sm_atual||'Sem SM')+')'+(s.tipo?' · '+esc(s.tipo):'')+'</option>';
     }).join('');
     return '<tr>'+
       '<td>'+esc(p)+'</td>'+
