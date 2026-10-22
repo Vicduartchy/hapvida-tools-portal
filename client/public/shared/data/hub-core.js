@@ -170,6 +170,11 @@
     return hits.length === 1 ? { nome: hits[0].nome, via: 'parcial' } : null;
   }
   function squads() { var c = load(); return c.model ? c.model.squads.slice() : []; }
+  function diretorias() {
+    var seen = {};
+    squads().forEach(function (s) { if (clean(s.diretoria)) seen[clean(s.diretoria)] = true; });
+    return Object.keys(seen).sort(function (a, b) { return a.localeCompare(b, 'pt-BR'); });
+  }
 
   /* mapa nome -> dados, uma entrada por nome conhecido da squad (inclui aliases); mesmo formato que as ferramentas já esperavam */
   function getSmSquadMapping() {
@@ -245,7 +250,7 @@
     LS_MODEL: LS_MODEL, MODEL_VERSION: MODEL_VERSION, DESLIGADOS: DESLIGADOS, SEM_SM: SEM_SM,
     clean: clean, normSquad: normSquad, normPerson: normPerson,
     load: load, reload: reload, resolve: resolve, smOf: smOf, isDesligado: isDesligado,
-    smNames: smNames, matchSm: matchSm, squads: squads, getSmSquadMapping: getSmSquadMapping,
+    smNames: smNames, matchSm: matchSm, squads: squads, diretorias: diretorias, getSmSquadMapping: getSmSquadMapping,
     status: status, renderBadge: renderBadge, readScope: readScope, scopeLink: scopeLink
   };
 })(typeof window !== 'undefined' ? window : globalThis);
