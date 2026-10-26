@@ -587,12 +587,37 @@
 
     <div class="insight-section">
       <h3>Projetos e melhorias por squad</h3>
-      <div class="filterbar">
+      <div class="filterbar" id="execSquadFilters">
+        <div class="field"><label for="execSquadSearch">Buscar</label><input type="text" id="execSquadSearch" placeholder="Squad, SM ou diretoria" autocomplete="off"></div>
+        <div class="field"><label for="execSmFilter">SM</label><select id="execSmFilter"><option value="">Todos</option></select></div>
+        <div class="field"><label for="execTipoFilter">Tipo da squad</label><select id="execTipoFilter"><option value="">Todos</option><option value="Produto">Produto</option><option value="Operação">Operação</option><option value="(Sem tipo)">Sem tipo</option></select></div>
+        <div class="field"><label for="execSitFilter">Situação</label><select id="execSitFilter"><option value="">Todas</option><option value="rodando">Com algo rodando</option><option value="parada">Nada rodando</option><option value="semsm">Sem SM</option><option value="semvinculo">Sem vínculo no dashboard</option></select></div>
         <div class="field"><label for="execSort">Ordenar por</label><select id="execSort"><option value="rodando">Rodando agora</option><option value="total">Total no trimestre</option><option value="projetos">Projetos em andamento</option><option value="melhorias">Melhorias finalizadas</option><option value="horas">Horas estimadas</option></select></div>
+        <button type="button" class="clearbtn" id="execSquadClear">Limpar</button>
       </div>
       <div class="resultcount" id="execSquadCount"></div>
-      <div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Boards ativos</th><th>Projetos</th><th>Proj. em andamento</th><th>Proj. planej./solic.</th><th>Proj. encerrados</th><th>Proj. fora</th><th>Melhorias</th><th>Melh. finalizadas</th><th>Melh. em curso</th><th>Melh. fora</th><th>Rodando</th></tr></thead><tbody id="execSquadBody"></tbody></table></div>
+      <div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Tipo</th><th>Boards ativos</th><th>Projetos</th><th>Proj. em andamento</th><th>Proj. planej./solic.</th><th>Proj. encerrados</th><th>Proj. fora</th><th>Melhorias</th><th>Melh. finalizadas</th><th>Melh. em curso</th><th>Melh. fora</th><th>Rodando</th></tr></thead><tbody id="execSquadBody"></tbody></table></div>
       <div style="margin-top:8px;font-size:10.5px;color:var(--cinza-texto);line-height:1.6;"><b>Como ler.</b> Projeto <i>fora</i> = despriorizado, cancelado ou suspenso; <i>em andamento</i> = execução, piloto, expansão e monitoramento. Melhoria <i>fora</i> = despriorizada ou cancelada; <i>em curso</i> = não iniciada até aguardando publicação. <i>Rodando</i> = projetos em andamento + melhorias em curso. Squad e SM vêm do Squad Azure e do levantamento de outubro.</div>
+    </div>
+
+    <div class="insight-section" id="pfSection">
+      <h3>Portfólio detalhado — projetos e melhorias</h3>
+      <div class="resultcount">Cada linha é um projeto ou uma melhoria importada, já ligada à squad, ao SM e à diretoria do dashboard. Os filtros da barra superior também valem aqui. Clique no cabeçalho para ordenar.</div>
+      <div class="filterbar" id="pfFilters">
+        <div class="field"><label for="pfSearch">Buscar</label><input type="text" id="pfSearch" placeholder="Título, LECOM, squad, SM" autocomplete="off"></div>
+        <div class="field"><label for="pfItem">Item</label><select id="pfItem"><option value="">Projetos e melhorias</option><option value="Projeto">Só projetos</option><option value="Melhoria">Só melhorias</option></select></div>
+        <div class="field"><label for="pfSit">Situação</label><select id="pfSit"><option value="">Todas</option><option value="rodando">Rodando agora</option><option value="planejamento">Planejamento</option><option value="concluido">Encerrado / finalizado</option><option value="fora">Fora (despriorizado, cancelado, suspenso)</option></select></div>
+        <div class="field"><label for="pfSm">SM</label><select id="pfSm"><option value="">Todos</option></select></div>
+        <div class="field"><label for="pfDir">Diretoria</label><select id="pfDir"><option value="">Todas</option></select></div>
+        <div class="field"><label for="pfTipoSquad">Tipo da squad</label><select id="pfTipoSquad"><option value="">Todos</option><option value="Produto">Produto</option><option value="Operação">Operação</option><option value="(Sem tipo)">Sem tipo</option></select></div>
+        <button type="button" class="clearbtn" id="pfClear">Limpar</button>
+        <button type="button" class="btn btn-outline btn-sm" id="pfExport">Exportar CSV</button>
+      </div>
+      <div class="resultcount" id="pfCount"></div>
+      <div class="tablewrap"><table class="squadtable" id="pfTable"><thead><tr>
+        <th data-pf="tipo">Item</th><th data-pf="lecom">LECOM</th><th data-pf="titulo">Título</th><th data-pf="squad">Squad</th><th data-pf="sm">SM</th><th data-pf="diretoria">Diretoria</th><th data-pf="tipoSquad">Tipo da squad</th><th data-pf="status">Status / fase</th><th data-pf="situacao">Situação</th><th data-pf="horas">Horas</th><th data-pf="dataKey">Data prevista / entrega</th><th data-pf="trimestre">Trimestre</th>
+      </tr></thead><tbody id="pfBody"></tbody></table></div>
+      <div id="pfPagination" style="display:flex; align-items:center; justify-content:center; margin-top:14px;"></div>
     </div>
   </div>
 
@@ -1358,6 +1383,7 @@ function buildQuarterlyModel(full){
   const unmapped = {};
   const inferred = {};
   const projectLecom = new Map(), improvementLecom = new Map();
+  const items = [];
   const quality = { semSquad:{p:0,m:0}, semMotivo:{p:0,m:0}, encerradoSemData:0, finalizadaSemData:0 };
 
   const filtering = !full && globalFilterActive(), pass = filtering ? gfPredicate(true) : null, onlyActive = !full && !filtering && GF.status === 'ativas';
@@ -1385,6 +1411,17 @@ function buildQuarterlyModel(full){
       unmapped[uk][type==='p'?'projects':'improvements'] += 1;
     }
     const cls = type==='p' ? qProjectClass(row) : qImprovementClass(row);
+    const dataRaw = type==='p' ? (row.fimReal || row.fimPlan) : (row.entrega || row.realizada);
+    items.push({
+      tipo: type==='p' ? 'Projeto' : 'Melhoria', lecom: qText(row.lecom), titulo: qText(row.titulo),
+      squad: squad ? squad.squad : (raw || '(Sem squad informada)'), vinculada: !!squad,
+      sm: squad ? (currentSMName(squad) || '') : '', diretoria: squad ? (squad.diretoria || '') : '',
+      tipoSquad: squad ? tipoDaSquad(squad) : '',
+      status: type==='p' ? qText(row.statusResumo || row.status || row.fase) : qText(row.status),
+      cls, situacao: PF_SIT_LABEL[cls] || cls, horas: qNumber(row.horas),
+      data: qText(dataRaw), dataKey: qDateKey(dataRaw), trimestre: qText(row.trimestre),
+      smPmo: qText(row.smPmo), desprior: qText(row.despriorizacao)
+    });
     const bucket = type==='p' ? agg.p : agg.m;
     bucket.total += 1; bucket[cls] += 1;
     if((type==='p' && cls==='andamento') || (type==='m' && cls==='curso')){ agg.rodando += 1; agg.horas += qNumber(row.horas); }
@@ -1448,7 +1485,7 @@ function buildQuarterlyModel(full){
     unmappedSquads: Object.keys(unmapped).length, inferredLinks: Object.keys(inferred).length,
     divergencias: divergencias.length, commonLecom: commonLecom.length
   };
-  return { squads, smRows, semSmComDemanda, unmapped:Object.values(unmapped), inferred:Object.values(inferred), divergencias, commonLecom, quality, metrics };
+  return { items, squads, smRows, semSmComDemanda, unmapped:Object.values(unmapped), inferred:Object.values(inferred), divergencias, commonLecom, quality, metrics };
 }
 
 function qKpi(id, value, label, tone, preset){
@@ -1498,6 +1535,191 @@ function qNum(n, tone){
   const v = qFormatNumber(n);
   return (n === 0) ? '<span style="color:#9AA1B2;">'+v+'</span>' : (tone ? '<b>'+v+'</b>' : v);
 }
+
+/* ===== Tabelas ordenáveis (clique no cabeçalho) e portfólio detalhado ===== */
+const Q_SORT = {};
+function qParseNum(s){
+  const m = /^[-+]?(\d{1,3}(\.\d{3})+|\d+)(,\d+)?\s*(h|%)?$/.exec(s);
+  return m ? Number(s.replace(/[h%\s]/g,'').replace(/\./g,'').replace(',','.')) : null;
+}
+function qCellSortValue(td){
+  if(!td) return '';
+  const dv = td.getAttribute('data-v');
+  const s = dv !== null ? dv : td.textContent.replace(/\s+/g,' ').trim();
+  const n = qParseNum(s);
+  return n !== null ? n : s;
+}
+/* tbodyId: tabela já renderizada por innerHTML; o estado de ordenação sobrevive às renderizações */
+function qSortableApply(tbodyId){
+  const body = document.getElementById(tbodyId);
+  if(!body) return;
+  const table = body.closest('table');
+  if(!table) return;
+  const heads = Array.from(table.querySelectorAll('thead th'));
+  if(!table.dataset.qsort){
+    table.dataset.qsort = '1';
+    heads.forEach((th, i)=>{
+      th.setAttribute('data-sort', String(i));
+      th.title = 'Clique para ordenar';
+      if(!th.querySelector('.sort-arrow')) th.insertAdjacentHTML('beforeend', ' <span class="sort-arrow">↕</span>');
+      th.addEventListener('click', ()=>{
+        const cur = Q_SORT[tbodyId];
+        Q_SORT[tbodyId] = cur && cur.col === i ? { col:i, dir: cur.dir === 'asc' ? 'desc' : 'asc' } : { col:i, dir:'asc' };
+        qSortableApply(tbodyId);
+        if(tbodyId === 'execSquadBody'){ const sel = document.getElementById('execSort'); if(sel) sel.title = 'A ordenação por cabeçalho está ativa; trocar aqui volta à ordem escolhida.'; }
+      });
+    });
+  }
+  const st = Q_SORT[tbodyId];
+  heads.forEach((th, i)=>{
+    const arrow = th.querySelector('.sort-arrow');
+    if(arrow) arrow.textContent = st && st.col === i ? (st.dir === 'asc' ? '▲' : '▼') : '↕';
+    th.classList.toggle('sort-active', !!st && st.col === i);
+  });
+  if(!st) return;
+  const rows = Array.from(body.children).filter(tr=>tr.children.length > 1);
+  const keyed = rows.map((tr, idx)=>({ tr, idx, v:qCellSortValue(tr.children[st.col]) }));
+  const empty = v => v === '' || v === '—' || v === '-';
+  keyed.sort((a, b)=>{
+    if(empty(a.v) !== empty(b.v)) return empty(a.v) ? 1 : -1;
+    let c;
+    if(typeof a.v === 'number' && typeof b.v === 'number') c = a.v - b.v;
+    else c = COLLATE_NUM.compare(String(a.v), String(b.v));
+    return (st.dir === 'asc' ? c : -c) || a.idx - b.idx;
+  });
+  keyed.forEach(k=>body.appendChild(k.tr));
+}
+
+/* Portfólio detalhado: lista projeto a projeto / melhoria a melhoria, com ordenação e filtros próprios */
+const PF = { sort:{ key:'situacao', dir:'asc' }, page:1, size:25, f:{ q:'', item:'', sit:'', sm:'', dir:'', tipoSquad:'' } };
+const PF_SIT_GROUP = { andamento:'rodando', curso:'rodando', planejamento:'planejamento', encerrado:'concluido', finalizada:'concluido', fora:'fora' };
+const PF_SIT_LABEL = { andamento:'Em andamento', curso:'Em curso', planejamento:'Planejamento', encerrado:'Encerrado', finalizada:'Finalizada', fora:'Fora' };
+function qDateKey(s){
+  const text = String(s || '').trim();
+  /* planilha lida pelo SheetJS traz m/d/aa (ex.: 8/20/26); datas com ano de 4 dígitos são dd/mm/aaaa */
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(text);
+  if(us) return (+us[1] >= 1 && +us[1] <= 12 && +us[2] >= 1 && +us[2] <= 31) ? '20'+us[3]+'-'+us[1].padStart(2,'0')+'-'+us[2].padStart(2,'0') : '';
+  const br = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(text);
+  if(br) return br[3]+'-'+br[2].padStart(2,'0')+'-'+br[1].padStart(2,'0');
+  const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
+  return iso ? iso[0] : '';
+}
+function qDateLabel(key, raw){
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
+  return m ? m[3]+'/'+m[2]+'/'+m[1] : (raw || '');
+}
+function pfFiltered(model){
+  const f = PF.f, term = qKey(f.q);
+  return (model.items || []).filter(it=>{
+    if(f.item && it.tipo !== f.item) return false;
+    if(f.sit && PF_SIT_GROUP[it.cls] !== f.sit) return false;
+    if(f.sm && (f.sm === '(Sem SM)' ? !!it.sm : it.sm !== f.sm)) return false;
+    if(f.dir && (it.diretoria || '(Sem diretoria)') !== f.dir) return false;
+    if(f.tipoSquad && (it.tipoSquad || '(Sem tipo)') !== f.tipoSquad) return false;
+    if(term && qKey(it.titulo+' '+it.lecom+' '+it.squad+' '+it.sm+' '+it.smPmo).indexOf(term) < 0) return false;
+    return true;
+  });
+}
+function pfSorted(rows){
+  const { key, dir } = PF.sort;
+  const num = key === 'horas';
+  const empty = v => v === '' || v == null;
+  return rows.map((r, i)=>({ r, i })).sort((a, b)=>{
+    const va = a.r[key], vb = b.r[key];
+    if(empty(va) !== empty(vb)) return empty(va) ? 1 : -1;
+    const c = num ? (va - vb) : COLLATE_NUM.compare(String(va), String(vb));
+    return (dir === 'asc' ? c : -c) || a.i - b.i;
+  }).map(x=>x.r);
+}
+function pfFillSelect(id, values, current, firstLabel){
+  const sel = document.getElementById(id);
+  if(!sel) return;
+  const signature = values.join('\u0001');
+  if(sel.dataset.sig !== signature){
+    sel.innerHTML = '<option value="">'+firstLabel+'</option>' + values.map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');
+    sel.dataset.sig = signature;
+  }
+  sel.value = values.indexOf(current) >= 0 ? current : '';
+}
+function renderPortfolioDetail(model){
+  model = model || QUARTERLY_MODEL;
+  const body = document.getElementById('pfBody');
+  if(!body || !model) return;
+  const all = model.items || [];
+  const uniq = list => [...new Set(list.filter(Boolean))].sort(COLLATE.compare);
+  pfFillSelect('pfSm', ['(Sem SM)'].concat(uniq(all.map(i=>i.sm))), PF.f.sm, 'Todos');
+  pfFillSelect('pfDir', uniq(all.map(i=>i.diretoria || '(Sem diretoria)')), PF.f.dir, 'Todas');
+  const rows = pfSorted(pfFiltered(model));
+  const maxPage = Math.max(1, Math.ceil(rows.length / PF.size));
+  if(PF.page > maxPage) PF.page = maxPage;
+  const cnt = document.getElementById('pfCount');
+  const run = rows.filter(r=>PF_SIT_GROUP[r.cls] === 'rodando').length;
+  if(cnt) cnt.innerHTML = '<b>'+qFormatNumber(rows.length)+'</b> de <b>'+qFormatNumber(all.length)+'</b> itens · <b>'+qFormatNumber(rows.filter(r=>r.tipo==='Projeto').length)+'</b> projetos · <b>'+qFormatNumber(rows.filter(r=>r.tipo==='Melhoria').length)+'</b> melhorias · <b>'+qFormatNumber(run)+'</b> rodando · <b>'+qFormatHours(rows.reduce((t,r)=>t+(PF_SIT_GROUP[r.cls]==='rodando' ? r.horas : 0),0))+'</b> estimadas do que roda';
+  const tone = { rodando:'ok', planejamento:'pend', concluido:'pend', fora:'miss' };
+  const page = rows.slice((PF.page-1)*PF.size, PF.page*PF.size);
+  body.innerHTML = page.length ? page.map(r=>'<tr>'+
+    '<td>'+esc(r.tipo)+'</td>'+
+    '<td>'+esc(r.lecom || '—')+'</td>'+
+    '<td style="min-width:240px;">'+esc(r.titulo || '—')+(r.desprior ? ' <span class="badge miss" title="'+esc(r.desprior)+'">despriorizado</span>' : '')+'</td>'+
+    '<td>'+esc(r.squad)+(r.vinculada ? '' : ' <span class="badge miss">sem vínculo</span>')+'</td>'+
+    '<td>'+(r.sm ? esc(r.sm) : (r.vinculada ? '<span class="badge miss">Sem SM</span>' : '<span style="color:#9AA1B2;">—</span>'))+'</td>'+
+    '<td>'+esc(r.diretoria || '—')+'</td>'+
+    '<td>'+(r.tipoSquad ? esc(r.tipoSquad) : '<span style="color:#9AA1B2;">—</span>')+'</td>'+
+    '<td>'+esc(r.status || '—')+'</td>'+
+    '<td><span class="badge '+tone[PF_SIT_GROUP[r.cls]]+'">'+esc(PF_SIT_LABEL[r.cls])+'</span></td>'+
+    '<td>'+(r.horas ? qFormatHours(r.horas) : '<span style="color:#9AA1B2;">0</span>')+'</td>'+
+    '<td>'+esc(qDateLabel(r.dataKey, r.data) || '—')+'</td>'+
+    '<td>'+esc(r.trimestre || '—')+'</td></tr>').join('') : qEmptyRow(12, all.length ? 'Nenhum item com esses filtros.' : 'Importe o Portfólio e as Melhorias para listar os itens.');
+  renderPaginationControls('pfPagination', rows.length, PF.page, PF.size, p=>{ PF.page = p; renderPortfolioDetail(); });
+  document.querySelectorAll('#pfTable thead th[data-pf]').forEach(th=>{
+    th.style.cursor = 'pointer';
+    th.title = 'Clique para ordenar';
+    let arrow = th.querySelector('.sort-arrow');
+    if(!arrow){ th.insertAdjacentHTML('beforeend', ' <span class="sort-arrow">↕</span>'); arrow = th.querySelector('.sort-arrow'); }
+    const active = th.getAttribute('data-pf') === PF.sort.key;
+    arrow.textContent = active ? (PF.sort.dir === 'asc' ? '▲' : '▼') : '↕';
+    th.classList.toggle('sort-active', active);
+  });
+}
+function pfExportCsv(){
+  const model = QUARTERLY_MODEL; if(!model) return;
+  const rows = pfSorted(pfFiltered(model));
+  const head = ['Item','LECOM','Título','Squad','SM','Diretoria','Tipo da squad','Status / fase','Situação','Horas','Data prevista / entrega','Trimestre','SM/PMO no Portfólio','Despriorização'];
+  const q = v => '"'+String(v == null ? '' : v).replace(/"/g,'""')+'"';
+  const lines = [head.map(q).join(';')].concat(rows.map(r=>[r.tipo, r.lecom, r.titulo, r.squad, r.sm || (r.vinculada ? 'Sem SM' : ''), r.diretoria, r.tipoSquad, r.status, PF_SIT_LABEL[r.cls], r.horas, qDateLabel(r.dataKey, r.data), r.trimestre, r.smPmo, r.desprior].map(q).join(';')));
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')], { type:'text/csv;charset=utf-8' }));
+  a.download = 'portfolio-detalhado.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
+}
+function wireExecPortfolio(){
+  const on = (id, evt, fn) => { const el = document.getElementById(id); if(el) el.addEventListener(evt, fn); };
+  const pfSet = (key, id) => on(id, id === 'pfSearch' ? 'input' : 'change', e=>{ PF.f[key] = e.target.value; PF.page = 1; renderPortfolioDetail(); });
+  pfSet('q','pfSearch'); pfSet('item','pfItem'); pfSet('sit','pfSit'); pfSet('sm','pfSm'); pfSet('dir','pfDir'); pfSet('tipoSquad','pfTipoSquad');
+  on('pfClear','click', ()=>{
+    PF.f = { q:'', item:'', sit:'', sm:'', dir:'', tipoSquad:'' }; PF.page = 1;
+    ['pfSearch','pfItem','pfSit','pfSm','pfDir','pfTipoSquad'].forEach(id=>{ const el = document.getElementById(id); if(el) el.value = ''; });
+    renderPortfolioDetail();
+  });
+  on('pfExport','click', pfExportCsv);
+  document.querySelectorAll('#pfTable thead th[data-pf]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.getAttribute('data-pf');
+      PF.sort = PF.sort.key === key ? { key, dir: PF.sort.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: key === 'horas' ? 'desc' : 'asc' };
+      PF.page = 1; renderPortfolioDetail();
+    });
+  });
+  const ef = (key, id, evt) => on(id, evt || 'change', e=>{ EXEC_F[key] = e.target.value; renderExecSquadTable(); });
+  ef('q','execSquadSearch','input'); ef('sm','execSmFilter'); ef('tipo','execTipoFilter'); ef('sit','execSitFilter');
+  on('execSquadClear','click', ()=>{
+    Object.keys(EXEC_F).forEach(k=>{ EXEC_F[k] = ''; });
+    ['execSquadSearch','execSmFilter','execTipoFilter','execSitFilter'].forEach(id=>{ const el = document.getElementById(id); if(el) el.value = ''; });
+    delete Q_SORT.execSquadBody;
+    renderExecSquadTable();
+  });
+}
+const EXEC_F = { q:'', sm:'', tipo:'', sit:'' };
 function renderExecutiveTab(){
   const kpi = document.getElementById('executiveKpiRow');
   if(!kpi) return;
@@ -1536,7 +1758,9 @@ function renderExecutiveTab(){
   const dirRows = Object.values(dirs).sort((a,b)=>(b.pAnd+b.mCur)-(a.pAnd+a.mCur));
   document.getElementById('execDirBody').innerHTML = dirRows.length ? dirRows.map(r=>'<tr><td><b>'+esc(r.nome)+'</b></td><td>'+qNum(r.squads)+'</td><td>'+(r.semSm ? '<span class="badge miss">'+r.semSm+'</span>' : '<span class="badge ok">0</span>')+'</td><td>'+qNum(r.sms.size)+'</td><td>'+qNum(r.p)+'</td><td>'+qNum(r.pAnd)+'</td><td>'+qNum(r.m)+'</td><td>'+qNum(r.mFin)+'</td><td>'+qNum(r.mCur)+'</td><td>'+qFormatHours(r.horas)+'</td></tr>').join('') : qEmptyRow(10, 'Sem demanda importada.');
 
+  qSortableApply('execSmBody'); qSortableApply('execDirBody');
   renderExecSquadTable(model);
+  renderPortfolioDetail(model);
   try{ renderExecInsights(model, !empty); renderExecCharts(model, !empty); renderDiretoriaCoverage(); }catch(err){ console.error('Execução dos insights/gráficos', err); }
 }
 function renderExecSquadTable(model){
@@ -1546,12 +1770,25 @@ function renderExecSquadTable(model){
   const term = qKey(GF.q || '');
   const sortBy = (document.getElementById('execSort') || {}).value || 'rodando';
   let rows = model.squads.filter(a=>a.p.total+a.m.total>0);
+  const withDemand = rows.length;
+  /* opções do filtro de SM (preserva a escolha atual) */
+  pfFillSelect('execSmFilter', ['(Sem SM)'].concat([...new Set(rows.map(a=>a.sm).filter(Boolean))].sort(COLLATE.compare)), EXEC_F.sm, 'Todos');
+  const tipoOf = a => (a.squad && tipoDaSquad(a.squad)) || '';
   if(term) rows = rows.filter(a=>qKey(a.label+' '+a.sm+' '+a.diretoria).indexOf(term) >= 0);
+  const lt = qKey(EXEC_F.q);
+  if(lt) rows = rows.filter(a=>qKey(a.label+' '+a.sm+' '+a.diretoria).indexOf(lt) >= 0);
+  if(EXEC_F.sm) rows = rows.filter(a=> EXEC_F.sm === '(Sem SM)' ? !a.sm : a.sm === EXEC_F.sm);
+  if(EXEC_F.tipo) rows = rows.filter(a=>(tipoOf(a) || '(Sem tipo)') === EXEC_F.tipo);
+  if(EXEC_F.sit === 'rodando') rows = rows.filter(a=>a.rodando > 0);
+  else if(EXEC_F.sit === 'parada') rows = rows.filter(a=>a.rodando === 0);
+  else if(EXEC_F.sit === 'semsm') rows = rows.filter(a=>!a.sm);
+  else if(EXEC_F.sit === 'semvinculo') rows = rows.filter(a=>!a.squad);
   const val = { rodando:a=>a.rodando, total:a=>a.p.total+a.m.total, projetos:a=>a.p.andamento, melhorias:a=>a.m.finalizada, horas:a=>a.horas }[sortBy] || (a=>a.rodando);
   rows = rows.sort((a,b)=> val(b)-val(a) || (b.p.total+b.m.total)-(a.p.total+a.m.total) || COLLATE.compare(a.label,b.label));
   const cnt = document.getElementById('execSquadCount');
-  if(cnt) cnt.innerHTML = '<b>'+rows.length+'</b> de <b>'+model.squads.filter(a=>a.p.total+a.m.total>0).length+'</b> squads com demanda';
-  body.innerHTML = rows.length ? rows.map(a=>'<tr><td><b>'+esc(a.label)+'</b>'+(a.squad ? '' : ' <span class="badge miss">sem vínculo</span>')+'</td><td>'+(a.sm ? esc(a.sm) : '<span class="badge miss">Sem SM</span>')+'</td><td>'+esc(a.diretoria || '—')+'</td><td>'+(a.squad ? qNum(a.squad.boards.filter(b=>b.ativo).length) : '—')+'</td><td>'+qNum(a.p.total)+'</td><td>'+qNum(a.p.andamento,1)+'</td><td>'+qNum(a.p.planejamento)+'</td><td>'+qNum(a.p.encerrado)+'</td><td>'+qNum(a.p.fora)+'</td><td>'+qNum(a.m.total)+'</td><td>'+qNum(a.m.finalizada)+'</td><td>'+qNum(a.m.curso,1)+'</td><td>'+qNum(a.m.fora)+'</td><td>'+qNum(a.rodando,1)+'</td></tr>').join('') : qEmptyRow(14, 'Nenhuma squad encontrada com esses filtros.');
+  if(cnt) cnt.innerHTML = '<b>'+rows.length+'</b> de <b>'+withDemand+'</b> squads com demanda';
+  body.innerHTML = rows.length ? rows.map(a=>'<tr><td><b>'+esc(a.label)+'</b>'+(a.squad ? '' : ' <span class="badge miss">sem vínculo</span>')+'</td><td>'+(a.sm ? esc(a.sm) : '<span class="badge miss">Sem SM</span>')+'</td><td>'+esc(a.diretoria || '—')+'</td><td>'+(a.squad && tipoDaSquad(a.squad) ? esc(tipoDaSquad(a.squad)) : '<span style="color:#9AA1B2;">—</span>')+'</td><td>'+(a.squad ? qNum(a.squad.boards.filter(b=>b.ativo).length) : '—')+'</td><td>'+qNum(a.p.total)+'</td><td>'+qNum(a.p.andamento,1)+'</td><td>'+qNum(a.p.planejamento)+'</td><td>'+qNum(a.p.encerrado)+'</td><td>'+qNum(a.p.fora)+'</td><td>'+qNum(a.m.total)+'</td><td>'+qNum(a.m.finalizada)+'</td><td>'+qNum(a.m.curso,1)+'</td><td>'+qNum(a.m.fora)+'</td><td>'+qNum(a.rodando,1)+'</td></tr>').join('') : qEmptyRow(15, 'Nenhuma squad encontrada com esses filtros.');
+  qSortableApply('execSquadBody');
 }
 function renderQualityTab(){
   const model = QUARTERLY_MODEL || buildQuarterlyModel();
@@ -2058,7 +2295,8 @@ function renderBasesSummary(){
   const pick = id => { const b = document.getElementById(id); return b ? b.textContent.trim().split(' · ')[0] : ''; };
   el.textContent = '· ' + [pick('resourcesDataBadge'), pick('portfolioDataBadge'), pick('improvementsDataBadge')].filter(Boolean).join(' · ');
 }
-{ const el=document.getElementById('execSort'); if(el) el.addEventListener('change', ()=>renderExecSquadTable()); }
+{ const el=document.getElementById('execSort'); if(el) el.addEventListener('change', ()=>{ delete Q_SORT.execSquadBody; renderExecSquadTable(); }); }
+wireExecPortfolio();
 window.addEventListener('hac-quarterly-change', refreshQuarterlyViews);
 window.addEventListener('hac-quarterly-error', event=>{
   const detail = event.detail || {};
