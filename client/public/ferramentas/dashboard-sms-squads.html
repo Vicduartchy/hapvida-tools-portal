@@ -1600,9 +1600,10 @@ function qDateKey(s){
   const us = /^(\d{1,2})\/(\d{1,2})\/(\d{2})$/.exec(text);
   if(us) return (+us[1] >= 1 && +us[1] <= 12 && +us[2] >= 1 && +us[2] <= 31) ? '20'+us[3]+'-'+us[1].padStart(2,'0')+'-'+us[2].padStart(2,'0') : '';
   const br = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(text);
-  if(br) return br[3]+'-'+br[2].padStart(2,'0')+'-'+br[1].padStart(2,'0');
+  const ok = (mo, d) => +mo >= 1 && +mo <= 12 && +d >= 1 && +d <= 31;
+  if(br) return ok(br[2], br[1]) ? br[3]+'-'+br[2].padStart(2,'0')+'-'+br[1].padStart(2,'0') : '';
   const iso = /^(\d{4})-(\d{2})-(\d{2})/.exec(text);
-  return iso ? iso[0] : '';
+  return iso && ok(iso[2], iso[3]) ? iso[0] : '';
 }
 function qDateLabel(key, raw){
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key || '');
