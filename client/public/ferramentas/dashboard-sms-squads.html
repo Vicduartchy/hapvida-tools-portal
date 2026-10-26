@@ -2797,14 +2797,35 @@ document.getElementById('btnCollapseAllSm').addEventListener('click', ()=>{
   renderSMsTab();
 });
 document.getElementById('btnExportSmXlsx').addEventListener('click', ()=>{
-  exportRowsToXlsx(LAST_SM_ROWS_FILTERED, [
-    {label:'SM', get:function(r){return r.nome;}, width:28},
-    {label:'Squads', get:function(r){return r.squadCount;}, width:10},
-    {label:'Diretoria(s)', get:function(r){return r.diretorias.join(', ');}, width:32},
-    {label:'Pessoas (únicas)', get:function(r){return r.pessoasUnicas;}, width:14},
-    {label:'Boards', get:function(r){return r.totalBoards;}, width:10},
-    {label:'Divergência SM', get:function(r){return r.divergencias.length;}, width:14},
-  ], 'Hapvida_SMs_{date}.xlsx');
+  /* uma linha por SM x squad; SM sem squad sai com a squad em branco */
+  const dm = smDemandMaps();
+  const linhas = [];
+  (LAST_SM_ROWS_FILTERED || []).forEach(sm=>{
+    const squads = sm.squads.slice().sort((a,b)=> COLLATE.compare(a.squad,b.squad));
+    const base = { sm: sm.nome, ocupacao: sm.squadCount };
+    if(!squads.length){ linhas.push(Object.assign({}, base, { squad:'', tipo:'', diretoria:(sm.diretorias||[]).join(', '), proj:'', projAnd:'', melh:'', melhCurso:'', rec:'' })); return; }
+    squads.forEach(s=>{
+      const a = dm.bySquad.get(s.id);
+      linhas.push(Object.assign({}, base, {
+        squad: s.squad, tipo: tipoDaSquad(s) || '', diretoria: s.diretoria || '',
+        proj: dm.loaded ? (a ? a.p.total : 0) : '', projAnd: dm.loaded ? (a ? a.p.andamento : 0) : '',
+        melh: dm.loaded ? (a ? a.m.total : 0) : '', melhCurso: dm.loaded ? (a ? a.m.curso : 0) : '',
+        rec: s.recursos.length
+      }));
+    });
+  });
+  exportRowsToXlsx(linhas, [
+    {label:'SM', get:r=>r.sm, width:30},
+    {label:'Squad', get:r=>r.squad, width:44},
+    {label:'Tipo', get:r=>r.tipo, width:11},
+    {label:'Diretoria', get:r=>r.diretoria, width:22},
+    {label:'Projetos na squad', get:r=>r.proj, width:16},
+    {label:'Projetos em andamento', get:r=>r.projAnd, width:18},
+    {label:'Melhorias na squad', get:r=>r.melh, width:16},
+    {label:'Melhorias em curso', get:r=>r.melhCurso, width:16},
+    {label:'Recursos na squad', get:r=>r.rec, width:16},
+    {label:'Squads do SM (ideal 3)', get:r=>r.ocupacao, width:18},
+  ], 'Hapvida_SMs_por_squad_{date}.xlsx');
 });
 
 /* ============================================================
