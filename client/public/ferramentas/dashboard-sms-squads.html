@@ -310,10 +310,36 @@
   .prov-azure{ background:#F0F1F5; color:#556; }
 
   .squadtable{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  /* ===== Leitura das tabelas: respiro, zebra, números à direita, cabeçalhos agrupados, primeira coluna fixa ===== */
+  .squadtable tbody td{ padding:9px 12px; border-bottom:1px solid #E9ECF3; vertical-align:middle; line-height:1.35; }
+  .squadtable tbody tr:not(.squad-row):not(.squad-detail-row):nth-child(even){ background:#F8F9FC; }
+  .squadtable tbody tr:not(.squad-row):not(.squad-detail-row):hover{ background:#EEF2FB; }
+  .squadtable th.num, .squadtable td.num{ text-align:right; font-variant-numeric:tabular-nums; }
+  .squadtable td.num{ padding-right:16px; }
+  .squadtable th.grp-start, .squadtable td.grp-start{ border-left:2px solid #DDE3F1; }
+  .squadtable thead tr.grp th{ background:var(--azul-escuro); text-align:center; font-size:10.5px; letter-spacing:.06em; text-transform:uppercase; padding:6px 8px; height:26px; box-sizing:border-box; border-left:1px solid rgba(255,255,255,.28); }
+  .squadtable thead tr.grp th:first-child{ border-left:none; }
+  .squadtable thead tr.grp + tr th{ top:26px; }
+  .squadtable.wide tr:not(.squad-detail-row) > :first-child{ position:sticky; left:0; z-index:2; box-shadow:1px 0 0 #DDE3F1; }
+  .squadtable.wide tbody tr:not(.squad-detail-row) > :first-child{ background:#fff; }
+  .squadtable.wide tbody tr:not(.squad-row):not(.squad-detail-row):nth-child(even) > :first-child{ background:#F8F9FC; }
+  .squadtable.wide thead tr > :first-child{ z-index:4; }
+  .squadtable td.nm{ min-width:180px; font-weight:600; color:var(--azul-escuro); }
+  .squadtable td.nowrap{ white-space:nowrap; }
+  #tab-executive .tablewrap, #tab-quality .tablewrap{ max-height:none; }
+  #tab-executive #execSquadWrap, #tab-executive #pfWrap{ max-height:72vh; }
+  .capmeter{ display:inline-block; width:56px; height:7px; border-radius:4px; background:#E4E8F2; vertical-align:middle; margin-left:8px; overflow:hidden; }
+  .capmeter > i{ display:block; height:100%; border-radius:4px; background:#2E9F5B; }
+  .capmeter.mid > i{ background:#F2A33A; }
+  .capmeter.over > i{ background:#E8272A; }
+  .runbar{ display:inline-block; height:7px; border-radius:4px; background:#1A3DAA; vertical-align:middle; margin-right:6px; min-width:2px; }
+  .tbl-legend{ margin:2px 0 8px; font-size:11.5px; color:var(--cinza-texto); line-height:1.5; }
+
   .squadtable thead th{
     background:var(--azul); color:var(--branco); text-align:left; padding:10px 12px;
-    position:sticky; top:0; z-index:1; font-weight:700; font-size:11.5px; white-space:nowrap;
+    position:sticky; top:0; z-index:1; font-weight:700; font-size:11.5px; white-space:normal; line-height:1.25; vertical-align:bottom;
   }
+  .squadtable thead th.num{ min-width:64px; }
   .squadtable thead th[data-sort]{ cursor:pointer; user-select:none; }
   .squadtable thead th[data-sort]:hover{ background:var(--azul-escuro); }
   .squadtable thead th .sort-arrow{ display:inline-block; width:12px; opacity:.55; font-size:10px; }
@@ -338,6 +364,9 @@
   .mini-table th{ text-align:left; padding:5px 8px; background:#EBF0FA; color:var(--azul-escuro); font-weight:700; }
   .mini-table td{ padding:5px 8px; border-bottom:1px solid #E6EAF4; }
   .mini-table tr:last-child td{ border-bottom:none; }
+  .mini-table.squadtable thead th{ background:var(--azul); color:#fff; }
+  .mini-table.squadtable thead tr.grp th{ background:var(--azul-escuro); text-align:center; }
+  .mini-table.squadtable td{ padding:7px 10px; }
   .mini-empty{ padding:10px 8px; color:var(--cinza-texto); font-style:italic; font-size:11.5px; }
 
   .badge.pend{ background:#FFEFD6; color:var(--laranja); }
@@ -569,7 +598,7 @@
         </div>
         <div class="chart-card">
           <h4>Cobertura de SM e pessoas</h4>
-          <div class="tablewrap"><table class="squadtable"><thead><tr><th>Diretoria</th><th>Squads ativas</th><th>Com SM</th><th>Sem SM</th><th>% com SM</th><th>Pessoas</th><th>SMs atuando</th></tr></thead><tbody id="diretoriaBody"></tbody></table></div>
+          <div class="tablewrap"><table class="squadtable" id="diretoriaTable"><thead><tr><th>Diretoria</th><th>Squads ativas</th><th>Com SM</th><th>Sem SM</th><th>% com SM</th><th>Pessoas</th><th>SMs atuando</th></tr></thead><tbody id="diretoriaBody"></tbody></table></div>
         </div>
       </div>
     </div>
@@ -577,12 +606,18 @@
     <div class="insight-section">
       <h3>Capacidade dos SMs</h3>
       <div class="resultcount" id="execCapacityNote"></div>
-      <div class="tablewrap"><table class="squadtable"><thead><tr><th>SM</th><th>Squads</th><th>Capacidade</th><th>Squads com demanda</th><th>Pessoas</th><th>Boards ativos</th><th>Projetos em andamento</th><th>Melhorias em curso</th><th>Melhorias finalizadas</th><th>Horas estimadas (rodando)</th><th>Rodando</th></tr></thead><tbody id="execSmBody"></tbody></table></div>
+      <div class="tablewrap"><table class="squadtable" id="execSmTable"><thead>
+        <tr class="grp"><th colspan="1"></th><th colspan="2">Capacidade (ideal: 3 squads por SM)</th><th colspan="3">Equipe e estrutura</th><th colspan="4">Demanda no trimestre</th><th colspan="1"></th></tr>
+        <tr><th>SM</th><th title="Squads sob responsabilidade do SM">Squads</th><th>Situação</th><th class="grp-start" title="Squads do SM com projeto ou melhoria no trimestre">Squads com demanda</th><th title="Pessoas únicas nas squads do SM">Pessoas</th><th>Boards ativos</th><th class="grp-start" title="Execução, piloto, expansão e monitoramento">Projetos em andamento</th><th title="Não iniciadas até aguardando publicação">Melhorias em curso</th><th>Melhorias finalizadas</th><th>Horas estimadas (rodando)</th><th class="grp-start" title="Projetos em andamento + melhorias em curso">Rodando</th></tr>
+        </thead><tbody id="execSmBody"></tbody></table></div>
     </div>
 
     <div class="insight-section">
       <h3>Por diretoria</h3>
-      <div class="tablewrap"><table class="squadtable"><thead><tr><th>Diretoria</th><th>Squads com demanda</th><th>Sem SM</th><th>SMs</th><th>Projetos</th><th>Em andamento</th><th>Melhorias</th><th>Finalizadas</th><th>Em curso</th><th>Horas estimadas (rodando)</th></tr></thead><tbody id="execDirBody"></tbody></table></div>
+      <div class="tablewrap"><table class="squadtable" id="execDirTable"><thead>
+        <tr class="grp"><th colspan="4">Estrutura</th><th colspan="2">Projetos</th><th colspan="3">Melhorias</th><th colspan="1">Carga</th></tr>
+        <tr><th>Diretoria</th><th title="Squads da diretoria com projeto ou melhoria no trimestre">Squads com demanda</th><th>Sem SM</th><th>SMs</th><th class="grp-start">Total</th><th>Em andamento</th><th class="grp-start">Total</th><th>Finalizadas</th><th>Em curso</th><th class="grp-start">Horas estimadas (rodando)</th></tr>
+        </thead><tbody id="execDirBody"></tbody></table></div>
     </div>
 
     <div class="insight-section">
@@ -596,7 +631,10 @@
         <button type="button" class="clearbtn" id="execSquadClear">Limpar</button>
       </div>
       <div class="resultcount" id="execSquadCount"></div>
-      <div class="tablewrap"><table class="squadtable"><thead><tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Tipo</th><th>Boards ativos</th><th>Projetos</th><th>Proj. em andamento</th><th>Proj. planej./solic.</th><th>Proj. encerrados</th><th>Proj. fora</th><th>Melhorias</th><th>Melh. finalizadas</th><th>Melh. em curso</th><th>Melh. fora</th><th>Rodando</th></tr></thead><tbody id="execSquadBody"></tbody></table></div>
+      <div class="tablewrap" id="execSquadWrap"><table class="squadtable" id="execSquadTable"><thead>
+        <tr class="grp"><th colspan="5">Squad</th><th colspan="5">Projetos</th><th colspan="4">Melhorias</th><th></th></tr>
+        <tr><th>Squad</th><th>SM</th><th>Diretoria</th><th>Tipo</th><th>Boards ativos</th><th class="grp-start">Total</th><th>Em andamento</th><th>Planej./solic.</th><th>Encerrados</th><th>Fora</th><th class="grp-start">Total</th><th>Finalizadas</th><th>Em curso</th><th>Fora</th><th class="grp-start">Rodando</th></tr>
+        </thead><tbody id="execSquadBody"></tbody></table></div>
       <div style="margin-top:8px;font-size:10.5px;color:var(--cinza-texto);line-height:1.6;"><b>Como ler.</b> Projeto <i>fora</i> = despriorizado, cancelado ou suspenso; <i>em andamento</i> = execução, piloto, expansão e monitoramento. Melhoria <i>fora</i> = despriorizada ou cancelada; <i>em curso</i> = não iniciada até aguardando publicação. <i>Rodando</i> = projetos em andamento + melhorias em curso. Squad e SM vêm do Squad Azure e do levantamento de outubro.</div>
     </div>
 
@@ -614,7 +652,7 @@
         <button type="button" class="btn btn-outline btn-sm" id="pfExport">Exportar CSV</button>
       </div>
       <div class="resultcount" id="pfCount"></div>
-      <div class="tablewrap"><table class="squadtable" id="pfTable"><thead><tr>
+      <div class="tablewrap" id="pfWrap"><table class="squadtable" id="pfTable"><thead><tr>
         <th data-pf="tipo">Item</th><th data-pf="lecom">LECOM</th><th data-pf="titulo">Título</th><th data-pf="squad">Squad</th><th data-pf="sm">SM</th><th data-pf="diretoria">Diretoria</th><th data-pf="tipoSquad">Tipo da squad</th><th data-pf="status">Status / fase</th><th data-pf="situacao">Situação</th><th data-pf="horas">Horas</th><th data-pf="dataKey">Data prevista / entrega</th><th data-pf="trimestre">Trimestre</th>
       </tr></thead><tbody id="pfBody"></tbody></table></div>
       <div id="pfPagination" style="display:flex; align-items:center; justify-content:center; margin-top:14px;"></div>
@@ -684,16 +722,23 @@
       <button class="btn btn-outline btn-sm" id="btnExportSmXlsx">📊 Exportar Excel</button>
     </div>
 
+    <div class="resultcount" id="smCapacityNote"></div>
     <div class="resultcount" id="smCount"></div>
 
     <div class="tablewrap">
       <table class="squadtable" id="smTable">
-        <thead><tr>
+        <thead>
+        <tr class="grp"><th></th><th colspan="1">Capacidade</th><th colspan="3">Estrutura</th><th colspan="3">Demanda no trimestre</th><th colspan="2"></th></tr>
+        <tr>
           <th data-sort="nome">SM <span class="sort-arrow">↕</span></th>
-          <th data-sort="squadCount">Squads <span class="sort-arrow">▼</span></th>
-          <th data-sort="diretorias">Diretoria(s) <span class="sort-arrow">↕</span></th>
+          <th data-sort="squadCount" title="Squads sob responsabilidade do SM (ideal: 3)">Squads / ideal 3 <span class="sort-arrow">▼</span></th>
+          <th class="grp-start" data-sort="diretorias">Diretoria(s) <span class="sort-arrow">↕</span></th>
           <th data-sort="pessoasUnicas">Pessoas (únicas) <span class="sort-arrow">↕</span></th>
           <th data-sort="totalBoards">Boards <span class="sort-arrow">↕</span></th>
+          <th class="grp-start" data-sort="pAnd" title="Execução, piloto, expansão e monitoramento">Projetos em andamento <span class="sort-arrow">↕</span></th>
+          <th data-sort="mCur" title="Não iniciadas até aguardando publicação">Melhorias em curso <span class="sort-arrow">↕</span></th>
+          <th data-sort="rodando" title="Projetos em andamento + melhorias em curso">Rodando <span class="sort-arrow">↕</span></th>
+          <th class="grp-start" data-sort="horas" title="Horas estimadas do que está rodando">Horas estimadas <span class="sort-arrow">↕</span></th>
           <th data-sort="divergencias">Divergência SM <span class="sort-arrow">↕</span></th>
         </tr></thead>
         <tbody id="smBody"></tbody>
@@ -1526,6 +1571,11 @@ function renderQuarterlySources(){
     banner.innerHTML = '<b>Três fontes carregadas.</b> O cruzamento está usando recursos, squads, projetos e melhorias salvos neste navegador.';
   }
 }
+function qCapMeter(squadCount){
+  const pct = Math.min(100, Math.round(squadCount / SM_IDEAL_SQUADS * 100));
+  const cls = squadCount > SM_IDEAL_SQUADS ? 'over' : (squadCount === SM_IDEAL_SQUADS ? 'mid' : '');
+  return '<span class="capmeter '+cls+'" title="'+squadCount+' de '+SM_IDEAL_SQUADS+' squads"><i style="width:'+pct+'%"></i></span>';
+}
 function qCapacityBadge(row){
   if(row.folga < 0) return '<span class="badge miss">Acima (+'+(-row.folga)+')</span>';
   if(row.folga === 0) return '<span class="badge pend">No limite</span>';
@@ -1537,6 +1587,44 @@ function qNum(n, tone){
 }
 
 /* ===== Tabelas ordenáveis (clique no cabeçalho) e portfólio detalhado ===== */
+/* Arruma qualquer .squadtable depois de renderizada: colunas numéricas à direita, primeira coluna fixa nas tabelas largas */
+function qTidyTable(table){
+  const head = table.querySelector('thead tr:last-child');
+  const body = table.tBodies[0];
+  if(!head || !body) return;
+  const ths = Array.from(head.children);
+  const rows = Array.from(body.rows).filter(r=>r.cells.length === ths.length && !r.classList.contains('squad-detail-row'));
+  ths.forEach((th, i)=>{
+    let filled = 0, numeric = 0;
+    rows.forEach(r=>{
+      const c = r.cells[i];
+      const text = c.textContent.replace(/\s+/g,' ').trim();
+      if(!text || text === '—') return;
+      filled += 1;
+      if(qParseNum(text) !== null || /^[+-]?\d+([.,]\d+)?\s*(h|%|\/\s*\d+)?$/.test(text)) numeric += 1;
+    });
+    const isNum = filled > 0 && numeric / filled >= 0.8;
+    th.classList.toggle('num', isNum);
+    rows.forEach(r=>r.cells[i].classList.toggle('num', isNum));
+  });
+  table.classList.toggle('wide', ths.length >= 9 && !table.classList.contains('mini-table'));
+}
+let _qTidyQueued = false;
+function qTidyAll(){
+  _qTidyQueued = false;
+  document.querySelectorAll('table.squadtable').forEach(tb=>{ try{ qTidyTable(tb); }catch(err){ /* tabela fora do padrão */ } });
+}
+function qTidyQueue(){
+  if(_qTidyQueued) return;
+  _qTidyQueued = true;
+  (window.requestAnimationFrame || setTimeout)(qTidyAll);
+}
+function wireTableTidy(){
+  if(typeof MutationObserver !== 'function' || !document.body) return;
+  new MutationObserver(qTidyQueue).observe(document.body, { childList:true, subtree:true });
+  qTidyQueue();
+}
+
 const Q_SORT = {};
 function qParseNum(s){
   const m = /^[-+]?(\d{1,3}(\.\d{3})+|\d+)(,\d+)?\s*(h|%)?$/.exec(s);
@@ -1555,7 +1643,7 @@ function qSortableApply(tbodyId){
   if(!body) return;
   const table = body.closest('table');
   if(!table) return;
-  const heads = Array.from(table.querySelectorAll('thead th'));
+  const heads = Array.from(table.querySelectorAll('thead tr:last-child th'));
   if(!table.dataset.qsort){
     table.dataset.qsort = '1';
     heads.forEach((th, i)=>{
@@ -1746,7 +1834,8 @@ function renderExecutiveTab(){
   /* capacidade dos SMs */
   const gap = document.getElementById('execCapacityNote');
   if(gap) gap.innerHTML = 'Capacidade = <b>'+SM_IDEAL_SQUADS+' squads por SM</b>. Hoje: <b>'+m.smAcima+'</b> SMs acima, <b>'+m.smNoLimite+'</b> no limite e <b>'+m.smComFolga+'</b> com folga (<b>'+m.folgaTotal+'</b> vagas de squad livres, <b>'+m.excessoTotal+'</b> squads acima do ideal). As <b>'+m.semSmSquads+'</b> squads com demanda sem SM equivalem a <b>'+m.deficitSMs+'</b> SMs na razão ideal; no total, o dashboard tem <b>'+m.squadsAtivasSemSm+'</b> squads ativas sem SM (inclui as sem demanda no trimestre).';
-  document.getElementById('execSmBody').innerHTML = model.smRows.length ? model.smRows.map(r=>'<tr><td><b>'+esc(r.nome)+'</b></td><td>'+qNum(r.squadCount,1)+'</td><td>'+qCapacityBadge(r)+'</td><td>'+qNum(r.squadsComDemanda)+'</td><td>'+qNum(r.pessoas)+'</td><td>'+qNum(r.boardsAtivos)+'</td><td>'+qNum(r.pAndamento)+'</td><td>'+qNum(r.mCurso)+'</td><td>'+qNum(r.mFinalizada)+'</td><td>'+(r.horas ? qFormatHours(r.horas) : '<span style="color:#9AA1B2;">0 h</span>')+'</td><td>'+qNum(r.rodando,1)+'</td></tr>').join('') : qEmptyRow(11, 'Sem SMs carregados.');
+  const maxRodSm = Math.max(1, ...model.smRows.map(r=>r.rodando));
+  document.getElementById('execSmBody').innerHTML = model.smRows.length ? model.smRows.map(r=>'<tr><td class="nm">'+esc(r.nome)+'</td><td class="nowrap"><b>'+qFormatNumber(r.squadCount)+'</b> / '+SM_IDEAL_SQUADS+qCapMeter(r.squadCount)+'</td><td class="nowrap">'+qCapacityBadge(r)+'</td><td class="grp-start">'+qNum(r.squadsComDemanda)+'</td><td>'+qNum(r.pessoas)+'</td><td>'+qNum(r.boardsAtivos)+'</td><td class="grp-start">'+qNum(r.pAndamento)+'</td><td>'+qNum(r.mCurso)+'</td><td>'+qNum(r.mFinalizada)+'</td><td>'+(r.horas ? qFormatHours(r.horas) : '<span style="color:#9AA1B2;">0 h</span>')+'</td><td class="grp-start nowrap">'+(r.rodando ? '<span class="runbar" style="width:'+Math.round(r.rodando/maxRodSm*46)+'px"></span>' : '')+qNum(r.rodando,1)+'</td></tr>').join('') : qEmptyRow(11, 'Sem SMs carregados.');
 
   /* por diretoria */
   const dirs = {};
@@ -1757,7 +1846,7 @@ function renderExecutiveTab(){
     r.pAnd += a.p.andamento; r.mCur += a.m.curso; r.mFin += a.m.finalizada; r.p += a.p.total; r.m += a.m.total; r.horas += a.horas;
   });
   const dirRows = Object.values(dirs).sort((a,b)=>(b.pAnd+b.mCur)-(a.pAnd+a.mCur));
-  document.getElementById('execDirBody').innerHTML = dirRows.length ? dirRows.map(r=>'<tr><td><b>'+esc(r.nome)+'</b></td><td>'+qNum(r.squads)+'</td><td>'+(r.semSm ? '<span class="badge miss">'+r.semSm+'</span>' : '<span class="badge ok">0</span>')+'</td><td>'+qNum(r.sms.size)+'</td><td>'+qNum(r.p)+'</td><td>'+qNum(r.pAnd)+'</td><td>'+qNum(r.m)+'</td><td>'+qNum(r.mFin)+'</td><td>'+qNum(r.mCur)+'</td><td>'+qFormatHours(r.horas)+'</td></tr>').join('') : qEmptyRow(10, 'Sem demanda importada.');
+  document.getElementById('execDirBody').innerHTML = dirRows.length ? dirRows.map(r=>'<tr><td class="nm">'+esc(r.nome)+'</td><td>'+qNum(r.squads)+'</td><td>'+(r.semSm ? '<span class="badge miss">'+r.semSm+'</span>' : '<span class="badge ok">0</span>')+'</td><td>'+qNum(r.sms.size)+'</td><td class="grp-start">'+qNum(r.p)+'</td><td>'+qNum(r.pAnd)+'</td><td class="grp-start">'+qNum(r.m)+'</td><td>'+qNum(r.mFin)+'</td><td>'+qNum(r.mCur)+'</td><td class="grp-start">'+qFormatHours(r.horas)+'</td></tr>').join('') : qEmptyRow(10, 'Sem demanda importada.');
 
   qSortableApply('execSmBody'); qSortableApply('execDirBody');
   renderExecSquadTable(model);
@@ -1788,7 +1877,7 @@ function renderExecSquadTable(model){
   rows = rows.sort((a,b)=> val(b)-val(a) || (b.p.total+b.m.total)-(a.p.total+a.m.total) || COLLATE.compare(a.label,b.label));
   const cnt = document.getElementById('execSquadCount');
   if(cnt) cnt.innerHTML = '<b>'+rows.length+'</b> de <b>'+withDemand+'</b> squads com demanda';
-  body.innerHTML = rows.length ? rows.map(a=>'<tr><td><b>'+esc(a.label)+'</b>'+(a.squad ? '' : ' <span class="badge miss">sem vínculo</span>')+'</td><td>'+(a.sm ? esc(a.sm) : '<span class="badge miss">Sem SM</span>')+'</td><td>'+esc(a.diretoria || '—')+'</td><td>'+(a.squad && tipoDaSquad(a.squad) ? esc(tipoDaSquad(a.squad)) : '<span style="color:#9AA1B2;">—</span>')+'</td><td>'+(a.squad ? qNum(a.squad.boards.filter(b=>b.ativo).length) : '—')+'</td><td>'+qNum(a.p.total)+'</td><td>'+qNum(a.p.andamento,1)+'</td><td>'+qNum(a.p.planejamento)+'</td><td>'+qNum(a.p.encerrado)+'</td><td>'+qNum(a.p.fora)+'</td><td>'+qNum(a.m.total)+'</td><td>'+qNum(a.m.finalizada)+'</td><td>'+qNum(a.m.curso,1)+'</td><td>'+qNum(a.m.fora)+'</td><td>'+qNum(a.rodando,1)+'</td></tr>').join('') : qEmptyRow(15, 'Nenhuma squad encontrada com esses filtros.');
+  body.innerHTML = rows.length ? rows.map(a=>'<tr><td class="nm">'+esc(a.label)+(a.squad ? '' : ' <span class="badge miss">sem vínculo</span>')+'</td><td style="min-width:170px;">'+(a.sm ? esc(a.sm) : '<span class="badge miss">Sem SM</span>')+'</td><td>'+esc(a.diretoria || '—')+'</td><td>'+(a.squad && tipoDaSquad(a.squad) ? esc(tipoDaSquad(a.squad)) : '<span style="color:#9AA1B2;">—</span>')+'</td><td>'+(a.squad ? qNum(a.squad.boards.filter(b=>b.ativo).length) : '—')+'</td><td class="grp-start">'+qNum(a.p.total)+'</td><td>'+qNum(a.p.andamento,1)+'</td><td>'+qNum(a.p.planejamento)+'</td><td>'+qNum(a.p.encerrado)+'</td><td>'+qNum(a.p.fora)+'</td><td class="grp-start">'+qNum(a.m.total)+'</td><td>'+qNum(a.m.finalizada)+'</td><td>'+qNum(a.m.curso,1)+'</td><td>'+qNum(a.m.fora)+'</td><td class="grp-start">'+qNum(a.rodando,1)+'</td></tr>').join('') : qEmptyRow(15, 'Nenhuma squad encontrada com esses filtros.');
   qSortableApply('execSquadBody');
 }
 function renderQualityTab(){
@@ -2289,6 +2378,7 @@ function refreshQuarterlyViews(){
   publishHubModel();
   renderExecutiveTab();
   renderQualityTab();
+  try{ renderSMsTab(); }catch(err){ console.error('Aba SMs', err); }
   updateTabBadges();
 }
 function renderBasesSummary(){
@@ -2298,6 +2388,7 @@ function renderBasesSummary(){
 }
 { const el=document.getElementById('execSort'); if(el) el.addEventListener('change', ()=>{ delete Q_SORT.execSquadBody; renderExecSquadTable(); }); }
 wireExecPortfolio();
+wireTableTidy();
 window.addEventListener('hac-quarterly-change', refreshQuarterlyViews);
 window.addEventListener('hac-quarterly-error', event=>{
   const detail = event.detail || {};
@@ -2502,11 +2593,36 @@ function hubOpenLinks(scope){
     '</div></div>';
 }
 
+/* Demanda do trimestre agrupada por SM e por squad, a partir do modelo trimestral completo */
+function smDemandMaps(){
+  const model = FULL_MODEL || QUARTERLY_MODEL;
+  const out = { loaded:false, bySm:new Map(), bySquad:new Map() };
+  if(!model) return out;
+  out.loaded = !!(model.items && model.items.length);
+  model.smRows.forEach(r=> out.bySm.set(boardKey(r.nome), r));
+  model.squads.forEach(a=>{ if(a.squad) out.bySquad.set(a.squad.id, a); });
+  return out;
+}
 function smRowDetail(sm){
   const squadRows = sm.squads.slice().sort((a,b)=> COLLATE.compare(a.squad,b.squad));
-  const squadsTable = '<table class="mini-table"><thead><tr><th>Squad</th><th>Diretoria</th><th>Recursos</th><th>Boards</th></tr></thead><tbody>' +
-    squadRows.map(s=> '<tr><td>'+esc(s.squad)+'</td><td>'+esc(s.diretoria||'—')+'</td><td>'+s.recursos.length+'</td><td>'+s.boards.length+'</td></tr>').join('') +
-    '</tbody></table>';
+  const dm = smDemandMaps();
+  const dash = '<span style="color:#9AA1B2;">—</span>';
+  const cell = (a, f) => dm.loaded ? (a ? qNum(f(a)) : qNum(0)) : dash;
+  const sum = { pT:0, pA:0, mT:0, mC:0, mF:0, h:0, r:0 };
+  squadRows.forEach(s=>{ const a = dm.bySquad.get(s.id); if(!a) return; sum.pT+=a.p.total; sum.pA+=a.p.andamento; sum.mT+=a.m.total; sum.mC+=a.m.curso; sum.mF+=a.m.finalizada; sum.h+=a.horas; sum.r+=a.rodando; });
+  const squadsTable = '<div class="tablewrap"><table class="mini-table squadtable"><thead>' +
+    '<tr class="grp"><th colspan="4">Squad</th><th colspan="2">Projetos</th><th colspan="3">Melhorias</th><th colspan="2">Carga</th></tr>' +
+    '<tr><th>Squad</th><th>Tipo</th><th>Diretoria</th><th>Recursos / boards</th><th class="grp-start">Total</th><th>Em andamento</th><th class="grp-start">Total</th><th>Em curso</th><th>Finalizadas</th><th class="grp-start">Rodando</th><th>Horas estimadas</th></tr></thead><tbody>' +
+    squadRows.map(s=>{
+      const a = dm.bySquad.get(s.id);
+      const tp = tipoDaSquad(s);
+      return '<tr><td class="nm">'+esc(s.squad)+'</td><td>'+(tp ? esc(tp) : dash)+'</td><td>'+esc(s.diretoria||'—')+'</td><td class="num">'+s.recursos.length+' / '+s.boards.length+'</td>' +
+        '<td class="num grp-start">'+cell(a,x=>x.p.total)+'</td><td class="num">'+cell(a,x=>x.p.andamento)+'</td>' +
+        '<td class="num grp-start">'+cell(a,x=>x.m.total)+'</td><td class="num">'+cell(a,x=>x.m.curso)+'</td><td class="num">'+cell(a,x=>x.m.finalizada)+'</td>' +
+        '<td class="num grp-start">'+(dm.loaded ? qNum(a ? a.rodando : 0, 1) : dash)+'</td><td class="num">'+(dm.loaded ? qFormatHours(a ? a.horas : 0) : dash)+'</td></tr>';
+    }).join('') +
+    (dm.loaded ? '<tr style="font-weight:700;"><td class="nm" colspan="4">Total do SM</td><td class="num grp-start">'+sum.pT+'</td><td class="num">'+sum.pA+'</td><td class="num grp-start">'+sum.mT+'</td><td class="num">'+sum.mC+'</td><td class="num">'+sum.mF+'</td><td class="num grp-start">'+sum.r+'</td><td class="num">'+qFormatHours(sum.h)+'</td></tr>' : '') +
+    '</tbody></table></div>';
 
   let novasHtml = '';
   if(sm.novasSquads.length){
@@ -2547,6 +2663,9 @@ function renderSMsTab(){
 
   let rows = filteredSMs();
 
+  /* demanda do trimestre por SM e por squad (usa o modelo completo, sem os filtros da tela) */
+  const dm = smDemandMaps();
+  rows.forEach(sm=>{ const d = dm.bySm.get(sm.id); sm.pAnd = d ? d.pAndamento : 0; sm.mCur = d ? d.mCurso : 0; sm.rodando = d ? d.rodando : 0; sm.horas = d ? d.horas : 0; sm.temDemanda = dm.loaded; });
   const sk = SM_SORT.key, sd = SM_SORT.dir;
   rows = rows.slice().sort((a,b)=>{
     let va, vb;
@@ -2582,21 +2701,33 @@ function renderSMsTab(){
   kpiRow.appendChild(kpiCard('kpiSmMulti', multiDir, 'SMs atuando em >1 diretoria'));
   kpiRow.appendChild(kpiCard('kpiSmDiverg', comDiverg, 'SMs com candidato a divergência (heurística)', comDiverg>0?'alert':undefined));
 
+  const note = document.getElementById('smCapacityNote');
+  if(note){
+    const todos = filteredSMs();
+    const folga = todos.reduce((t,sm)=>t+Math.max(0, SM_IDEAL_SQUADS-sm.squadCount),0);
+    const excesso = todos.reduce((t,sm)=>t+Math.max(0, sm.squadCount-SM_IDEAL_SQUADS),0);
+    note.innerHTML = '<b>Capacidade = '+SM_IDEAL_SQUADS+' squads por SM.</b> Hoje: <b>'+acimaIdeal+'</b> SM(s) acima do ideal ('+excesso+' squad(s) excedente(s)) e <b>'+folga+'</b> vaga(s) livre(s) nos demais. ' +
+      (dm.loaded ? 'Projetos e melhorias vêm do Portfólio e das Melhorias importados; clique no SM para ver o detalhe por squad.' : 'Importe Portfólio e Melhorias do trimestre para ver projetos e melhorias por SM e por squad.');
+  }
   const tbody = document.getElementById('smBody');
   if(rows.length===0){
-    tbody.innerHTML = '<tr><td colspan="6" class="noresults">Nenhum SM encontrado com esses filtros.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="noresults">Nenhum SM encontrado com esses filtros.</td></tr>';
   } else {
     tbody.innerHTML = pageRows.map(sm=>{
       const isOpen = OPEN_SM_ROWS.has(sm.id);
       return '<tr class="squad-row'+(isOpen?' open':'')+'" data-id="'+esc(sm.id)+'">' +
-        '<td><span class="chevron">▸</span> '+esc(sm.nome)+'</td>' +
-        '<td>'+(sm.overload ? '<span class="badge miss">'+sm.squadCount+'</span>' : '<span class="badge ok">'+sm.squadCount+'</span>')+'</td>' +
-        '<td>'+esc(sm.diretorias.join(', '))+(sm.multiDiretoria?' <span class="prov-tag prov-manual">MULTI</span>':'')+'</td>' +
-        '<td>'+sm.pessoasUnicas+'</td>' +
-        '<td>'+sm.totalBoards+'</td>' +
+        '<td class="nm"><span class="chevron">▸</span> '+esc(sm.nome)+'</td>' +
+        '<td class="nowrap"><b>'+sm.squadCount+'</b> / '+SM_IDEAL_SQUADS+qCapMeter(sm.squadCount)+qCapacityBadge({folga: SM_IDEAL_SQUADS - sm.squadCount})+'</td>' +
+        '<td class="grp-start">'+esc(sm.diretorias.join(', '))+(sm.multiDiretoria?' <span class="prov-tag prov-manual">MULTI</span>':'')+'</td>' +
+        '<td class="num">'+sm.pessoasUnicas+'</td>' +
+        '<td class="num">'+sm.totalBoards+'</td>' +
+        '<td class="num grp-start">'+(sm.temDemanda ? qNum(sm.pAnd) : '—')+'</td>' +
+        '<td class="num">'+(sm.temDemanda ? qNum(sm.mCur) : '—')+'</td>' +
+        '<td class="num">'+(sm.temDemanda ? qNum(sm.rodando,1) : '—')+'</td>' +
+        '<td class="num grp-start">'+(sm.temDemanda ? qFormatHours(sm.horas) : '—')+'</td>' +
         '<td>'+(sm.divergencias.length ? '<span class="badge miss">'+sm.divergencias.length+'</span>' : '<span class="badge ok">0</span>')+'</td>' +
         '</tr>' +
-        '<tr class="squad-detail-row'+(isOpen?' open':'')+'" data-detail-id="'+esc(sm.id)+'"><td colspan="6">'+(isOpen ? smRowDetail(sm) : '')+'</td></tr>';
+        '<tr class="squad-detail-row'+(isOpen?' open':'')+'" data-detail-id="'+esc(sm.id)+'"><td colspan="10">'+(isOpen ? smRowDetail(sm) : '')+'</td></tr>';
     }).join('');
 
     tbody.querySelectorAll('.squad-row').forEach(tr=>{
@@ -3317,7 +3448,7 @@ function renderDiretoriaCoverage(){
   body.innerHTML = labels.length ? labels.map(d=>{
     const g = dirs[d], total = g.length, comSm = g.filter(s=>currentSMName(s)).length, semSm = total - comSm;
     const sms = new Set(g.filter(s=>currentSMName(s)).map(s=>boardKey(currentSMName(s))));
-    return '<tr><td><b>'+esc(d)+'</b></td><td>'+total+'</td><td>'+comSm+'</td><td>'+(semSm ? '<span class="badge miss">'+semSm+'</span>' : '0')+'</td><td>'+Math.round(comSm/total*100)+'%</td><td>'+g.reduce((t,s)=>t+s.recursos.length,0)+'</td><td>'+sms.size+'</td></tr>';
+    return '<tr><td class="nm">'+esc(d)+'</td><td>'+total+'</td><td>'+comSm+'</td><td>'+(semSm ? '<span class="badge miss">'+semSm+'</span>' : '0')+'</td><td>'+Math.round(comSm/total*100)+'%</td><td>'+g.reduce((t,s)=>t+s.recursos.length,0)+'</td><td>'+sms.size+'</td></tr>';
   }).join('') : qEmptyRow(7, 'Nenhuma squad ativa no filtro atual.');
 }
 
