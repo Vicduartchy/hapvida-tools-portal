@@ -1301,7 +1301,31 @@ function loadOverrides(){
       const p = JSON.parse(raw);
       if(p) MANUAL_OVERRIDES = Object.assign(emptyOverrides(), p);
     }
+    aplicarMigracoesOverrides();
   }catch(e){ console.warn('Não consegui ler overrides salvos:', e); }
+}
+/* Migrações únicas: quando o levantamento dos SMs é atualizado na base, uma edição manual antiga de SM
+   (feita no navegador) continuaria valendo e esconderia a atualização. Cada migração limpa só o campo
+   "SM" dessas squads, uma única vez por navegador; as demais edições manuais são preservadas. */
+const MIGRACOES_OVERRIDES = [
+  { id:'2026-11-03-insights-sms', squads:['insights-operadora','insights-analytics-engineering-diretoria-de-protocolos','insights-analytics-engineering-novos-projetos-e-sustentacao','insights-analytics-engineering-rentabilidade-e-incorporacao','insights-backoffice-crm','insights-data-science-backoffice','insights-plataforma-ml-e-ai','insights-analytics-engineering-planej-estrategico','insights-planejamento-financeiro','insights-gestao-e-gov-de-dados','insights-assistencial-e-grm','insights-lakehouse','insights-arquitetura-de-dados'] }
+];
+function aplicarMigracoesOverrides(){
+  const feitas = Array.isArray(MANUAL_OVERRIDES.migracoes) ? MANUAL_OVERRIDES.migracoes : (MANUAL_OVERRIDES.migracoes = []);
+  let mudou = false;
+  MIGRACOES_OVERRIDES.forEach(m=>{
+    if(feitas.indexOf(m.id) >= 0) return;
+    m.squads.forEach(id=>{
+      const ov = MANUAL_OVERRIDES.squads[id];
+      if(ov && Object.prototype.hasOwnProperty.call(ov, 'levantamento_sm')){
+        delete ov.levantamento_sm;
+        if(Array.isArray(ov._manual)) ov._manual = ov._manual.filter(k=>k !== 'levantamento_sm');
+        if(!Object.keys(ov).filter(k=>k !== '_manual').length) delete MANUAL_OVERRIDES.squads[id];
+      }
+    });
+    feitas.push(m.id); mudou = true;
+  });
+  if(mudou) saveOverrides();
 }
 function saveOverrides(){
   try{ localStorage.setItem(LS_OVERRIDES, JSON.stringify(MANUAL_OVERRIDES)); }catch(e){ console.warn('Não consegui salvar overrides:', e); }
