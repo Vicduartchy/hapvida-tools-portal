@@ -22,7 +22,7 @@
   var LS_OVERRIDES = 'hac_shared_dashboard_overrides_v1';
   var MODEL_VERSION = 1;
   /* SMs/PMOs desligados: ainda podem aparecer em bases de origem e devem ser sinalizados */
-  var DESLIGADOS = ['pollyana', 'victor vasconcelos', 'alexandre viana'];
+  var DESLIGADOS = ['pollyana', 'victor vasconcelos', 'alexandre viana', 'caio nojoza'];
   var SEM_SM = 'Sem SM';
 
   /* ---------- normalização de nomes ---------- */
